@@ -29,12 +29,14 @@ In modern B2B environments, enterprise systems consist of multiple servers, micr
 
 ## **2. Team Roles & Responsibilities**
 
-| Team Member | Role | Responsibilities |
-|-------------|------|------------------|
-| **Hao Tian** | **Frontend Lead** | Designs and implements the React-based user interface, integrates API endpoints, creates responsive KPI charts, and manages application state using Redux/Zustand. |
-| **Yuyang Ai** | **Backend Lead** | Develops Spring Boot REST APIs, implements metrics ingestion and querying logic, integrates alerting engine, and handles database schema design in PostgreSQL. |
-| **Yuanchao Chen** | **DevOps & Infrastructure** | Sets up Docker Compose and Kubernetes deployments, configures CI/CD pipelines, manages environment variables and application scaling, and ensures secure and reliable deployments. |
-| **Junya You** | **Full-Stack Developer & QA** | Assists both frontend and backend development, implements RBAC features, writes unit/integration tests, performs API testing, and ensures quality through automated test pipelines. |
+| Team Member  | Role               | Responsibilities |
+|--------------|--------------------|------------------|
+| Hao Tian     | Frontend Lead      | Designs and implements the React-based user interface, integrates API endpoints, creates responsive KPI charts, and manages application state using Redux/Zustand. |
+| Yuyang Ai    | Backend Lead       | Develops Spring Boot REST APIs, implements metrics ingestion and querying logic, integrates alerting engine, and handles database schema design in PostgreSQL. |
+| Yuanchao Chen| DevOps & Infrastructure | Sets up Docker Compose and Kubernetes deployments, configures CI/CD pipelines, manages environment variables and application scaling, and ensures secure and reliable deployments. |
+| Junya You    | Full-Stack Developer & QA | Assists both frontend and backend development, implements RBAC features, writes unit/integration tests, performs API testing, and ensures quality through automated test pipelines. |
+| Yurou Chen | UI/UX Designer | Designs user-friendly and visually appealing UI layouts, improves dashboard usability, conducts user testing, and collaborates with the frontend team to implement design changes. |
+
 
 ---
 
