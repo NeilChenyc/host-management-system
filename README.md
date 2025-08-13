@@ -3,68 +3,58 @@
 
 ---
 
-## **Overview**
+## **1. Project Overview**
 
-The **B2B System Health Dashboard** is a web application designed for **operations** and **management** teams to monitor the health of enterprise systems in real-time.  
-It collects server and service metrics, visualizes **key performance indicators (KPIs)**, raises alerts when thresholds are breached, and implements **role-based access control (RBAC)** to ensure secure and tailored data access.  
+### **Problem Statement**
+In modern B2B environments, enterprise systems consist of multiple servers, microservices, and third-party integrations. Without a unified monitoring platform, teams struggle with:
+- **Delayed issue detection** – Problems are discovered only after customers are impacted.  
+- **Fragmented visibility** – Metrics are scattered across tools and systems.  
+- **Ineffective alerting** – No automated notifications to the right stakeholders.  
+- **Role confusion** – Both technical and management teams see the same data without context.
 
----
+### **Main Features**
+- **Metric Collection** – Supports both push (HTTP API) and pull (Prometheus format) models for server and service metrics.  
+- **Real-Time Visualization** – Live KPI charts (CPU usage, memory consumption, error rates, latency) using SSE/WebSocket.  
+- **Alerting System** – Configurable threshold rules with multi-channel notifications (email, Slack).  
+- **Role-Based Access Control (RBAC)** – Secure and tailored views for Operations and Management teams.  
+- **Scalable Architecture** – Modular backend, modern frontend, and efficient time-series data storage.
 
-## **Real-World Problem**
-
-In modern B2B environments, organizations rely on multiple servers, microservices, and third-party APIs to deliver critical business functions.  
-Without a centralized monitoring solution, teams face challenges such as:  
-
-- **Delayed issue detection** — Problems are often discovered after customers report them.  
-- **Lack of unified visibility** — Metrics are scattered across tools and environments.  
-- **Inefficient alerting** — No automated triggers to inform relevant roles promptly.  
-- **Role confusion** — Technical and management teams see the same data without context.  
-
-**This dashboard addresses these issues** by providing **real-time monitoring, alerting, and role-specific data views** in a single, easy-to-use platform.  
-
----
-
-## **Key Requirements**
-
-1. **Metric Collection**  
-   - Support both push (HTTP API) and pull (Prometheus format) methods.  
-   - Store time-series metrics in a relational database with indexing.  
-
-2. **Real-Time Visualization**  
-   - Provide interactive charts for KPIs such as CPU usage, memory consumption, error rates, and latency.  
-   - Live updates via Server-Sent Events (SSE) or WebSockets.  
-
-3. **Alerting System**  
-   - Configurable threshold rules.  
-   - Multi-channel notifications (email, Slack webhook).  
-
-4. **Role-Based Access Control (RBAC)**  
-   - `ROLE_OPS` (Operations): full access to detailed metrics and alert configuration.  
-   - `ROLE_MGMT` (Management): access to high-level summaries and read-only views.  
-
-5. **Scalable Architecture**  
-   - Backend API in Spring Boot with REST endpoints.  
-   - Frontend in React with modular components and state management.  
-   - PostgreSQL as the primary data store (optional TimescaleDB extension).  
+### **High-Level Goals**
+- Enable **fast detection** of infrastructure and application issues.  
+- Provide **unified visibility** into system health for all stakeholders.  
+- Automate **alerting** to reduce downtime and improve incident response.  
+- Ensure **secure, role-specific** access to relevant information.  
 
 ---
 
-## **Architecture**
+## **2. Team Roles & Responsibilities**
+
+| Team Member | Role | Responsibilities |
+|-------------|------|------------------|
+| **Alice Zhang** | **Frontend Lead** | Designs and implements the React-based user interface, integrates API endpoints, creates responsive KPI charts, and manages application state using Redux/Zustand. |
+| **Brian Lee** | **Backend Lead** | Develops Spring Boot REST APIs, implements metrics ingestion and querying logic, integrates alerting engine, and handles database schema design in PostgreSQL. |
+| **Catherine Wong** | **DevOps & Infrastructure** | Sets up Docker Compose and Kubernetes deployments, configures CI/CD pipelines, manages environment variables and application scaling, and ensures secure and reliable deployments. |
+| **David Kim** | **Full-Stack Developer & QA** | Assists both frontend and backend development, implements RBAC features, writes unit/integration tests, performs API testing, and ensures quality through automated test pipelines. |
+
+---
+
+## **3. Architecture Diagram**
 
 ```
-[Metrics Agents / Exporters]
+
+\[Metrics Agents / Exporters]
 ↓
-[Spring Boot Backend: Ingestion API] → [PostgreSQL]
-↓ ↑
-[Alert Evaluator & Notifier] │
-↓ │
-[Realtime API (SSE/WebSocket)] → [React Frontend UI]
-```
+\[Spring Boot Backend: Ingestion API] → \[PostgreSQL]
+↓                                ↑
+\[Alert Evaluator & Notifier]          │
+↓                                │
+\[Realtime API (SSE/WebSocket)] → \[React Frontend UI]
 
+````
 
 ---
 
-## **Tech Stack**
+## **4. Tech Stack**
 
 - **Frontend:** React 18, Vite, React Router, Zustand/Redux, ECharts  
 - **Backend:** Spring Boot 3, Spring Web, Spring Security, JWT Authentication, Spring Data JPA  
@@ -74,38 +64,38 @@ Without a centralized monitoring solution, teams face challenges such as:
 
 ---
 
-## **Features**
+## **5. Key Features**
 
-- Collect metrics from servers and services via push or pull models.  
-- Store and query time-series data efficiently.  
+- Collect and store time-series metrics efficiently.  
 - Display real-time KPIs with interactive charts.  
-- Raise alerts and send notifications when thresholds are exceeded.  
-- Role-based access to control data visibility.  
-- Scalable, containerized deployment.  
+- Raise alerts based on defined rules and thresholds.  
+- Provide different data views for different user roles.  
+- Deployable in containerized and cloud environments.
 
 ---
 
-## **Quick Start (Docker)**
+## **6. Quick Start (Docker)**
 
-**1. Clone the repository**
+**Clone the repository**
 ```bash
 git clone https://github.com/your-org/b2b-system-health-dashboard.git
 cd b2b-system-health-dashboard
-```
+````
 
-**2. Run with Docker Compose**
+**Run with Docker Compose**
+
 ```bash
 docker compose up -d --build
 ```
 
-**3. Access the application**
+**Access the application**
 
 * Frontend: `http://localhost:5173`
 * Backend Health Check: `http://localhost:8080/actuator/health`
 
 ---
 
-## **API Overview**
+## **7. API Overview**
 
 * **Auth**
   `POST /auth/login` → Returns JWT token.
@@ -126,14 +116,14 @@ docker compose up -d --build
 
 ---
 
-## **RBAC Roles**
+## **8. RBAC Roles**
 
-* **ROLE\_OPS**: Full access to detailed metrics, can create/update alert rules.
+* **ROLE\_OPS**: Full access to detailed metrics, can manage alert rules.
 * **ROLE\_MGMT**: Read-only access to high-level summaries and trends.
 
 ---
 
-## **License**
+## **9. License**
 
 This project is licensed under the MIT License.
 
