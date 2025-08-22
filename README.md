@@ -1,36 +1,179 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Host Management System
 
-## Getting Started
+> Enterprise-level host management system based on Next.js and Ant Design - Course Assignment Project
 
-First, run the development server:
+## 📋 Project Overview
+
+This is a modern host management system developed with Next.js 15 + React 19 + Ant Design 5 + TypeScript technology stack. The system provides comprehensive device monitoring, user management, system settings and other functional modules, suitable for unified host device management in enterprise environments.
+
+**Note: This project is a course assignment project for learning and demonstrating modern frontend development technologies.**
+
+## ✨ Key Features
+
+### 🖥️ Device Management
+- **Device Overview**: Real-time display of device status statistics and operation status charts
+- **Host Management**: Device list management, add/edit/delete devices
+- **Status Monitoring**: CPU and memory usage monitoring
+- **Category Filtering**: Filter by device type (Web server, database server, etc.)
+
+### 👥 User Management
+- **User List**: CRUD operations for user information
+- **Role Permissions**: User role assignment and permission management
+- **User Groups**: Support for user group management
+- **Status Management**: User enable/disable status control
+
+### ⚙️ System Settings
+- **Basic Configuration**: Site name, description, administrator email, etc.
+- **Security Settings**: Login restrictions, session timeout, maintenance mode
+- **Notification Settings**: Email and SMS notification switches
+- **System Logs**: Operation log viewing and filtering
+- **Backup Management**: Data backup and recovery functionality
+
+### 🎨 Interface Features
+- **Responsive Design**: Adapted for desktop and mobile devices
+- **Modern UI**: Based on Ant Design 5 design language
+- **Dark Theme**: Support for theme switching (extensible)
+- **Internationalization**: Support for English interface
+
+## 🛠️ Technology Stack
+
+- **Frontend Framework**: Next.js 15.5.0
+- **UI Library**: React 19.1.0
+- **Component Library**: Ant Design 5.27.1
+- **Development Language**: TypeScript 5
+- **Styling Solution**: Tailwind CSS 4
+- **Build Tool**: Turbopack
+- **Code Standards**: ESLint 9
+
+## 🚀 Quick Start
+
+### Environment Requirements
+
+- Node.js >= 18.0.0
+- npm >= 8.0.0
+
+### Install Dependencies
+
+```bash
+npm install
+```
+
+### Start Development Server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to view the application.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Build for Production
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+npm run start
+```
 
-## Learn More
+### Code Linting
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run lint
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 📁 Project Structure
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+host-management-system/
+├── src/
+│   ├── app/                    # Next.js App Router
+│   │   ├── globals.css        # Global styles
+│   │   ├── layout.tsx         # Root layout
+│   │   └── page.tsx           # Home page
+│   ├── components/            # Components directory
+│   │   ├── DeviceManagement/  # Device management components
+│   │   │   ├── DeviceOverview.tsx
+│   │   │   └── DeviceList.tsx
+│   │   ├── UserManagement/    # User management components
+│   │   │   └── UserList.tsx
+│   │   ├── SystemSettings/    # System settings components
+│   │   │   └── SystemSettings.tsx
+│   │   └── Layout/           # Layout components
+│   │       └── MainLayout.tsx
+│   └── lib/                  # Utility libraries
+│       └── antd-registry.tsx # Ant Design style registration
+├── public/                   # Static assets
+├── package.json             # Project configuration
+├── tsconfig.json           # TypeScript configuration
+├── next.config.ts          # Next.js configuration
+└── README.md               # Project documentation
+```
 
-## Deploy on Vercel
+## 🎯 Feature Demonstration
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Device Overview Page
+- Display statistics for total devices, online devices, offline devices, and devices under maintenance
+- Provide device status distribution charts
+- Support filtering by device type
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Host Management Page
+- Device list display including hostname, IP address, status, operating system, etc.
+- Support adding new devices, editing device information, and deleting devices
+- Provide search and status filtering functionality
+
+### User Management Page
+- User information management including username, email, role, status, etc.
+- Support user permission assignment and role management
+- Provide user grouping functionality
+
+### System Settings Page
+- System basic configuration management
+- System log viewing and filtering
+- Backup management functionality
+
+## 📝 Development Guide
+
+### Component Development Standards
+- Use TypeScript for type definitions
+- Follow React Hooks best practices
+- Use functional components + Hooks pattern
+- Use Ant Design component library to maintain UI consistency
+
+### Style Standards
+- Prioritize using Ant Design provided styles
+- Use Tailwind CSS for custom styles
+- Maintain responsive design principles
+
+### Data Management
+- Currently using mock data
+- Extensible to integrate with real API interfaces
+- Support CRUD operations for data
+
+## 🔧 Configuration
+
+### Ant Design Configuration
+The project uses `@ant-design/nextjs-registry` for style management, with configuration file located at `src/lib/antd-registry.tsx`.
+
+### TypeScript Configuration
+The project enables strict mode, with configuration file `tsconfig.json`.
+
+### Next.js Configuration
+Uses Turbopack as the build tool, with configuration file `next.config.ts`.
+
+## 📚 Learning Resources
+
+- [Next.js Official Documentation](https://nextjs.org/docs)
+- [React Official Documentation](https://react.dev/)
+- [Ant Design Official Documentation](https://ant.design/)
+- [TypeScript Official Documentation](https://www.typescriptlang.org/)
+- [Tailwind CSS Official Documentation](https://tailwindcss.com/)
+
+## 📄 License
+
+This project is for learning and educational purposes only.
+
+## 👨‍💻 Author
+
+Course Assignment Project - Host Management System
+
+---
+
+**Note**: This project is a course assignment using mock data for demonstration. For actual production environment usage, real backend APIs and databases need to be integrated.
