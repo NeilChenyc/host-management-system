@@ -1,0 +1,160 @@
+package com.elec5619.backend.controller;
+
+import com.elec5619.backend.dto.UserResponseDto;
+import com.elec5619.backend.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Set;
+
+/**
+ * User management controller.
+ * Provides REST endpoints for user CRUD operations.
+ */
+@RestController
+@RequestMapping("/api/users")
+@Tag(name = "User Management", description = "User management and administration APIs")
+@CrossOrigin(origins = "*")
+public class UserController {
+
+    @Autowired
+    private UserService userService;
+
+    /**
+     * Get all users
+     * @return List of all users
+     */
+    @GetMapping
+    @Operation(
+        summary = "Get All Users",
+        description = "Retrieve a list of all users in the system"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Users retrieved successfully",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = UserResponseDto.class)
+            )
+        )
+    })
+    public ResponseEntity<List<UserResponseDto>> getAllUsers() {
+        // For now, return empty list since we simplified the service
+        return ResponseEntity.ok(List.of());
+    }
+
+    /**
+     * Get user by ID
+     * @param id User ID
+     * @return User information
+     */
+    @GetMapping("/{id}")
+    @Operation(
+        summary = "Get User by ID",
+        description = "Retrieve user information by user ID"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "User found",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = UserResponseDto.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "User not found"
+        )
+    })
+    public ResponseEntity<UserResponseDto> getUserById(
+            @Parameter(description = "User ID", required = true)
+            @PathVariable Long id) {
+        // For now, return mock response
+        UserResponseDto user = new UserResponseDto();
+        user.setId(id);
+        user.setUsername("user_" + id);
+        user.setEmail("user" + id + "@example.com");
+        user.setRoles(Set.of("ROLE_USER"));
+        
+        return ResponseEntity.ok(user);
+    }
+
+    /**
+     * Update user roles
+     * @param id User ID
+     * @param roles New roles
+     * @return Updated user information
+     */
+    @PutMapping("/{id}/roles")
+    @Operation(
+        summary = "Update User Roles",
+        description = "Update the roles assigned to a specific user"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "User roles updated successfully",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = UserResponseDto.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "User not found"
+        )
+    })
+    public ResponseEntity<UserResponseDto> updateUserRoles(
+            @Parameter(description = "User ID", required = true)
+            @PathVariable Long id,
+            @Parameter(description = "New roles for the user", required = true)
+            @RequestBody Set<String> roles) {
+        // For now, return mock response
+        UserResponseDto user = new UserResponseDto();
+        user.setId(id);
+        user.setUsername("user_" + id);
+        user.setEmail("user" + id + "@example.com");
+        user.setRoles(roles);
+        
+        return ResponseEntity.ok(user);
+    }
+
+    /**
+     * Delete user
+     * @param id User ID
+     * @return Success response
+     */
+    @DeleteMapping("/{id}")
+    @Operation(
+        summary = "Delete User",
+        description = "Delete a user from the system"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "User deleted successfully"
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "User not found"
+        )
+    })
+    public ResponseEntity<Void> deleteUser(
+            @Parameter(description = "User ID", required = true)
+            @PathVariable Long id) {
+        // For now, just return success
+        return ResponseEntity.ok().build();
+    }
+}
