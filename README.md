@@ -130,3 +130,22 @@ docker compose up -d --build
 This project is licensed under the MIT License.
 
 
+## **10. Database Structure**
+
+**`users` Table**
+* `id` (Primary Key)
+* `username` (Unique)
+* `password_hash`
+* `email` (Unique)
+* `created_at`
+
+**`roles` Table**
+* `id` (Primary Key)
+* `name` (Unique, e.g., 'ROLE_OPS')
+
+**`user_roles` Table**
+* `user_id` (Foreign Key to `users.id`)
+* `role_id` (Foreign Key to `roles.id`)
+
+
+
