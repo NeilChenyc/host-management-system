@@ -39,7 +39,7 @@ const { Search } = Input;
 const { Option } = Select;
 const { TextArea } = Input;
 
-// 用户数据接口
+// User data interface
 interface User {
   id: string;
   username: string;
@@ -56,14 +56,14 @@ interface User {
   description?: string;
 }
 
-// 用户组数据接口
+// User group data interface
 interface UserGroup {
   value: string;
   title: string;
   children?: UserGroup[];
 }
 
-// 权限数据接口
+// Permission data interface
 interface Permission {
   id: string;
   name: string;
@@ -71,12 +71,12 @@ interface Permission {
   category: string;
 }
 
-// 模拟用户数据
+// Mock user data
 const mockUsers: User[] = [
   {
     id: '1',
     username: 'admin',
-    realName: '系统管理员',
+    realName: 'System Administrator',
     email: 'admin@example.com',
     phone: '13800138000',
     role: 'admin',
@@ -85,12 +85,12 @@ const mockUsers: User[] = [
     lastLogin: '2024-01-15 10:30:00',
     createTime: '2023-01-01 00:00:00',
     permissions: ['user:read', 'user:write', 'device:read', 'device:write', 'system:read', 'system:write'],
-    description: '系统超级管理员',
+    description: 'System Super Administrator',
   },
   {
     id: '2',
     username: 'operator1',
-    realName: '运维工程师',
+    realName: 'DevOps Engineer',
     email: 'operator1@example.com',
     phone: '13800138001',
     role: 'operator',
@@ -99,12 +99,12 @@ const mockUsers: User[] = [
     lastLogin: '2024-01-15 09:45:00',
     createTime: '2023-06-15 10:00:00',
     permissions: ['device:read', 'device:write', 'system:read'],
-    description: '负责设备运维管理',
+    description: 'Responsible for device operations management',
   },
   {
     id: '3',
     username: 'viewer1',
-    realName: '监控员',
+    realName: 'Monitor Operator',
     email: 'viewer1@example.com',
     phone: '13800138002',
     role: 'viewer',
@@ -113,12 +113,12 @@ const mockUsers: User[] = [
     lastLogin: '2024-01-15 08:20:00',
     createTime: '2023-09-01 14:30:00',
     permissions: ['device:read', 'system:read'],
-    description: '负责系统监控',
+    description: 'Responsible for system monitoring',
   },
   {
     id: '4',
     username: 'testuser',
-    realName: '测试用户',
+    realName: 'Test User',
     email: 'test@example.com',
     phone: '13800138003',
     role: 'viewer',
@@ -127,42 +127,42 @@ const mockUsers: User[] = [
     lastLogin: '2024-01-10 16:00:00',
     createTime: '2023-12-01 09:00:00',
     permissions: ['device:read'],
-    description: '测试账号',
+    description: 'Test Account',
   },
 ];
 
-// 模拟用户组数据
+// Mock user group data
 const mockUserGroups: UserGroup[] = [
   {
     value: 'system-admin',
-    title: '系统管理组',
+    title: 'System Admin Group',
   },
   {
     value: 'ops-team',
-    title: '运维团队',
+    title: 'Operations Team',
     children: [
-      { value: 'ops-senior', title: '高级运维' },
-      { value: 'ops-junior', title: '初级运维' },
+      { value: 'ops-senior', title: 'Senior Operations' },
+      { value: 'ops-junior', title: 'Junior Operations' },
     ],
   },
   {
     value: 'monitor-team',
-    title: '监控团队',
+    title: 'Monitor Team',
   },
   {
     value: 'test-team',
-    title: '测试团队',
+    title: 'Test Team',
   },
 ];
 
-// 模拟权限数据
+// Mock permission data
 const mockPermissions: Permission[] = [
-  { id: 'user:read', name: '用户查看', description: '查看用户信息', category: '用户管理' },
-  { id: 'user:write', name: '用户编辑', description: '编辑用户信息', category: '用户管理' },
-  { id: 'device:read', name: '设备查看', description: '查看设备信息', category: '设备管理' },
-  { id: 'device:write', name: '设备编辑', description: '编辑设备信息', category: '设备管理' },
-  { id: 'system:read', name: '系统查看', description: '查看系统信息', category: '系统管理' },
-  { id: 'system:write', name: '系统编辑', description: '编辑系统配置', category: '系统管理' },
+  { id: 'user:read', name: 'User View', description: 'View user information', category: 'User Management' },
+  { id: 'user:write', name: 'User Edit', description: 'Edit user information', category: 'User Management' },
+  { id: 'device:read', name: 'Device View', description: 'View device information', category: 'Device Management' },
+  { id: 'device:write', name: 'Device Edit', description: 'Edit device information', category: 'Device Management' },
+  { id: 'system:read', name: 'System View', description: 'View system information', category: 'System Management' },
+  { id: 'system:write', name: 'System Edit', description: 'Edit system configuration', category: 'System Management' },
 ];
 
 const UserList: React.FC = () => {
@@ -178,38 +178,38 @@ const UserList: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [form] = Form.useForm();
 
-  // 角色标签颜色映射
+  // Role tag color mapping
   const roleColors = {
     admin: 'red',
     operator: 'blue',
     viewer: 'green',
   };
 
-  // 角色文本映射
+  // Role text mapping
   const roleTexts = {
-    admin: '管理员',
-    operator: '操作员',
-    viewer: '查看者',
+    admin: 'Administrator',
+    operator: 'Operator',
+    viewer: 'Viewer',
   };
 
-  // 状态标签颜色映射
+  // Status tag color mapping
   const statusColors = {
     active: 'green',
     inactive: 'orange',
     locked: 'red',
   };
 
-  // 状态文本映射
+  // Status text mapping
   const statusTexts = {
-    active: '正常',
-    inactive: '停用',
-    locked: '锁定',
+    active: 'Active',
+    inactive: 'Inactive',
+    locked: 'Locked',
   };
 
-  // 表格列定义
+  // Table column definitions
   const columns: ColumnsType<User> = [
     {
-      title: '用户信息',
+      title: 'User Info',
       key: 'userInfo',
       width: 200,
       render: (_, record) => (
@@ -228,7 +228,7 @@ const UserList: React.FC = () => {
       ),
     },
     {
-      title: '联系方式',
+      title: 'Contact',
       key: 'contact',
       width: 180,
       render: (_, record) => (
@@ -239,7 +239,7 @@ const UserList: React.FC = () => {
       ),
     },
     {
-      title: '角色',
+      title: 'Role',
       dataIndex: 'role',
       key: 'role',
       width: 100,
@@ -249,14 +249,14 @@ const UserList: React.FC = () => {
         </Tag>
       ),
       filters: [
-        { text: '管理员', value: 'admin' },
-        { text: '操作员', value: 'operator' },
-        { text: '查看者', value: 'viewer' },
+        { text: 'Administrator', value: 'admin' },
+        { text: 'Operator', value: 'operator' },
+        { text: 'Viewer', value: 'viewer' },
       ],
       onFilter: (value, record) => record.role === value,
     },
     {
-      title: '用户组',
+      title: 'User Group',
       dataIndex: 'group',
       key: 'group',
       width: 120,
@@ -266,7 +266,7 @@ const UserList: React.FC = () => {
       },
     },
     {
-      title: '状态',
+      title: 'Status',
       dataIndex: 'status',
       key: 'status',
       width: 80,
@@ -276,21 +276,21 @@ const UserList: React.FC = () => {
         </Tag>
       ),
       filters: [
-        { text: '正常', value: 'active' },
-        { text: '停用', value: 'inactive' },
-        { text: '锁定', value: 'locked' },
+        { text: 'Active', value: 'active' },
+        { text: 'Inactive', value: 'inactive' },
+        { text: 'Locked', value: 'locked' },
       ],
       onFilter: (value, record) => record.status === value,
     },
     {
-      title: '最后登录',
+      title: 'Last Login',
       dataIndex: 'lastLogin',
       key: 'lastLogin',
       width: 150,
       sorter: (a, b) => new Date(a.lastLogin).getTime() - new Date(b.lastLogin).getTime(),
     },
     {
-      title: '操作',
+      title: 'Actions',
       key: 'action',
       width: 200,
       render: (_, record) => (
@@ -301,7 +301,7 @@ const UserList: React.FC = () => {
             icon={<EyeOutlined />}
             onClick={() => handleViewPermissions(record)}
           >
-            权限
+            Permissions
           </Button>
           <Button
             type="link"
@@ -309,13 +309,13 @@ const UserList: React.FC = () => {
             icon={<EditOutlined />}
             onClick={() => handleEdit(record)}
           >
-            编辑
+            Edit
           </Button>
           <Popconfirm
-            title="确定要删除这个用户吗？"
+            title="Are you sure you want to delete this user?"
             onConfirm={() => handleDelete(record.id)}
-            okText="确定"
-            cancelText="取消"
+            okText="Yes"
+            cancelText="No"
           >
             <Button
               type="link"
@@ -323,7 +323,7 @@ const UserList: React.FC = () => {
               danger
               icon={<DeleteOutlined />}
             >
-              删除
+              Delete
             </Button>
           </Popconfirm>
         </Space>
@@ -331,7 +331,7 @@ const UserList: React.FC = () => {
     },
   ];
 
-  // 查找用户组信息
+  // Find user group information
   const findGroupByValue = (groups: UserGroup[], value: string): UserGroup | null => {
     for (const group of groups) {
       if (group.value === value) return group;
@@ -343,25 +343,25 @@ const UserList: React.FC = () => {
     return null;
   };
 
-  // 搜索功能
+  // Search functionality
   const handleSearch = (value: string) => {
     setSearchText(value);
     filterUsers(value, roleFilter, statusFilter);
   };
 
-  // 角色筛选
+  // Role filtering
   const handleRoleFilter = (value: string) => {
     setRoleFilter(value);
     filterUsers(searchText, value, statusFilter);
   };
 
-  // 状态筛选
+  // Status filtering
   const handleStatusFilter = (value: string) => {
     setStatusFilter(value);
     filterUsers(searchText, roleFilter, value);
   };
 
-  // 过滤用户
+  // Filter users
   const filterUsers = (search: string, role: string, status: string) => {
     let filtered = users;
 
@@ -385,23 +385,23 @@ const UserList: React.FC = () => {
     setFilteredUsers(filtered);
   };
 
-  // 刷新数据
+  // Refresh data
   const handleRefresh = () => {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
-      message.success('数据刷新成功');
+      message.success('Data refreshed successfully');
     }, 1000);
   };
 
-  // 添加用户
+  // Add user
   const handleAdd = () => {
     setEditingUser(null);
     form.resetFields();
     setIsModalVisible(true);
   };
 
-  // 编辑用户
+  // Edit user
   const handleEdit = (user: User) => {
     setEditingUser(user);
     form.setFieldsValue({
@@ -411,13 +411,13 @@ const UserList: React.FC = () => {
     setIsModalVisible(true);
   };
 
-  // 查看权限
+  // View permissions
   const handleViewPermissions = (user: User) => {
     setSelectedUser(user);
     setIsPermissionDrawerVisible(true);
   };
 
-  // 删除用户
+  // Delete user
   const handleDelete = (id: string) => {
     const newUsers = users.filter((user) => user.id !== id);
     setUsers(newUsers);
@@ -430,10 +430,10 @@ const UserList: React.FC = () => {
       const matchStatus = statusFilter === 'all' || user.status === statusFilter;
       return matchSearch && matchRole && matchStatus;
     }));
-    message.success('用户删除成功');
+    message.success('User deleted successfully');
   };
 
-  // 保存用户
+  // Save user
   const handleSave = async () => {
     try {
       const values = await form.validateFields();
@@ -445,29 +445,29 @@ const UserList: React.FC = () => {
       };
 
       if (editingUser) {
-        // 编辑用户
+        // Edit user
         const newUsers = users.map((user) =>
           user.id === editingUser.id ? { ...user, ...userData } : user
         );
         setUsers(newUsers);
         filterUsers(searchText, roleFilter, statusFilter);
-        message.success('用户信息更新成功');
+        message.success('User information updated successfully');
       } else {
-        // 添加用户
+        // Add user
         const newUsers = [...users, userData as User];
         setUsers(newUsers);
         filterUsers(searchText, roleFilter, statusFilter);
-        message.success('用户添加成功');
+        message.success('User added successfully');
       }
 
       setIsModalVisible(false);
       form.resetFields();
     } catch (error) {
-      console.error('表单验证失败:', error);
+      console.error('Form validation failed:', error);
     }
   };
 
-  // 更新用户权限
+  // Update user permissions
   const handleUpdatePermissions = (permissions: string[]) => {
     if (selectedUser) {
       const newUsers = users.map((user) =>
@@ -475,7 +475,7 @@ const UserList: React.FC = () => {
       );
       setUsers(newUsers);
       filterUsers(searchText, roleFilter, statusFilter);
-      message.success('权限更新成功');
+      message.success('Permissions updated successfully');
     }
   };
 
@@ -486,7 +486,7 @@ const UserList: React.FC = () => {
         <Row gutter={[16, 16]}>
           <Col xs={24} sm={8} md={6}>
             <Search
-              placeholder="搜索用户名、姓名或邮箱"
+              placeholder="Search username, name or email"
               allowClear
               onSearch={handleSearch}
               style={{ width: '100%' }}
@@ -499,7 +499,7 @@ const UserList: React.FC = () => {
               style={{ width: '100%' }}
               placeholder="角色筛选"
             >
-              <Option value="all">全部角色</Option>
+              <Option value="all">All Roles</Option>
               <Option value="admin">管理员</Option>
               <Option value="operator">操作员</Option>
               <Option value="viewer">查看者</Option>
@@ -512,7 +512,7 @@ const UserList: React.FC = () => {
               style={{ width: '100%' }}
               placeholder="状态筛选"
             >
-              <Option value="all">全部状态</Option>
+              <Option value="all">All Status</Option>
               <Option value="active">正常</Option>
               <Option value="inactive">停用</Option>
               <Option value="locked">锁定</Option>
@@ -525,14 +525,14 @@ const UserList: React.FC = () => {
                 icon={<PlusOutlined />}
                 onClick={handleAdd}
               >
-                添加用户
+                Add User
               </Button>
               <Button
                 icon={<ReloadOutlined />}
                 onClick={handleRefresh}
                 loading={loading}
               >
-                刷新
+                Refresh
               </Button>
             </Space>
           </Col>
@@ -559,7 +559,7 @@ const UserList: React.FC = () => {
 
       {/* 添加/编辑用户模态框 */}
       <Modal
-        title={editingUser ? '编辑用户' : '添加用户'}
+        title={editingUser ? 'Edit User' : 'Add User'}
         open={isModalVisible}
         onOk={handleSave}
         onCancel={() => {
@@ -567,8 +567,8 @@ const UserList: React.FC = () => {
           form.resetFields();
         }}
         width={600}
-        okText="保存"
-        cancelText="取消"
+        okText="Save"
+        cancelText="Cancel"
       >
         <Form
           form={form}
@@ -584,19 +584,19 @@ const UserList: React.FC = () => {
             <Col span={12}>
               <Form.Item
                 name="username"
-                label="用户名"
-                rules={[{ required: true, message: '请输入用户名' }]}
+                label="Username"
+                rules={[{ required: true, message: 'Please enter username' }]}
               >
-                <Input placeholder="请输入用户名" />
+                <Input placeholder="Please enter username" />
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item
                 name="realName"
-                label="真实姓名"
-                rules={[{ required: true, message: '请输入真实姓名' }]}
+                label="Real Name"
+                rules={[{ required: true, message: 'Please enter real name' }]}
               >
-                <Input placeholder="请输入真实姓名" />
+                <Input placeholder="Please enter real name" />
               </Form.Item>
             </Col>
           </Row>
@@ -604,22 +604,22 @@ const UserList: React.FC = () => {
             <Col span={12}>
               <Form.Item
                 name="email"
-                label="邮箱"
+                label="Email"
                 rules={[
-                  { required: true, message: '请输入邮箱' },
-                  { type: 'email', message: '请输入有效的邮箱地址' },
+                  { required: true, message: 'Please enter email' },
+                  { type: 'email', message: 'Please enter a valid email address' },
                 ]}
               >
-                <Input placeholder="请输入邮箱" />
+                <Input placeholder="Please enter email" />
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item
                 name="phone"
-                label="手机号"
-                rules={[{ required: true, message: '请输入手机号' }]}
+                label="Phone"
+                rules={[{ required: true, message: 'Please enter phone number' }]}
               >
-                <Input placeholder="请输入手机号" />
+                <Input placeholder="Please enter phone number" />
               </Form.Item>
             </Col>
           </Row>
@@ -627,10 +627,10 @@ const UserList: React.FC = () => {
             <Col span={8}>
               <Form.Item
                 name="role"
-                label="角色"
-                rules={[{ required: true, message: '请选择角色' }]}
+                label="Role"
+                rules={[{ required: true, message: 'Please select role' }]}
               >
-                <Select placeholder="请选择角色">
+                <Select placeholder="Please select role">
                   <Option value="admin">管理员</Option>
                   <Option value="operator">操作员</Option>
                   <Option value="viewer">查看者</Option>
@@ -640,12 +640,12 @@ const UserList: React.FC = () => {
             <Col span={8}>
               <Form.Item
                 name="group"
-                label="用户组"
-                rules={[{ required: true, message: '请选择用户组' }]}
+                label="User Group"
+                rules={[{ required: true, message: 'Please select user group' }]}
               >
                 <TreeSelect
                   treeData={mockUserGroups}
-                  placeholder="请选择用户组"
+                  placeholder="Please select user group"
                   treeDefaultExpandAll
                 />
               </Form.Item>
@@ -653,10 +653,10 @@ const UserList: React.FC = () => {
             <Col span={8}>
               <Form.Item
                 name="status"
-                label="状态"
-                rules={[{ required: true, message: '请选择状态' }]}
+                label="Status"
+                rules={[{ required: true, message: 'Please select status' }]}
               >
-                <Select placeholder="请选择状态">
+                <Select placeholder="Please select status">
                   <Option value="active">正常</Option>
                   <Option value="inactive">停用</Option>
                   <Option value="locked">锁定</Option>
@@ -666,8 +666,8 @@ const UserList: React.FC = () => {
           </Row>
           <Form.Item
             name="permissions"
-            label="权限"
-            rules={[{ required: true, message: '请选择权限' }]}
+            label="Permissions"
+            rules={[{ required: true, message: 'Please select permissions' }]}
           >
             <Checkbox.Group>
               <Row>
@@ -681,15 +681,15 @@ const UserList: React.FC = () => {
               </Row>
             </Checkbox.Group>
           </Form.Item>
-          <Form.Item name="description" label="描述">
-            <TextArea rows={3} placeholder="请输入用户描述" />
+          <Form.Item name="description" label="Description">
+            <TextArea rows={3} placeholder="Please enter user description" />
           </Form.Item>
         </Form>
       </Modal>
 
-      {/* 权限查看抽屉 */}
+      {/* Permission View Drawer */}
       <Drawer
-        title={`${selectedUser?.realName} 的权限详情`}
+        title={`${selectedUser?.realName}'s Permission Details`}
         placement="right"
         onClose={() => setIsPermissionDrawerVisible(false)}
         open={isPermissionDrawerVisible}
@@ -697,17 +697,17 @@ const UserList: React.FC = () => {
       >
         {selectedUser && (
           <div>
-            <Card size="small" title="基本信息" style={{ marginBottom: 16 }}>
+            <Card size="small" title="Basic Information" style={{ marginBottom: 16 }}>
               <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                <div><strong>用户名:</strong> {selectedUser.username}</div>
-                <div><strong>真实姓名:</strong> {selectedUser.realName}</div>
-                <div><strong>角色:</strong> <Tag color={roleColors[selectedUser.role]}>{roleTexts[selectedUser.role]}</Tag></div>
-                <div><strong>用户组:</strong> <Tag color="blue">{findGroupByValue(mockUserGroups, selectedUser.group)?.title}</Tag></div>
-                <div><strong>状态:</strong> <Tag color={statusColors[selectedUser.status]}>{statusTexts[selectedUser.status]}</Tag></div>
+                <div><strong>Username:</strong> {selectedUser.username}</div>
+                <div><strong>Real Name:</strong> {selectedUser.realName}</div>
+                <div><strong>Role:</strong> <Tag color={roleColors[selectedUser.role]}>{roleTexts[selectedUser.role]}</Tag></div>
+                <div><strong>User Group:</strong> <Tag color="blue">{findGroupByValue(mockUserGroups, selectedUser.group)?.title}</Tag></div>
+                <div><strong>Status:</strong> <Tag color={statusColors[selectedUser.status]}>{statusTexts[selectedUser.status]}</Tag></div>
               </Space>
             </Card>
             
-            <Card size="small" title="权限列表">
+            <Card size="small" title="Permission List">
               <Space direction="vertical" size="small" style={{ width: '100%' }}>
                 {selectedUser.permissions.map((permissionId) => {
                   const permission = mockPermissions.find(p => p.id === permissionId);

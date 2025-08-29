@@ -26,7 +26,7 @@ import type { ColumnsType } from 'antd/es/table';
 
 const { Option } = Select;
 
-// 设备数据接口
+// Device data interface
 interface Device {
   id: string;
   hostname: string;
@@ -41,7 +41,7 @@ interface Device {
   lastUpdate: string;
 }
 
-// 模拟设备数据
+// Mock device data
 const mockDevices: Device[] = [
   {
     id: '1',
@@ -129,30 +129,30 @@ const DeviceOverview: React.FC = () => {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [loading, setLoading] = useState(false);
 
-  // 状态标签颜色映射
+  // Status tag color mapping
   const statusColors = {
     online: 'green',
     offline: 'red',
     maintenance: 'orange',
   };
 
-  // 状态文本映射
+  // Status text mapping
   const statusTexts = {
-    online: '在线',
-    offline: '离线',
-    maintenance: '维护中',
+    online: 'Online',
+    offline: 'Offline',
+    maintenance: 'Maintenance',
   };
 
-  // 设备分类映射
+  // Device category mapping
   const categoryTexts = {
-    web: 'Web服务器',
-    database: '数据库服务器',
-    application: '应用服务器',
-    backup: '备份服务器',
-    test: '测试服务器',
+    web: 'Web Server',
+    database: 'Database Server',
+    application: 'Application Server',
+    backup: 'Backup Server',
+    test: 'Test Server',
   };
 
-  // 计算统计数据
+  // Calculate statistics
   const getStatistics = () => {
     const total = filteredDevices.length;
     const online = filteredDevices.filter(d => d.status === 'online').length;
@@ -165,7 +165,7 @@ const DeviceOverview: React.FC = () => {
 
   const stats = getStatistics();
 
-  // 设备分类筛选
+  // Device category filtering
   const handleCategoryFilter = (value: string) => {
     setCategoryFilter(value);
     if (value === 'all') {
@@ -175,12 +175,12 @@ const DeviceOverview: React.FC = () => {
     }
   };
 
-  // 刷新数据
+  // Refresh data
   const handleRefresh = () => {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
-      // 模拟数据更新
+      // Simulate data update
       const updatedDevices = devices.map(device => ({
         ...device,
         cpuUsage: Math.floor(Math.random() * 100),
@@ -196,22 +196,22 @@ const DeviceOverview: React.FC = () => {
     }, 1000);
   };
 
-  // 表格列定义
+  // Table column definitions
   const columns: ColumnsType<Device> = [
     {
-      title: '主机名称',
+      title: 'Hostname',
       dataIndex: 'hostname',
       key: 'hostname',
       width: 150,
     },
     {
-      title: 'IP地址',
+      title: 'IP Address',
       dataIndex: 'ipAddress',
       key: 'ipAddress',
       width: 120,
     },
     {
-      title: '状态',
+      title: 'Status',
       dataIndex: 'status',
       key: 'status',
       width: 80,
@@ -222,7 +222,7 @@ const DeviceOverview: React.FC = () => {
       ),
     },
     {
-      title: '分类',
+      title: 'Category',
       dataIndex: 'category',
       key: 'category',
       width: 120,
@@ -231,7 +231,7 @@ const DeviceOverview: React.FC = () => {
       ),
     },
     {
-      title: 'CPU使用率',
+      title: 'CPU Usage',
       dataIndex: 'cpuUsage',
       key: 'cpuUsage',
       width: 120,
@@ -244,7 +244,7 @@ const DeviceOverview: React.FC = () => {
       ),
     },
     {
-      title: '内存使用率',
+      title: 'Memory Usage',
       dataIndex: 'memoryUsage',
       key: 'memoryUsage',
       width: 120,
@@ -257,7 +257,7 @@ const DeviceOverview: React.FC = () => {
       ),
     },
     {
-      title: '最后更新',
+      title: 'Last Update',
       dataIndex: 'lastUpdate',
       key: 'lastUpdate',
       width: 150,
@@ -266,12 +266,12 @@ const DeviceOverview: React.FC = () => {
 
   return (
     <div>
-      {/* 统计卡片 */}
+      {/* Statistics Cards */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={24} sm={12} md={6}>
           <Card>
             <Statistic
-              title="设备总数"
+              title="Total Devices"
               value={stats.total}
               prefix={<DesktopOutlined />}
               valueStyle={{ color: '#1890ff' }}
@@ -281,7 +281,7 @@ const DeviceOverview: React.FC = () => {
         <Col xs={24} sm={12} md={6}>
           <Card>
             <Statistic
-              title="在线设备"
+              title="Online Devices"
               value={stats.online}
               prefix={<CheckCircleOutlined />}
               valueStyle={{ color: '#52c41a' }}
@@ -291,7 +291,7 @@ const DeviceOverview: React.FC = () => {
         <Col xs={24} sm={12} md={6}>
           <Card>
             <Statistic
-              title="离线设备"
+              title="Offline Devices"
               value={stats.offline}
               prefix={<CloseCircleOutlined />}
               valueStyle={{ color: '#ff4d4f' }}
@@ -301,7 +301,7 @@ const DeviceOverview: React.FC = () => {
         <Col xs={24} sm={12} md={6}>
           <Card>
             <Statistic
-              title="在线率"
+              title="Online Rate"
               value={stats.onlineRate}
               suffix="%"
               prefix={<BarChartOutlined />}
@@ -311,11 +311,11 @@ const DeviceOverview: React.FC = () => {
         </Col>
       </Row>
 
-      {/* 运行状态概览 */}
-      <Card title="运行状态概览" style={{ marginBottom: 24 }}>
+      {/* Runtime Status Overview */}
+      <Card title="Runtime Status Overview" style={{ marginBottom: 24 }}>
         <Row gutter={[16, 16]}>
           <Col xs={24} md={8}>
-            <Card size="small" title="设备状态分布">
+            <Card size="small" title="Device Status Distribution">
               <div style={{ textAlign: 'center' }}>
                 <Progress
                   type="circle"
@@ -328,16 +328,16 @@ const DeviceOverview: React.FC = () => {
                 />
                 <div style={{ marginTop: 16 }}>
                   <Space direction="vertical" size="small">
-                    <div><Tag color="green">在线: {stats.online}</Tag></div>
-                    <div><Tag color="red">离线: {stats.offline}</Tag></div>
-                    <div><Tag color="orange">维护: {stats.maintenance}</Tag></div>
+                    <div><Tag color="green">Online: {stats.online}</Tag></div>
+                    <div><Tag color="red">Offline: {stats.offline}</Tag></div>
+                    <div><Tag color="orange">Maintenance: {stats.maintenance}</Tag></div>
                   </Space>
                 </div>
               </div>
             </Card>
           </Col>
           <Col xs={24} md={16}>
-            <Card size="small" title="设备分类统计">
+            <Card size="small" title="Device Category Statistics">
               <Row gutter={[8, 8]}>
                 {Object.entries(categoryTexts).map(([key, label]) => {
                   const count = devices.filter(d => d.category === key).length;
@@ -361,18 +361,18 @@ const DeviceOverview: React.FC = () => {
         </Row>
       </Card>
 
-      {/* 设备列表 */}
+      {/* Device List */}
       <Card
-        title="设备详情列表"
+        title="Device Details List"
         extra={
           <Space>
             <Select
               value={categoryFilter}
               onChange={handleCategoryFilter}
               style={{ width: 150 }}
-              placeholder="选择设备分类"
+              placeholder="Select Device Category"
             >
-              <Option value="all">全部分类</Option>
+              <Option value="all">All Categories</Option>
               {Object.entries(categoryTexts).map(([key, label]) => (
                 <Option key={key} value={key}>{label}</Option>
               ))}
@@ -382,7 +382,7 @@ const DeviceOverview: React.FC = () => {
               onClick={handleRefresh}
               loading={loading}
             >
-              刷新
+              Refresh
             </Button>
           </Space>
         }
@@ -397,7 +397,7 @@ const DeviceOverview: React.FC = () => {
             pageSize: 10,
             showSizeChanger: true,
             showQuickJumper: true,
-            showTotal: (total, range) => `第 ${range[0]}-${range[1]} 条/共 ${total} 条`,
+            showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
           }}
           scroll={{ x: 800 }}
         />

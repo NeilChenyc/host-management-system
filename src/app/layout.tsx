@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "电脑主机管理系统",
-  description: "基于Next.js的电脑主机管理员系统前端界面",
+  title: "Host Management System",
+  description: "Frontend interface for host device management system based on Next.js",
 };
 
 export default function RootLayout({

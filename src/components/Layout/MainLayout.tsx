@@ -29,41 +29,41 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [selectedKey, setSelectedKey] = useState('1');
 
-  // 左侧菜单项
+  // Left sidebar menu items
   const menuItems = [
     {
       key: '1',
       icon: <DashboardOutlined />,
-      label: '设备总览',
+      label: 'Device Overview',
     },
     {
       key: '2',
       icon: <DesktopOutlined />,
-      label: '主机管理',
+      label: 'Host Management',
     },
     {
       key: '3',
       icon: <UserOutlined />,
-      label: '用户管理',
+      label: 'User Management',
     },
     {
       key: '4',
       icon: <SettingOutlined />,
-      label: '系统设置',
+      label: 'System Settings',
     },
   ];
 
-  // 用户下拉菜单
+  // User dropdown menu
   const userMenuItems: MenuProps['items'] = [
     {
       key: 'profile',
       icon: <ProfileOutlined />,
-      label: '个人资料',
+      label: 'Profile',
     },
     {
       key: 'settings',
       icon: <SettingOutlined />,
-      label: '账户设置',
+      label: 'Account Settings',
     },
     {
       type: 'divider',
@@ -71,7 +71,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     {
       key: 'logout',
       icon: <LogoutOutlined />,
-      label: '退出登录',
+      label: 'Logout',
       danger: true,
     },
   ];
@@ -80,7 +80,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     setSelectedKey(key);
   };
 
-  // 根据选中的菜单项渲染对应的页面组件
+  // Render corresponding page component based on selected menu item
   const renderContent = () => {
     if (children) {
       return children;
@@ -130,7 +130,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             fontWeight: 'bold',
           }}
         >
-          {collapsed ? '主机' : '主机管理系统'}
+          {collapsed ? 'HMS' : 'Host Management System'}
         </div>
         
         <Menu
@@ -209,7 +209,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                   icon={<UserOutlined />}
                   style={{ backgroundColor: '#1890ff' }}
                 />
-                <span style={{ fontSize: '14px' }}>管理员</span>
+                <span style={{ fontSize: '14px' }}>Administrator</span>
               </div>
             </Dropdown>
           </div>

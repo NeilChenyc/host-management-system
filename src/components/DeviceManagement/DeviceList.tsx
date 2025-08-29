@@ -28,7 +28,7 @@ import type { ColumnsType } from 'antd/es/table';
 const { Search } = Input;
 const { Option } = Select;
 
-// 设备数据接口
+// Device interface
 interface Device {
   id: string;
   hostname: string;
@@ -40,7 +40,7 @@ interface Device {
   lastUpdate: string;
 }
 
-// 模拟设备数据
+// Mock data
 const mockDevices: Device[] = [
   {
     id: '1',
@@ -104,51 +104,63 @@ const DeviceList: React.FC = () => {
   const [editingDevice, setEditingDevice] = useState<Device | null>(null);
   const [form] = Form.useForm();
 
-  // 状态标签颜色映射
-  const statusColors = {
-    online: 'green',
-    offline: 'red',
-    maintenance: 'orange',
+  // Status color mapping
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'online':
+        return 'green';
+      case 'offline':
+        return 'red';
+      case 'maintenance':
+        return 'orange';
+      default:
+        return 'default';
+    }
   };
 
-  // 状态文本映射
-  const statusTexts = {
-    online: '在线',
-    offline: '离线',
-    maintenance: '维护中',
+  // Status text mapping
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'online':
+        return 'Online';
+      case 'offline':
+        return 'Offline';
+      case 'maintenance':
+        return 'Maintenance';
+      default:
+        return status;
+    }
   };
 
-  // 表格列定义
+  // Table columns
   const columns: ColumnsType<Device> = [
     {
-      title: '主机名称',
+      title: 'Hostname',
       dataIndex: 'hostname',
       key: 'hostname',
       sorter: (a, b) => a.hostname.localeCompare(b.hostname),
     },
     {
-      title: 'IP地址',
+      title: 'IP Address',
       dataIndex: 'ipAddress',
       key: 'ipAddress',
     },
     {
-      title: '状态',
+      title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      render: (status: keyof typeof statusColors) => (
-        <Tag color={statusColors[status]}>
-          {statusTexts[status]}
-        </Tag>
+      render: (status: string) => (
+        <Tag color={getStatusColor(status)}>{getStatusText(status)}</Tag>
       ),
       filters: [
-        { text: '在线', value: 'online' },
-        { text: '离线', value: 'offline' },
-        { text: '维护中', value: 'maintenance' },
+        { text: 'Online', value: 'online' },
+        { text: 'Offline', value: 'offline' },
+        { text: 'Maintenance', value: 'maintenance' },
       ],
       onFilter: (value, record) => record.status === value,
     },
     {
-      title: '操作系统',
+      title: 'Operating System',
       dataIndex: 'os',
       key: 'os',
     },
@@ -158,19 +170,19 @@ const DeviceList: React.FC = () => {
       key: 'cpu',
     },
     {
-      title: '内存',
+      title: 'Memory',
       dataIndex: 'memory',
       key: 'memory',
     },
     {
-      title: '最后更新',
+      title: 'Last Update',
       dataIndex: 'lastUpdate',
       key: 'lastUpdate',
       sorter: (a, b) => new Date(a.lastUpdate).getTime() - new Date(b.lastUpdate).getTime(),
     },
     {
-      title: '操作',
-      key: 'action',
+      title: 'Actions',
+      key: 'actions',
       render: (_, record) => (
         <Space size="middle">
           <Button
@@ -178,20 +190,17 @@ const DeviceList: React.FC = () => {
             icon={<EditOutlined />}
             onClick={() => handleEdit(record)}
           >
-            编辑
+            Edit
           </Button>
           <Popconfirm
-            title="确定要删除这台设备吗？"
+            title="Delete Device"
+            description="Are you sure you want to delete this device?"
             onConfirm={() => handleDelete(record.id)}
-            okText="确定"
-            cancelText="取消"
+            okText="Yes"
+            cancelText="No"
           >
-            <Button
-              type="link"
-              danger
-              icon={<DeleteOutlined />}
-            >
-              删除
+            <Button type="link" danger icon={<DeleteOutlined />}>
+              Delete
             </Button>
           </Popconfirm>
         </Space>
@@ -199,19 +208,7 @@ const DeviceList: React.FC = () => {
     },
   ];
 
-  // 搜索功能
-  const handleSearch = (value: string) => {
-    setSearchText(value);
-    filterDevices(value, statusFilter);
-  };
-
-  // 状态筛选
-  const handleStatusFilter = (value: string) => {
-    setStatusFilter(value);
-    filterDevices(searchText, value);
-  };
-
-  // 过滤设备
+  // Filter devices
   const filterDevices = (search: string, status: string) => {
     let filtered = devices;
 
@@ -231,53 +228,67 @@ const DeviceList: React.FC = () => {
     setFilteredDevices(filtered);
   };
 
-  // 刷新数据
+  // Search handler
+  const handleSearch = (value: string) => {
+    setSearchText(value);
+    filterDevices(value, statusFilter);
+  };
+
+  // Status filter handler
+  const handleStatusFilter = (value: string) => {
+    setStatusFilter(value);
+    filterDevices(searchText, value);
+  };
+
+  // Refresh handler
   const handleRefresh = () => {
     setLoading(true);
     setTimeout(() => {
+      setDevices([...mockDevices]);
+      filterDevices(searchText, statusFilter);
       setLoading(false);
-      message.success('数据刷新成功');
+      message.success('Device list refreshed');
     }, 1000);
   };
 
-  // 添加设备
+  // Add device handler
   const handleAdd = () => {
     setEditingDevice(null);
     form.resetFields();
     setIsModalVisible(true);
   };
 
-  // 编辑设备
+  // Edit device handler
   const handleEdit = (device: Device) => {
     setEditingDevice(device);
     form.setFieldsValue(device);
     setIsModalVisible(true);
   };
 
-  // 删除设备
+  // Delete device handler
   const handleDelete = (id: string) => {
     const newDevices = devices.filter((device) => device.id !== id);
     setDevices(newDevices);
     filterDevices(searchText, statusFilter);
-    message.success('设备删除成功');
+    message.success('Device deleted successfully');
   };
 
-  // 保存设备
+  // Save device
   const handleSave = async () => {
     try {
       const values = await form.validateFields();
       
       if (editingDevice) {
-        // 编辑模式
+        // Edit mode
         const newDevices = devices.map((device) =>
           device.id === editingDevice.id
             ? { ...device, ...values, lastUpdate: new Date().toLocaleString('zh-CN') }
             : device
         );
         setDevices(newDevices);
-        message.success('设备更新成功');
+        message.success('Device updated successfully');
       } else {
-        // 添加模式
+        // Add mode
         const newDevice: Device = {
           ...values,
           id: Date.now().toString(),
@@ -285,24 +296,24 @@ const DeviceList: React.FC = () => {
         };
         const newDevices = [...devices, newDevice];
         setDevices(newDevices);
-        message.success('设备添加成功');
+        message.success('Device added successfully');
       }
       
       filterDevices(searchText, statusFilter);
       setIsModalVisible(false);
     } catch (error) {
-      console.error('表单验证失败:', error);
+      console.error('Form validation failed:', error);
     }
   };
 
   return (
     <div>
-      {/* 页面标题和操作区 */}
+      {/* Page title and operation area */}
       <Card>
         <Row gutter={[16, 16]} align="middle">
           <Col xs={24} sm={12} md={8}>
             <Search
-              placeholder="搜索主机名称、IP地址或操作系统"
+              placeholder="Search hostname, IP address or operating system"
               allowClear
               enterButton={<SearchOutlined />}
               size="middle"
@@ -316,10 +327,10 @@ const DeviceList: React.FC = () => {
               style={{ width: '100%' }}
               size="middle"
             >
-              <Option value="all">全部状态</Option>
-              <Option value="online">在线</Option>
-              <Option value="offline">离线</Option>
-              <Option value="maintenance">维护中</Option>
+              <Option value="all">All Status</Option>
+              <Option value="online">Online</Option>
+              <Option value="offline">Offline</Option>
+              <Option value="maintenance">Maintenance</Option>
             </Select>
           </Col>
           <Col xs={24} sm={24} md={12}>
@@ -329,21 +340,21 @@ const DeviceList: React.FC = () => {
                 onClick={handleRefresh}
                 loading={loading}
               >
-                刷新
+                Refresh
               </Button>
               <Button
                 type="primary"
                 icon={<PlusOutlined />}
                 onClick={handleAdd}
               >
-                添加设备
+                Add Device
               </Button>
             </Space>
           </Col>
         </Row>
       </Card>
 
-      {/* 设备列表表格 */}
+      {/* Device list table */}
       <Card style={{ marginTop: 16 }}>
         <Table
           columns={columns}
@@ -356,21 +367,21 @@ const DeviceList: React.FC = () => {
             showSizeChanger: true,
             showQuickJumper: true,
             showTotal: (total, range) =>
-              `第 ${range[0]}-${range[1]} 条/共 ${total} 条`,
+              `${range[0]}-${range[1]} of ${total} items`,
           }}
           scroll={{ x: 1200 }}
         />
       </Card>
 
-      {/* 添加/编辑设备模态框 */}
+      {/* Add/Edit Device Modal */}
       <Modal
-        title={editingDevice ? '编辑设备' : '添加设备'}
+        title={editingDevice ? 'Edit Device' : 'Add Device'}
         open={isModalVisible}
         onOk={handleSave}
         onCancel={() => setIsModalVisible(false)}
         width={600}
-        okText="保存"
-        cancelText="取消"
+        okText="Save"
+        cancelText="Cancel"
       >
         <Form
           form={form}
@@ -382,50 +393,56 @@ const DeviceList: React.FC = () => {
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
-                label="主机名称"
+                label="Hostname"
                 name="hostname"
-                rules={[{ required: true, message: '请输入主机名称' }]}
+                rules={[
+                  { required: true, message: 'Please enter hostname' },
+                ]}
               >
-                <Input placeholder="请输入主机名称" />
+                <Input placeholder="Please enter hostname" />
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item
-                label="IP地址"
+                label="IP Address"
                 name="ipAddress"
                 rules={[
-                  { required: true, message: '请输入IP地址' },
+                  { required: true, message: 'Please enter IP address' },
                   {
                     pattern: /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/,
-                    message: '请输入有效的IP地址',
+                    message: 'Please enter a valid IP address',
                   },
                 ]}
               >
-                <Input placeholder="请输入IP地址" />
+                <Input placeholder="Please enter IP address" />
               </Form.Item>
             </Col>
           </Row>
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
-                label="状态"
+                label="Status"
                 name="status"
-                rules={[{ required: true, message: '请选择状态' }]}
+                rules={[
+                  { required: true, message: 'Please select status' },
+                ]}
               >
-                <Select placeholder="请选择状态">
-                  <Option value="online">在线</Option>
-                  <Option value="offline">离线</Option>
-                  <Option value="maintenance">维护中</Option>
+                <Select placeholder="Please select status">
+                  <Option value="online">Online</Option>
+                  <Option value="offline">Offline</Option>
+                  <Option value="maintenance">Maintenance</Option>
                 </Select>
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item
-                label="操作系统"
+                label="Operating System"
                 name="os"
-                rules={[{ required: true, message: '请输入操作系统' }]}
+                rules={[
+                  { required: true, message: 'Please enter operating system' },
+                ]}
               >
-                <Input placeholder="请输入操作系统" />
+                <Input placeholder="Please enter operating system" />
               </Form.Item>
             </Col>
           </Row>
@@ -434,18 +451,22 @@ const DeviceList: React.FC = () => {
               <Form.Item
                 label="CPU"
                 name="cpu"
-                rules={[{ required: true, message: '请输入CPU信息' }]}
+                rules={[
+                  { required: true, message: 'Please enter CPU information' },
+                ]}
               >
-                <Input placeholder="请输入CPU信息" />
+                <Input placeholder="Please enter CPU information" />
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item
-                label="内存"
+                label="Memory"
                 name="memory"
-                rules={[{ required: true, message: '请输入内存信息' }]}
+                rules={[
+                  { required: true, message: 'Please enter memory information' },
+                ]}
               >
-                <Input placeholder="请输入内存信息" />
+                <Input placeholder="Please enter memory information" />
               </Form.Item>
             </Col>
           </Row>

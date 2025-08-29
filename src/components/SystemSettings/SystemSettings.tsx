@@ -53,7 +53,7 @@ const { RangePicker } = DatePicker;
 const { Text, Title } = Typography;
 const { Dragger } = Upload;
 
-// 系统配置接口
+// System configuration interface
 interface SystemConfig {
   siteName: string;
   siteDescription: string;
@@ -71,7 +71,7 @@ interface SystemConfig {
   debugMode: boolean;
 }
 
-// 系统日志接口
+// System log interface
 interface SystemLog {
   id: string;
   timestamp: string;
@@ -83,7 +83,7 @@ interface SystemLog {
   userAgent?: string;
 }
 
-// 备份记录接口
+// Backup record interface
 interface BackupRecord {
   id: string;
   filename: string;
@@ -94,10 +94,10 @@ interface BackupRecord {
   description?: string;
 }
 
-// 模拟系统配置数据
+// Mock system configuration data
 const mockSystemConfig: SystemConfig = {
-  siteName: '主机管理系统',
-  siteDescription: '企业级主机设备管理平台',
+  siteName: 'Host Management System',
+  siteDescription: 'Enterprise Host Device Management Platform',
   adminEmail: 'admin@example.com',
   maxLoginAttempts: 5,
   sessionTimeout: 30,
@@ -112,14 +112,14 @@ const mockSystemConfig: SystemConfig = {
   debugMode: false,
 };
 
-// 模拟系统日志数据
+// Mock system log data
 const mockSystemLogs: SystemLog[] = [
   {
     id: '1',
     timestamp: '2024-01-15 10:30:15',
     level: 'info',
-    module: '用户管理',
-    message: '用户 admin 登录成功',
+    module: 'User Management',
+    message: 'User admin login successful',
     userId: 'admin',
     ip: '192.168.1.100',
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
@@ -128,37 +128,37 @@ const mockSystemLogs: SystemLog[] = [
     id: '2',
     timestamp: '2024-01-15 10:25:30',
     level: 'warn',
-    module: '设备管理',
-    message: '设备 SERVER-001 CPU使用率超过80%',
+    module: 'Device Management',
+    message: 'Device SERVER-001 CPU usage exceeds 80%',
     ip: '192.168.1.101',
   },
   {
     id: '3',
     timestamp: '2024-01-15 10:20:45',
     level: 'error',
-    module: '系统监控',
-    message: '数据库连接失败，正在尝试重连',
+    module: 'System Monitoring',
+    message: 'Database connection failed, attempting to reconnect',
     ip: '192.168.1.102',
   },
   {
     id: '4',
     timestamp: '2024-01-15 10:15:20',
     level: 'info',
-    module: '备份管理',
-    message: '自动备份任务执行成功',
+    module: 'Backup Management',
+    message: 'Automatic backup task executed successfully',
   },
   {
     id: '5',
     timestamp: '2024-01-15 10:10:10',
     level: 'debug',
-    module: '系统设置',
-    message: '系统配置更新：会话超时时间修改为30分钟',
+    module: 'System Settings',
+    message: 'System configuration updated: session timeout changed to 30 minutes',
     userId: 'admin',
     ip: '192.168.1.100',
   },
 ];
 
-// 模拟备份记录数据
+// Mock backup record data
 const mockBackupRecords: BackupRecord[] = [
   {
     id: '1',
@@ -167,7 +167,7 @@ const mockBackupRecords: BackupRecord[] = [
     createTime: '2024-01-15 10:30:00',
     type: 'auto',
     status: 'success',
-    description: '定时自动备份',
+    description: 'Scheduled automatic backup',
   },
   {
     id: '2',
@@ -176,7 +176,7 @@ const mockBackupRecords: BackupRecord[] = [
     createTime: '2024-01-14 15:00:00',
     type: 'manual',
     status: 'success',
-    description: '手动备份',
+    description: 'Manual backup',
   },
   {
     id: '3',
@@ -185,7 +185,7 @@ const mockBackupRecords: BackupRecord[] = [
     createTime: '2024-01-13 10:30:00',
     type: 'auto',
     status: 'failed',
-    description: '备份失败：磁盘空间不足',
+    description: 'Backup failed: insufficient disk space',
   },
   {
     id: '4',
@@ -194,7 +194,7 @@ const mockBackupRecords: BackupRecord[] = [
     createTime: '2024-01-12 10:30:00',
     type: 'auto',
     status: 'success',
-    description: '定时自动备份',
+    description: 'Scheduled automatic backup',
   },
 ];
 
@@ -211,7 +211,7 @@ const SystemSettings: React.FC = () => {
   const [logDateRange, setLogDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(null);
   const [form] = Form.useForm();
 
-  // 日志级别颜色映射
+  // Log level color mapping
   const logLevelColors = {
     info: 'blue',
     warn: 'orange',
@@ -219,39 +219,39 @@ const SystemSettings: React.FC = () => {
     debug: 'green',
   };
 
-  // 日志级别文本映射
+  // Log level text mapping
   const logLevelTexts = {
-    info: '信息',
-    warn: '警告',
-    error: '错误',
-    debug: '调试',
+    info: 'Info',
+    warn: 'Warning',
+    error: 'Error',
+    debug: 'Debug',
   };
 
-  // 备份状态颜色映射
+  // Backup status color mapping
   const backupStatusColors = {
     success: 'green',
     failed: 'red',
     in_progress: 'blue',
   };
 
-  // 备份状态文本映射
+  // Backup status text mapping
   const backupStatusTexts = {
-    success: '成功',
-    failed: '失败',
-    in_progress: '进行中',
+    success: 'Success',
+    failed: 'Failed',
+    in_progress: 'In Progress',
   };
 
-  // 系统日志表格列定义
+  // System log table column definitions
   const logColumns: ColumnsType<SystemLog> = [
     {
-      title: '时间',
+      title: 'Time',
       dataIndex: 'timestamp',
       key: 'timestamp',
       width: 150,
       sorter: (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
     },
     {
-      title: '级别',
+      title: 'Level',
       dataIndex: 'level',
       key: 'level',
       width: 80,
@@ -261,29 +261,29 @@ const SystemSettings: React.FC = () => {
         </Tag>
       ),
       filters: [
-        { text: '信息', value: 'info' },
-        { text: '警告', value: 'warn' },
-        { text: '错误', value: 'error' },
-        { text: '调试', value: 'debug' },
+        { text: 'Info', value: 'info' },
+        { text: 'Warning', value: 'warn' },
+        { text: 'Error', value: 'error' },
+        { text: 'Debug', value: 'debug' },
       ],
       onFilter: (value, record) => record.level === value,
     },
     {
-      title: '模块',
+      title: 'Module',
       dataIndex: 'module',
       key: 'module',
       width: 120,
       filters: [
-        { text: '用户管理', value: '用户管理' },
-        { text: '设备管理', value: '设备管理' },
-        { text: '系统监控', value: '系统监控' },
-        { text: '备份管理', value: '备份管理' },
-        { text: '系统设置', value: '系统设置' },
+        { text: 'User Management', value: 'User Management' },
+        { text: 'Device Management', value: 'Device Management' },
+        { text: 'System Monitoring', value: 'System Monitoring' },
+        { text: 'Backup Management', value: 'Backup Management' },
+        { text: 'System Settings', value: 'System Settings' },
       ],
       onFilter: (value, record) => record.module === value,
     },
     {
-      title: '消息',
+      title: 'Message',
       dataIndex: 'message',
       key: 'message',
       ellipsis: {
@@ -296,14 +296,14 @@ const SystemSettings: React.FC = () => {
       ),
     },
     {
-      title: '用户',
+      title: 'User',
       dataIndex: 'userId',
       key: 'userId',
       width: 100,
       render: (userId: string) => userId || '-',
     },
     {
-      title: 'IP地址',
+      title: 'IP Address',
       dataIndex: 'ip',
       key: 'ip',
       width: 120,
@@ -311,10 +311,10 @@ const SystemSettings: React.FC = () => {
     },
   ];
 
-  // 备份记录表格列定义
+  // Backup record table column definitions
   const backupColumns: ColumnsType<BackupRecord> = [
     {
-      title: '文件名',
+      title: 'Filename',
       dataIndex: 'filename',
       key: 'filename',
       ellipsis: {
@@ -328,7 +328,7 @@ const SystemSettings: React.FC = () => {
       ),
     },
     {
-      title: '大小',
+      title: 'Size',
       dataIndex: 'size',
       key: 'size',
       width: 100,
@@ -339,30 +339,30 @@ const SystemSettings: React.FC = () => {
       },
     },
     {
-      title: '创建时间',
+      title: 'Create Time',
       dataIndex: 'createTime',
       key: 'createTime',
       width: 150,
       sorter: (a, b) => new Date(a.createTime).getTime() - new Date(b.createTime).getTime(),
     },
     {
-      title: '类型',
+      title: 'Type',
       dataIndex: 'type',
       key: 'type',
       width: 80,
       render: (type: string) => (
         <Tag color={type === 'auto' ? 'blue' : 'green'}>
-          {type === 'auto' ? '自动' : '手动'}
+          {type === 'auto' ? 'Auto' : 'Manual'}
         </Tag>
       ),
       filters: [
-        { text: '自动', value: 'auto' },
-        { text: '手动', value: 'manual' },
+        { text: 'Auto', value: 'auto' },
+        { text: 'Manual', value: 'manual' },
       ],
       onFilter: (value, record) => record.type === value,
     },
     {
-      title: '状态',
+      title: 'Status',
       dataIndex: 'status',
       key: 'status',
       width: 80,
@@ -372,14 +372,14 @@ const SystemSettings: React.FC = () => {
         </Tag>
       ),
       filters: [
-        { text: '成功', value: 'success' },
-        { text: '失败', value: 'failed' },
-        { text: '进行中', value: 'in_progress' },
+        { text: 'Success', value: 'success' },
+        { text: 'Failed', value: 'failed' },
+        { text: 'In Progress', value: 'in_progress' },
       ],
       onFilter: (value, record) => record.status === value,
     },
     {
-      title: '描述',
+      title: 'Description',
       dataIndex: 'description',
       key: 'description',
       ellipsis: {
@@ -392,7 +392,7 @@ const SystemSettings: React.FC = () => {
       ),
     },
     {
-      title: '操作',
+      title: 'Actions',
       key: 'action',
       width: 150,
       render: (_, record) => (
@@ -405,7 +405,7 @@ const SystemSettings: React.FC = () => {
                 icon={<DownloadOutlined />}
                 onClick={() => handleDownloadBackup(record)}
               >
-                下载
+                Download
               </Button>
               <Button
                 type="link"
@@ -413,7 +413,7 @@ const SystemSettings: React.FC = () => {
                 icon={<UploadOutlined />}
                 onClick={() => handleRestoreBackup(record)}
               >
-                恢复
+                Restore
               </Button>
             </>
           )}
@@ -424,14 +424,14 @@ const SystemSettings: React.FC = () => {
             icon={<DeleteOutlined />}
             onClick={() => handleDeleteBackup(record.id)}
           >
-            删除
+            Delete
           </Button>
         </Space>
       ),
     },
   ];
 
-  // 过滤日志
+  // Filter logs
   const filterLogs = (level: string, module: string, dateRange: [dayjs.Dayjs, dayjs.Dayjs] | null) => {
     let filtered = logs;
 
@@ -454,25 +454,25 @@ const SystemSettings: React.FC = () => {
     setFilteredLogs(filtered);
   };
 
-  // 日志级别筛选
+  // Log level filtering
   const handleLogLevelFilter = (value: string) => {
     setLogLevel(value);
     filterLogs(value, logModule, logDateRange);
   };
 
-  // 日志模块筛选
+  // Log module filtering
   const handleLogModuleFilter = (value: string) => {
     setLogModule(value);
     filterLogs(logLevel, value, logDateRange);
   };
 
-  // 日志时间范围筛选
+  // Log date range filtering
   const handleLogDateRangeFilter: RangePickerProps['onChange'] = (dates) => {
     setLogDateRange(dates as [dayjs.Dayjs, dayjs.Dayjs] | null);
     filterLogs(logLevel, logModule, dates as [dayjs.Dayjs, dayjs.Dayjs] | null);
   };
 
-  // 保存系统配置
+  // Save system configuration
   const handleSaveConfig = async () => {
     try {
       const values = await form.validateFields();
@@ -482,21 +482,21 @@ const SystemSettings: React.FC = () => {
       setTimeout(() => {
         setSystemConfig({ ...systemConfig, ...values });
         setLoading(false);
-        message.success('系统配置保存成功');
+        message.success('System configuration saved successfully');
       }, 1000);
     } catch (error) {
-      console.error('表单验证失败:', error);
+      console.error('Form validation failed:', error);
     }
   };
 
-  // 重置系统配置
+  // Reset system configuration
   const handleResetConfig = () => {
     form.setFieldsValue(mockSystemConfig);
     setSystemConfig(mockSystemConfig);
-    message.info('系统配置已重置');
+    message.info('System configuration has been reset');
   };
 
-  // 创建备份
+  // Create backup
   const handleCreateBackup = () => {
     setBackupLoading(true);
     const newBackup: BackupRecord = {
@@ -506,7 +506,7 @@ const SystemSettings: React.FC = () => {
       createTime: dayjs().format('YYYY-MM-DD HH:mm:ss'),
       type: 'manual',
       status: 'in_progress',
-      description: '手动备份',
+      description: 'Manual backup',
     };
 
     setBackupRecords([newBackup, ...backupRecords]);
@@ -522,65 +522,65 @@ const SystemSettings: React.FC = () => {
         record.id === newBackup.id ? updatedBackup : record
       ));
       setBackupLoading(false);
-      message.success('备份创建成功');
+      message.success('Backup created successfully');
     }, 3000);
   };
 
-  // 下载备份
+  // Download backup
   const handleDownloadBackup = (record: BackupRecord) => {
-    message.info(`正在下载备份文件: ${record.filename}`);
-    // 这里应该实现实际的下载逻辑
+    message.info(`Downloading backup file: ${record.filename}`);
+    // Actual download logic should be implemented here
   };
 
-  // 恢复备份
+  // Restore backup
   const handleRestoreBackup = (record: BackupRecord) => {
     Modal.confirm({
-      title: '确认恢复备份',
-      content: `确定要恢复备份文件 "${record.filename}" 吗？此操作将覆盖当前系统数据。`,
+      title: 'Confirm Restore Backup',
+      content: `Are you sure you want to restore backup file "${record.filename}"? This operation will overwrite current system data.`,
       icon: <ExclamationCircleOutlined />,
-      okText: '确定恢复',
-      cancelText: '取消',
+      okText: 'Confirm Restore',
+      cancelText: 'Cancel',
       okType: 'danger',
       onOk: () => {
         setRestoreLoading(true);
-        // 模拟恢复过程
+        // Simulate restore process
         setTimeout(() => {
           setRestoreLoading(false);
-          message.success('备份恢复成功');
+          message.success('Backup restored successfully');
         }, 2000);
       },
     });
   };
 
-  // 删除备份
+  // Delete backup
   const handleDeleteBackup = (id: string) => {
     Modal.confirm({
-      title: '确认删除备份',
-      content: '确定要删除这个备份文件吗？删除后无法恢复。',
+      title: 'Confirm Delete Backup',
+      content: 'Are you sure you want to delete this backup file? This action cannot be undone.',
       icon: <ExclamationCircleOutlined />,
-      okText: '确定删除',
-      cancelText: '取消',
+      okText: 'Confirm Delete',
+      cancelText: 'Cancel',
       okType: 'danger',
       onOk: () => {
         setBackupRecords(backupRecords.filter(record => record.id !== id));
-        message.success('备份文件删除成功');
+        message.success('Backup file deleted successfully');
       },
     });
   };
 
-  // 清理日志
+  // Clear logs
   const handleClearLogs = () => {
     Modal.confirm({
-      title: '确认清理日志',
-      content: '确定要清理所有系统日志吗？此操作不可恢复。',
+      title: 'Confirm Clear Logs',
+      content: 'Are you sure you want to clear all system logs? This operation cannot be undone.',
       icon: <ExclamationCircleOutlined />,
-      okText: '确定清理',
-      cancelText: '取消',
+      okText: 'Confirm Clear',
+      cancelText: 'Cancel',
       okType: 'danger',
       onOk: () => {
         setLogs([]);
         setFilteredLogs([]);
-        message.success('系统日志清理成功');
+        message.success('System logs cleared successfully');
       },
     });
   };
@@ -589,7 +589,7 @@ const SystemSettings: React.FC = () => {
     <div>
       <Tabs defaultActiveKey="config" type="card">
         {/* 系统配置 */}
-        <TabPane tab={<span><SettingOutlined />系统配置</span>} key="config">
+        <TabPane tab={<span><SettingOutlined />System Configuration</span>} key="config">
           <Card>
             <Form
               form={form}
@@ -597,45 +597,45 @@ const SystemSettings: React.FC = () => {
               initialValues={systemConfig}
               onFinish={handleSaveConfig}
             >
-              <Title level={4}>基本设置</Title>
+              <Title level={4}>Basic Settings</Title>
               <Row gutter={16}>
                 <Col span={12}>
                   <Form.Item
                     name="siteName"
-                    label="站点名称"
-                    rules={[{ required: true, message: '请输入站点名称' }]}
+                    label="Site Name"
+                    rules={[{ required: true, message: 'Please enter site name' }]}
                   >
-                    <Input placeholder="请输入站点名称" />
+                    <Input placeholder="Please enter site name" />
                   </Form.Item>
                 </Col>
                 <Col span={12}>
                   <Form.Item
                     name="adminEmail"
-                    label="管理员邮箱"
+                    label="Admin Email"
                     rules={[
-                      { required: true, message: '请输入管理员邮箱' },
-                      { type: 'email', message: '请输入有效的邮箱地址' },
+                      { required: true, message: 'Please enter admin email' },
+                      { type: 'email', message: 'Please enter a valid email address' },
                     ]}
                   >
-                    <Input placeholder="请输入管理员邮箱" />
+                    <Input placeholder="Please enter admin email" />
                   </Form.Item>
                 </Col>
               </Row>
               <Form.Item
                 name="siteDescription"
-                label="站点描述"
+                label="Site Description"
               >
-                <TextArea rows={3} placeholder="请输入站点描述" />
+                <TextArea rows={3} placeholder="Please enter site description" />
               </Form.Item>
 
               <Divider />
-              <Title level={4}>安全设置</Title>
+              <Title level={4}>Security Settings</Title>
               <Row gutter={16}>
                 <Col span={8}>
                   <Form.Item
                     name="maxLoginAttempts"
-                    label="最大登录尝试次数"
-                    rules={[{ required: true, message: '请输入最大登录尝试次数' }]}
+                    label="Max Login Attempts"
+                    rules={[{ required: true, message: 'Please enter max login attempts' }]}
                   >
                     <InputNumber min={1} max={10} style={{ width: '100%' }} />
                   </Form.Item>
@@ -643,8 +643,8 @@ const SystemSettings: React.FC = () => {
                 <Col span={8}>
                   <Form.Item
                     name="sessionTimeout"
-                    label="会话超时时间（分钟）"
-                    rules={[{ required: true, message: '请输入会话超时时间' }]}
+                    label="Session Timeout (minutes)"
+                    rules={[{ required: true, message: 'Please enter session timeout' }]}
                   >
                     <InputNumber min={5} max={120} style={{ width: '100%' }} />
                   </Form.Item>
@@ -652,8 +652,8 @@ const SystemSettings: React.FC = () => {
                 <Col span={8}>
                   <Form.Item
                     name="maxFileSize"
-                    label="最大文件大小（MB）"
-                    rules={[{ required: true, message: '请输入最大文件大小' }]}
+                    label="Max File Size (MB)"
+                    rules={[{ required: true, message: 'Please enter max file size' }]}
                   >
                     <InputNumber min={1} max={100} style={{ width: '100%' }} />
                   </Form.Item>
@@ -663,7 +663,7 @@ const SystemSettings: React.FC = () => {
                 <Col span={8}>
                   <Form.Item
                     name="enableRegistration"
-                    label="允许用户注册"
+                    label="Allow User Registration"
                     valuePropName="checked"
                   >
                     <Switch />
@@ -672,7 +672,7 @@ const SystemSettings: React.FC = () => {
                 <Col span={8}>
                   <Form.Item
                     name="maintenanceMode"
-                    label="维护模式"
+                    label="Maintenance Mode"
                     valuePropName="checked"
                   >
                     <Switch />
@@ -681,7 +681,7 @@ const SystemSettings: React.FC = () => {
                 <Col span={8}>
                   <Form.Item
                     name="debugMode"
-                    label="调试模式"
+                    label="Debug Mode"
                     valuePropName="checked"
                   >
                     <Switch />
@@ -690,12 +690,12 @@ const SystemSettings: React.FC = () => {
               </Row>
 
               <Divider />
-              <Title level={4}>通知设置</Title>
+              <Title level={4}>Notification Settings</Title>
               <Row gutter={16}>
                 <Col span={12}>
                   <Form.Item
                     name="enableEmailNotification"
-                    label="启用邮件通知"
+                    label="Enable Email Notification"
                     valuePropName="checked"
                   >
                     <Switch />
@@ -704,7 +704,7 @@ const SystemSettings: React.FC = () => {
                 <Col span={12}>
                   <Form.Item
                     name="enableSMSNotification"
-                    label="启用短信通知"
+                    label="Enable SMS Notification"
                     valuePropName="checked"
                   >
                     <Switch />
@@ -713,13 +713,13 @@ const SystemSettings: React.FC = () => {
               </Row>
 
               <Divider />
-              <Title level={4}>系统维护</Title>
+              <Title level={4}>System Maintenance</Title>
               <Row gutter={16}>
                 <Col span={8}>
                   <Form.Item
                     name="backupInterval"
-                    label="备份间隔（小时）"
-                    rules={[{ required: true, message: '请输入备份间隔' }]}
+                    label="Backup Interval (hours)"
+                    rules={[{ required: true, message: 'Please enter backup interval' }]}
                   >
                     <InputNumber min={1} max={168} style={{ width: '100%' }} />
                   </Form.Item>
@@ -727,8 +727,8 @@ const SystemSettings: React.FC = () => {
                 <Col span={8}>
                   <Form.Item
                     name="logRetentionDays"
-                    label="日志保留天数"
-                    rules={[{ required: true, message: '请输入日志保留天数' }]}
+                    label="Log Retention Days"
+                    rules={[{ required: true, message: 'Please enter log retention days' }]}
                   >
                     <InputNumber min={1} max={365} style={{ width: '100%' }} />
                   </Form.Item>
@@ -743,13 +743,13 @@ const SystemSettings: React.FC = () => {
                     icon={<SaveOutlined />}
                     loading={loading}
                   >
-                    保存配置
+                    Save Configuration
                   </Button>
                   <Button
                     icon={<ReloadOutlined />}
                     onClick={handleResetConfig}
                   >
-                    重置配置
+                    Reset Configuration
                   </Button>
                 </Space>
               </Form.Item>
@@ -758,7 +758,7 @@ const SystemSettings: React.FC = () => {
         </TabPane>
 
         {/* 系统日志 */}
-        <TabPane tab={<span><FileTextOutlined />系统日志</span>} key="logs">
+        <TabPane tab={<span><FileTextOutlined />System Logs</span>} key="logs">
           <Card style={{ marginBottom: 16 }}>
             <Row gutter={[16, 16]}>
               <Col xs={24} sm={6} md={4}>
@@ -766,13 +766,13 @@ const SystemSettings: React.FC = () => {
                   value={logLevel}
                   onChange={handleLogLevelFilter}
                   style={{ width: '100%' }}
-                  placeholder="日志级别"
+                  placeholder="Log Level"
                 >
-                  <Select.Option value="all">全部级别</Select.Option>
-                  <Select.Option value="info">信息</Select.Option>
-                  <Select.Option value="warn">警告</Select.Option>
-                  <Select.Option value="error">错误</Select.Option>
-                  <Select.Option value="debug">调试</Select.Option>
+                  <Select.Option value="all">All Levels</Select.Option>
+                  <Select.Option value="info">Info</Select.Option>
+                  <Select.Option value="warn">Warning</Select.Option>
+                  <Select.Option value="error">Error</Select.Option>
+                  <Select.Option value="debug">Debug</Select.Option>
                 </Select>
               </Col>
               <Col xs={24} sm={6} md={4}>
@@ -780,14 +780,14 @@ const SystemSettings: React.FC = () => {
                   value={logModule}
                   onChange={handleLogModuleFilter}
                   style={{ width: '100%' }}
-                  placeholder="模块筛选"
+                  placeholder="Module Filter"
                 >
-                  <Select.Option value="all">全部模块</Select.Option>
-                  <Select.Option value="用户管理">用户管理</Select.Option>
-                  <Select.Option value="设备管理">设备管理</Select.Option>
-                  <Select.Option value="系统监控">系统监控</Select.Option>
-                  <Select.Option value="备份管理">备份管理</Select.Option>
-                  <Select.Option value="系统设置">系统设置</Select.Option>
+                  <Select.Option value="all">All Modules</Select.Option>
+                  <Select.Option value="用户管理">User Management</Select.Option>
+                  <Select.Option value="设备管理">Device Management</Select.Option>
+                  <Select.Option value="系统监控">System Monitoring</Select.Option>
+                  <Select.Option value="备份管理">Backup Management</Select.Option>
+                  <Select.Option value="系统设置">System Settings</Select.Option>
                 </Select>
               </Col>
               <Col xs={24} sm={12} md={8}>
@@ -795,7 +795,7 @@ const SystemSettings: React.FC = () => {
                   value={logDateRange}
                   onChange={handleLogDateRangeFilter}
                   style={{ width: '100%' }}
-                  placeholder={['开始时间', '结束时间']}
+                  placeholder={['Start Time', 'End Time']}
                 />
               </Col>
               <Col xs={24} sm={24} md={8}>
@@ -809,14 +809,14 @@ const SystemSettings: React.FC = () => {
                       setFilteredLogs(logs);
                     }}
                   >
-                    重置筛选
+                    Reset Filter
                   </Button>
                   <Button
                     danger
                     icon={<DeleteOutlined />}
                     onClick={handleClearLogs}
                   >
-                    清理日志
+                    Clear Logs
                   </Button>
                 </Space>
               </Col>
@@ -833,7 +833,7 @@ const SystemSettings: React.FC = () => {
                 pageSize: 20,
                 showSizeChanger: true,
                 showQuickJumper: true,
-                showTotal: (total, range) => `第 ${range[0]}-${range[1]} 条/共 ${total} 条`,
+                showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
               }}
               scroll={{ x: 1000 }}
             />
@@ -841,13 +841,13 @@ const SystemSettings: React.FC = () => {
         </TabPane>
 
         {/* 备份与恢复 */}
-        <TabPane tab={<span><DatabaseOutlined />备份与恢复</span>} key="backup">
+        <TabPane tab={<span><DatabaseOutlined />Backup & Recovery</span>} key="backup">
           <Card style={{ marginBottom: 16 }}>
             <Row gutter={16}>
               <Col span={12}>
                 <Alert
-                  message="备份提醒"
-                  description="建议定期备份系统数据，确保数据安全。当前备份间隔为24小时。"
+                  message="Backup Reminder"
+                  description="It is recommended to backup system data regularly to ensure data security. Current backup interval is 24 hours."
                   type="info"
                   showIcon
                   icon={<InfoCircleOutlined />}
@@ -861,7 +861,7 @@ const SystemSettings: React.FC = () => {
                     onClick={handleCreateBackup}
                     loading={backupLoading}
                   >
-                    创建备份
+                    Create Backup
                   </Button>
                 </Space>
               </Col>
@@ -879,7 +879,7 @@ const SystemSettings: React.FC = () => {
                 pageSize: 10,
                 showSizeChanger: true,
                 showQuickJumper: true,
-                showTotal: (total, range) => `第 ${range[0]}-${range[1]} 条/共 ${total} 条`,
+                showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
               }}
               scroll={{ x: 1000 }}
             />
