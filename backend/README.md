@@ -1,245 +1,84 @@
-# ELEC5619 Backend - User Authentication and Management System
+# Spring Boot Backend Application
 
-A comprehensive Spring Boot backend application providing user authentication, authorization, and management capabilities with JWT-based security.
+## 项目概述
+一个基于Spring Boot的后端应用，提供用户认证、授权和管理功能，采用JWT安全机制。
 
-## Features
+## 核心功能
+- 用户认证：基于JWT的登录和注册
+- 基于角色的访问控制：三种预定义角色（USER、ADMIN、OPS）
+- 用户管理：带角色管理的用户CRUD操作
+- 数据库集成：PostgreSQL（本地或Supabase云数据库）和Flyway迁移
+- 安全性：带JWT令牌的Spring Security
+- 输入验证和异常处理
 
-- **User Authentication**: JWT-based login and registration
-- **Role-Based Access Control**: Three predefined roles (USER, ADMIN, OPS)
-- **User Management**: CRUD operations for users with role management
-- **Database Integration**: PostgreSQL with Flyway migrations (Local or Supabase Cloud)
-- **Security**: Spring Security with JWT tokens
-- **Validation**: Input validation with proper error handling
-- **Exception Handling**: Centralized exception handling with consistent error responses
+## 技术栈
+- Java 17
+- Spring Boot 3.5.4
+- Spring Security
+- Spring Data JPA
+- PostgreSQL
+- Flyway（数据库迁移）
+- JWT（JSON Web Tokens）
+- Maven
 
-## Technology Stack
-
-- **Java 17**
-- **Spring Boot 3.5.4**
-- **Spring Security**
-- **Spring Data JPA**
-- **PostgreSQL** (Local or Supabase Cloud)
-- **Flyway** (Database migrations)
-- **JWT** (JSON Web Tokens)
-- **Maven**
-
-## Project Structure
-
+## 项目结构
 ```
 src/main/java/com/elec5619/backend/
-├── BackendApplication.java          # Main application class
-├── controller/                      # REST controllers
-│   ├── AuthController.java         # Authentication endpoints
-│   ├── UserController.java         # User management endpoints
-│   └── TestController.java         # Public test endpoints
-├── dto/                            # Data Transfer Objects
-│   ├── LoginDto.java              # Login request DTO
-│   ├── UserRegistrationDto.java   # User registration DTO
-│   ├── UserResponseDto.java       # User response DTO
-│   └── JwtResponseDto.java        # JWT response DTO
-├── entity/                         # JPA entities
-│   ├── User.java                  # User entity
-│   └── Role.java                  # Role entity
-├── exception/                      # Exception handling
-│   └── GlobalExceptionHandler.java # Global exception handler
-├── repository/                     # Data access layer
-│   ├── UserRepository.java        # User repository
-│   └── RoleRepository.java        # Role repository
-├── security/                       # Security configuration
-│   ├── AuthTokenFilter.java       # JWT authentication filter
-│   ├── JwtUtils.java              # JWT utility class
-│   ├── UserDetailsImpl.java       # User details implementation
-│   ├── UserDetailsServiceImpl.java # User details service
-│   └── WebSecurityConfig.java     # Security configuration
-└── service/                        # Business logic layer
-    └── UserService.java           # User service
+├── BackendApplication.java          # 主应用类
+├── controller/                      # REST控制器
+├── dto/                            # 数据传输对象
+├── entity/                         # JPA实体
+├── exception/                      # 异常处理
+├── repository/                     # 数据访问层
+├── security/                       # 安全配置
+└── service/                        # 业务逻辑层
 ```
 
-## Database Schema
+## 数据库设置
 
-### Users Table
-- `id` (Primary Key, BIGSERIAL)
-- `username` (Unique, VARCHAR(50))
-- `password_hash` (VARCHAR(255))
-- `email` (Unique, VARCHAR(100))
-- `created_at` (TIMESTAMP)
+### 选项1：本地PostgreSQL
+1. 创建名为`elec5619_db`的PostgreSQL数据库
+2. 如需更改数据库凭证，更新`application.properties`文件
 
-### Roles Table
-- `id` (Primary Key, BIGSERIAL)
-- `name` (Unique, VARCHAR(50))
+### 选项2：Supabase云数据库（推荐）
+1. 访问Supabase Dashboard
+2. 获取数据库连接信息
+3. 更新`application-supabase.properties`中的密码
+4. 使用Supabase配置启动应用
 
-### User_Roles Table (Junction Table)
-- `user_id` (Foreign Key to users.id)
-- `role_id` (Foreign Key to roles.id)
+## 运行应用
 
-## API Endpoints
-
-### Public Endpoints
-- `GET /api/public/test` - Test endpoint
-- `GET /api/public/health` - Health check
-
-### Authentication Endpoints
-- `POST /api/auth/signup` - User registration
-- `POST /api/auth/signin` - User login
-- `GET /api/auth/me` - Get current user info
-
-### User Management Endpoints (Protected)
-- `GET /api/users` - Get all users (ADMIN only)
-- `GET /api/users/{id}` - Get user by ID (ADMIN or own profile)
-- `PUT /api/users/{id}/roles` - Update user roles (ADMIN only)
-- `DELETE /api/users/{id}` - Delete user (ADMIN only)
-- `GET /api/users/by-role/{roleName}` - Get users by role (ADMIN/OPS only)
-
-## Setup and Configuration
-
-### Prerequisites
-- Java 17 or higher
-- Maven 3.6 or higher
-- PostgreSQL 12 or higher (Local) OR Supabase account
-
-### Database Setup Options
-
-#### Option 1: Local PostgreSQL
-1. Create a PostgreSQL database named `elec5619_db`
-2. Update database credentials in `application.properties` if needed
-
-#### Option 2: Supabase Cloud Database (推荐)
-1. 访问 [Supabase Dashboard](https://supabase.com/dashboard/project/zphjbywuwrxwzjdbxiaq)
-2. 获取数据库连接信息：
-   - Database URL: `db.zphjbywuwrxwzjdbxiaq.supabase.co`
-   - Database Password: 在项目设置中找到
-   - Port: 5432
-3. 更新 `application-supabase.properties` 中的密码
-4. 使用 Supabase 配置启动应用
-
-### Application Configuration
-
-#### 本地数据库配置 (默认)
-使用 `application.properties` 文件，包含本地 PostgreSQL 设置
-
-#### Supabase 云数据库配置
-使用 `application-supabase.properties` 文件，包含 Supabase 特定设置
-
-### Running the Application
-
-#### 使用本地数据库
+### 使用本地数据库
 ```bash
 mvn spring-boot:run
 ```
 
-#### 使用 Supabase 数据库
+### 使用Supabase数据库
 ```bash
 mvn spring-boot:run -Dspring.profiles.active=supabase
 ```
 
-The application will start on port 8080 and automatically create the database schema using Flyway migrations.
+应用将在端口8080启动，并通过Flyway自动创建数据库模式。
 
-## Security Features
+## 主要API端点
 
-### JWT Authentication
-- Stateless authentication using JWT tokens
-- Configurable token expiration
-- Secure token validation
+### 公共端点
+- `GET /api/public/test` - 测试端点
+- `GET /api/public/health` - 健康检查
 
-### Role-Based Access Control
-- **ROLE_USER**: Basic user access
-- **ROLE_ADMIN**: Full system access
-- **ROLE_OPS**: Operations and monitoring access
+### 认证端点
+- `POST /api/auth/signup` - 用户注册
+- `POST /api/auth/signin` - 用户登录
+- `GET /api/auth/me` - 获取当前用户信息
 
-### Password Security
-- BCrypt password hashing
-- Secure password storage
+### 用户管理端点（受保护）
+- `GET /api/users` - 获取所有用户（仅ADMIN）
+- `GET /api/users/{id}` - 获取特定用户（ADMIN或自己的配置文件）
+- `PUT /api/users/{id}/roles` - 更新用户角色（仅ADMIN）
+- `DELETE /api/users/{id}` - 删除用户（仅ADMIN）
+- `GET /api/users/by-role/{roleName}` - 按角色获取用户（仅ADMIN/OPS）
 
-## Data Validation
-
-- Input validation using Bean Validation annotations
-- Custom validation messages
-- Comprehensive error handling
-
-## Error Handling
-
-- Centralized exception handling
-- Consistent error response format
-- Proper HTTP status codes
-- Detailed error messages for debugging
-
-## Testing
-
-The application includes test dependencies for:
-- Spring Boot Test
-- Spring Security Test
-- JUnit 5
-
-## Development Notes
-
-- The application uses Flyway for database migrations
-- JWT tokens are stateless and don't require server-side storage
-- All endpoints are properly secured with appropriate role requirements
-- CORS is enabled for cross-origin requests
-- Comprehensive logging is configured for debugging
-- Supports both local PostgreSQL and Supabase cloud database
-
-## API Usage Examples
-
-### User Registration
-```bash
-curl -X POST http://localhost:8080/api/auth/signup \
-  -H "Content-Type: application/json" \
-  -d '{
-    "username": "testuser",
-    "password": "password123",
-    "email": "test@example.com",
-    "roles": ["user"]
-  }'
-```
-
-### User Login
-```bash
-curl -X POST http://localhost:8080/api/auth/signin \
-  -H "Content-Type: application/json" \
-  -d '{
-    "username": "testuser",
-    "password": "password123"
-  }'
-```
-
-### Access Protected Endpoint
-```bash
-curl -X GET http://localhost:8080/api/users \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-```
-
-## Supabase 连接说明
-
-### 1. 获取连接信息
-在 [Supabase Dashboard](https://supabase.com/dashboard/project/zphjbywuwrxwzjdbxiaq) 中：
-- 进入 Project Settings → Database
-- 复制 Connection string 或 Host, Database, Password 信息
-
-### 2. 配置连接
-编辑 `application-supabase.properties` 文件：
-```properties
-spring.datasource.url=jdbc:postgresql://db.zphjbywuwrxwzjdbxiaq.supabase.co:5432/postgres
-spring.datasource.username=postgres
-spring.datasource.password=YOUR_ACTUAL_PASSWORD
-```
-
-### 3. 启动应用
-```bash
-mvn spring-boot:run -Dspring.profiles.active=supabase
-```
-
-### 4. 验证连接
-访问 `http://localhost:8080/api/public/health` 检查应用状态
-
-## Contributing
-
-1. Follow the existing code structure and naming conventions
-2. Add comprehensive documentation for new features
-3. Include proper error handling and validation
-4. Write tests for new functionality
-5. Update this README for any new features or changes
-
-## License
-
-This project is part of the ELEC5619 course at the University of Sydney.
+## 安全机制
+- JWT无状态认证
+- 基于角色的访问控制
+- BCrypt密码哈希安全存储

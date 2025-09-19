@@ -1,7 +1,23 @@
 package com.elec5619.backend.controller;
 
+import java.util.List;
+import java.util.Set;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.elec5619.backend.dto.UserResponseDto;
+import com.elec5619.backend.exception.GlobalExceptionHandler;
 import com.elec5619.backend.service.UserService;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -9,13 +25,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-import java.util.Set;
 
 /**
  * User management controller.
@@ -112,23 +121,39 @@ public class UserController {
             )
         ),
         @ApiResponse(
+            responseCode = "400",
+            description = "Invalid input data"
+        ),
+        @ApiResponse(
             responseCode = "404",
             description = "User not found"
         )
     })
-    public ResponseEntity<UserResponseDto> updateUserRoles(
+    public ResponseEntity<?> updateUserRoles(
             @Parameter(description = "User ID", required = true)
             @PathVariable Long id,
             @Parameter(description = "New roles for the user", required = true)
             @RequestBody Set<String> roles) {
-        // For now, return mock response
-        UserResponseDto user = new UserResponseDto();
-        user.setId(id);
-        user.setUsername("user_" + id);
-        user.setEmail("user" + id + "@example.com");
-        user.setRoles(roles);
-        
-        return ResponseEntity.ok(user);
+        try {
+            // For now, return mock response
+            UserResponseDto user = new UserResponseDto();
+            user.setId(id);
+            user.setUsername("user_" + id);
+            user.setEmail("user" + id + "@example.com");
+            user.setRoles(roles);
+            
+            return ResponseEntity.ok(user);
+        } catch (Exception e) {
+            // Handle any exceptions
+            GlobalExceptionHandler.ErrorResponse errorResponse = new GlobalExceptionHandler.ErrorResponse(
+                java.time.LocalDateTime.now(),
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                "Internal Server Error",
+                "Failed to update user roles: " + e.getMessage(),
+                null
+            );
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
     }
 
     /**
@@ -156,5 +181,32 @@ public class UserController {
             @PathVariable Long id) {
         // For now, just return success
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/by-username/{username}")
+    @Operation(
+        summary = "Get User by Username",
+        description = "Retrieve user information by username"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "User found",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = UserResponseDto.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "User not found"
+        )
+    })
+    public ResponseEntity<UserResponseDto> getByUsername(
+            @Parameter(description = "Username", required = true)
+            @PathVariable String username) {
+        return userService.getUserByUsername(username)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 }

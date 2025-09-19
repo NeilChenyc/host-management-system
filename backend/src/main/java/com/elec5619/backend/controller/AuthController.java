@@ -19,6 +19,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+import java.util.HashMap;
+import java.time.LocalDateTime;
 import java.util.Set;
 
 /**
@@ -71,7 +74,7 @@ public class AuthController {
     }
 
     /**
-     * Authenticate user login
+     * Authenticate user login using signin path
      * @param loginDto User login credentials
      * @return JWT response with authentication token
      */
@@ -90,26 +93,58 @@ public class AuthController {
             )
         ),
         @ApiResponse(
+            responseCode = "400",
+            description = "Invalid input data"
+        ),
+        @ApiResponse(
             responseCode = "401",
             description = "Invalid credentials"
         )
     })
-    public ResponseEntity<JwtResponseDto> authenticateUser(
+    public ResponseEntity<?> signin(
             @Parameter(description = "User login credentials", required = true)
             @Valid @RequestBody LoginDto loginDto) {
-        
-        // For now, return a mock response since we removed JWT
-        JwtResponseDto response = new JwtResponseDto();
-        response.setToken("mock-jwt-token");
-        response.setType("Bearer");
-        response.setId(1L);
-        response.setUsername(loginDto.getUsername());
-        response.setEmail("user@example.com");
-        response.setRoles(new String[]{"ROLE_USER"});
-        
-        return ResponseEntity.ok(response);
+        try {
+            // Simple mock implementation for signin
+            JwtResponseDto response = new JwtResponseDto();
+            response.setToken("mock-jwt-token");
+            response.setType("Bearer");
+            response.setId(1L);
+            response.setUsername(loginDto.getUsername());
+            response.setEmail("user@example.com");
+            response.setRoles(new String[]{"ROLE_USER"});
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Signin failed: " + e.getMessage());
+        }
     }
-
+    
+    /**
+     * Simplified login endpoint
+     * @return Simple success response
+     */
+    @PostMapping("/login")
+    public ResponseEntity<?> login() {
+        try {
+            // Most basic implementation that always succeeds
+            System.out.println("Login endpoint called successfully");
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Login endpoint is working!");
+            response.put("timestamp", LocalDateTime.now());
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            System.out.println("Login error: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Error: " + e.getMessage());
+        }
+    }
+    
     /**
      * Get current authenticated user information
      * @return Current user information
