@@ -1,0 +1,18 @@
+# Maven Installation Guide
+
+Write-Host "===== Maven Installation Guide ====="
+Write-Host "Because direct download may fail, here are the manual installation steps:"
+Write-Host ""
+Write-Host "1. Visit the official download page: https://maven.apache.org/download.cgi"
+Write-Host "2. Download the latest binary zip file (e.g., apache-maven-3.x.x-bin.zip)"
+Write-Host "3. Extract the downloaded zip file to E:\apache-maven directory"
+Write-Host "4. Set up environment variables:"
+Write-Host "   - Create system variable MAVEN_HOME with value as the extracted directory path (e.g., E:\apache-maven\apache-maven-3.x.x)"
+Write-Host "   - Add %MAVEN_HOME%\bin to the system's Path variable"
+Write-Host "5. Open a new command prompt window and run 'mvn -v' to verify installation"
+Write-Host ""
+Write-Host "===== Maven is Already Included in the Project ====="
+Write-Host "Note: This project already includes Maven Wrapper (mvnw and mvnw.cmd), you can use them directly:" 
+Write-Host "- Windows: .\mvnw.cmd clean package"
+Write-Host "- Linux/Mac: ./mvnw clean package"
+Write-Host "No separate Maven installation is needed when using Maven Wrapper!"
