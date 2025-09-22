@@ -1,0 +1,37 @@
+package com.elec5619.backend.service;
+
+import com.elec5619.backend.entity.SystemSetting;
+import com.elec5619.backend.repository.SystemSettingRepository;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
+
+@Service
+public class SystemSettingService {
+    private final SystemSettingRepository repository;
+
+    public SystemSettingService(SystemSettingRepository repository) {
+        this.repository = repository;
+    }
+
+    public List<SystemSetting> getAll() {
+        return repository.findAll();
+    }
+
+    public Optional<SystemSetting> getById(Long id) {
+        return repository.findById(id);
+    }
+
+    public Optional<SystemSetting> getByKeyName(String keyName) {
+        return repository.findByKeyName(keyName);
+    }
+
+    public SystemSetting save(SystemSetting setting) {
+        return repository.save(setting);
+    }
+
+    public void delete(Long id) {
+        repository.deleteById(id);
+    }
+}
