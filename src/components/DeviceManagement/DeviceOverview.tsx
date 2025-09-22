@@ -13,6 +13,7 @@ import {
   Table,
   Tag,
   Divider,
+  Tabs,
 } from 'antd';
 import {
   DesktopOutlined,
@@ -21,8 +22,10 @@ import {
   CloseCircleOutlined,
   ReloadOutlined,
   BarChartOutlined,
+  MonitorOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
+import MonitoringDashboard from '../MonitoringDashboard/MonitoringDashboard';
 
 const { Option } = Select;
 
@@ -39,87 +42,150 @@ interface Device {
   cpuUsage: number;
   memoryUsage: number;
   lastUpdate: string;
+  projects: string[]; // 多对多关系，一个主机可以属于多个项目
 }
 
-// Mock device data
+// Mock device data - synchronized with MonitoringDashboard (10 hosts)
 const mockDevices: Device[] = [
   {
-    id: '1',
-    hostname: 'WEB-SERVER-01',
+    id: 'host-001',
+    hostname: 'Production Server 1',
     ipAddress: '192.168.1.10',
     status: 'online',
     category: 'web',
-    os: 'Ubuntu 20.04',
-    cpu: 'Intel i7-9700K',
-    memory: '32GB',
-    cpuUsage: 45,
-    memoryUsage: 68,
-    lastUpdate: '2024-01-15 10:30:00',
-  },
-  {
-    id: '2',
-    hostname: 'DB-SERVER-01',
-    ipAddress: '192.168.1.11',
-    status: 'online',
-    category: 'database',
-    os: 'CentOS 8',
-    cpu: 'AMD Ryzen 7 3700X',
-    memory: '64GB',
-    cpuUsage: 72,
-    memoryUsage: 85,
-    lastUpdate: '2024-01-15 10:25:00',
-  },
-  {
-    id: '3',
-    hostname: 'APP-SERVER-01',
-    ipAddress: '192.168.1.12',
-    status: 'offline',
-    category: 'application',
-    os: 'Windows Server 2019',
-    cpu: 'Intel i5-8400',
-    memory: '16GB',
-    cpuUsage: 0,
-    memoryUsage: 0,
-    lastUpdate: '2024-01-15 09:45:00',
-  },
-  {
-    id: '4',
-    hostname: 'BACKUP-SERVER-01',
-    ipAddress: '192.168.1.13',
-    status: 'maintenance',
-    category: 'backup',
     os: 'Ubuntu 22.04',
     cpu: 'Intel Xeon E5-2680',
-    memory: '128GB',
-    cpuUsage: 25,
-    memoryUsage: 40,
-    lastUpdate: '2024-01-15 08:15:00',
+    memory: '64GB',
+    cpuUsage: 65,
+    memoryUsage: 78,
+    lastUpdate: new Date().toLocaleString('zh-CN'),
+    projects: ['E-Commerce Platform', 'User Portal'],
   },
   {
-    id: '5',
-    hostname: 'TEST-SERVER-01',
-    ipAddress: '192.168.1.14',
-    status: 'online',
-    category: 'test',
-    os: 'Debian 11',
-    cpu: 'AMD Ryzen 5 3600',
-    memory: '32GB',
-    cpuUsage: 35,
-    memoryUsage: 52,
-    lastUpdate: '2024-01-15 10:20:00',
-  },
-  {
-    id: '6',
-    hostname: 'WEB-SERVER-02',
-    ipAddress: '192.168.1.15',
-    status: 'online',
+    id: 'host-002',
+    hostname: 'Production Server 2',
+    ipAddress: '192.168.1.11',
+    status: 'maintenance',
     category: 'web',
+    os: 'CentOS 8',
+    cpu: 'Intel Xeon E5-2680',
+    memory: '64GB',
+    cpuUsage: 89,
+    memoryUsage: 92,
+    lastUpdate: new Date().toLocaleString('zh-CN'),
+    projects: ['E-Commerce Platform'],
+  },
+  {
+    id: 'host-003',
+    hostname: 'Database Server 1',
+    ipAddress: '192.168.1.20',
+    status: 'online',
+    category: 'database',
     os: 'Ubuntu 20.04',
+    cpu: 'AMD Ryzen 7 3700X',
+    memory: '128GB',
+    cpuUsage: 34,
+    memoryUsage: 56,
+    lastUpdate: new Date().toLocaleString('zh-CN'),
+    projects: ['E-Commerce Platform', 'Analytics System'],
+  },
+  {
+    id: 'host-004',
+    hostname: 'Load Balancer',
+    ipAddress: '192.168.1.5',
+    status: 'offline',
+    category: 'application',
+    os: 'NGINX Plus',
     cpu: 'Intel i7-9700K',
     memory: '32GB',
+    cpuUsage: 0,
+    memoryUsage: 0,
+    lastUpdate: new Date().toLocaleString('zh-CN'),
+    projects: ['E-Commerce Platform', 'User Portal'],
+  },
+  {
+    id: 'host-005',
+    hostname: 'Web Server 1',
+    ipAddress: '192.168.1.30',
+    status: 'online',
+    category: 'web',
+    os: 'Ubuntu 22.04',
+    cpu: 'Intel Xeon E5-2660',
+    memory: '32GB',
+    cpuUsage: 42,
+    memoryUsage: 68,
+    lastUpdate: new Date().toLocaleString('zh-CN'),
+    projects: ['User Portal'],
+  },
+  {
+    id: 'host-006',
+    hostname: 'Web Server 2',
+    ipAddress: '192.168.1.31',
+    status: 'online',
+    category: 'web',
+    os: 'Ubuntu 22.04',
+    cpu: 'Intel Xeon E5-2660',
+    memory: '32GB',
     cpuUsage: 38,
-    memoryUsage: 61,
-    lastUpdate: '2024-01-15 10:28:00',
+    memoryUsage: 72,
+    lastUpdate: new Date().toLocaleString('zh-CN'),
+    projects: ['User Portal'],
+  },
+  {
+    id: 'host-007',
+    hostname: 'Database Server 2',
+    ipAddress: '192.168.1.21',
+    status: 'maintenance',
+    category: 'database',
+    os: 'PostgreSQL 14',
+    cpu: 'AMD Ryzen 9 5900X',
+    memory: '128GB',
+    cpuUsage: 76,
+    memoryUsage: 85,
+    lastUpdate: new Date().toLocaleString('zh-CN'),
+    projects: ['Analytics System'],
+  },
+  {
+    id: 'host-008',
+    hostname: 'Cache Server',
+    ipAddress: '192.168.1.40',
+    status: 'online',
+    category: 'application',
+    os: 'Redis 7.0',
+    cpu: 'Intel i5-10400',
+    memory: '16GB',
+    cpuUsage: 28,
+    memoryUsage: 45,
+    lastUpdate: new Date().toLocaleString('zh-CN'),
+    projects: ['E-Commerce Platform', 'User Portal'],
+  },
+  {
+    id: 'host-009',
+    hostname: 'API Gateway',
+    ipAddress: '192.168.1.50',
+    status: 'online',
+    category: 'application',
+    os: 'Kong Gateway',
+    cpu: 'Intel Xeon E5-2640',
+    memory: '32GB',
+    cpuUsage: 52,
+    memoryUsage: 64,
+    lastUpdate: new Date().toLocaleString('zh-CN'),
+    projects: ['E-Commerce Platform', 'User Portal', 'Analytics System'],
+  },
+  {
+    id: 'host-010',
+    hostname: 'Monitoring Server',
+    ipAddress: '192.168.1.60',
+    status: 'offline',
+    category: 'application',
+    os: 'Prometheus',
+    cpu: 'AMD Ryzen 5 3600',
+    memory: '32GB',
+    cpuUsage: 0,
+    memoryUsage: 0,
+    lastUpdate: new Date(Date.now() - 3600000).toLocaleString('zh-CN'),
+    projects: ['Infrastructure Monitoring'],
   },
 ];
 
@@ -199,7 +265,7 @@ const DeviceOverview: React.FC = () => {
   // Table column definitions
   const columns: ColumnsType<Device> = [
     {
-      title: 'Hostname',
+      title: 'Server Name',
       dataIndex: 'hostname',
       key: 'hostname',
       width: 150,
@@ -257,6 +323,21 @@ const DeviceOverview: React.FC = () => {
       ),
     },
     {
+      title: 'Projects',
+      dataIndex: 'projects',
+      key: 'projects',
+      width: 200,
+      render: (projects: string[]) => (
+        <div>
+          {projects.map((project, index) => (
+            <Tag key={index} color="geekblue" style={{ marginBottom: 4 }}>
+              {project}
+            </Tag>
+          ))}
+        </div>
+      ),
+    },
+    {
       title: 'Last Update',
       dataIndex: 'lastUpdate',
       key: 'lastUpdate',
@@ -264,10 +345,19 @@ const DeviceOverview: React.FC = () => {
     },
   ];
 
-  return (
-    <div>
-      {/* Statistics Cards */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+  const tabItems = [
+    {
+      key: 'monitoring',
+      label: <span><MonitorOutlined />Monitoring Dashboard</span>,
+      children: <MonitoringDashboard />,
+    },
+    {
+      key: 'overview',
+      label: <span><DesktopOutlined />Server Overview</span>,
+      children: (
+        <div>
+          {/* Statistics Cards */}
+          <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={24} sm={12} md={6}>
           <Card>
             <Statistic
@@ -402,6 +492,14 @@ const DeviceOverview: React.FC = () => {
           scroll={{ x: 800 }}
         />
       </Card>
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <div>
+      <Tabs defaultActiveKey="monitoring" type="card" items={tabItems} />
     </div>
   );
 };

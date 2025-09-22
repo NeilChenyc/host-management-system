@@ -12,12 +12,17 @@ import {
   BellOutlined,
   LogoutOutlined,
   ProfileOutlined,
+  AlertOutlined,
+  ProjectOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
+import { AuthProvider, AuthGuard, useAuth } from '../Authentication/AuthGuard';
 import DeviceOverview from '../DeviceManagement/DeviceOverview';
 import DeviceList from '../DeviceManagement/DeviceList';
 import UserList from '../UserManagement/UserList';
 import SystemSettings from '../SystemSettings/SystemSettings';
+import AlertManagement from '../AlertManagement/AlertManagement';
+import ProjectManagement from '../ProjectManagement/ProjectManagement';
 
 const { Header, Sider, Content } = Layout;
 
@@ -25,29 +30,40 @@ interface MainLayoutProps {
   children?: React.ReactNode;
 }
 
-const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
+const MainLayoutContent: React.FC<MainLayoutProps> = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [selectedKey, setSelectedKey] = useState('1');
+  const auth = useAuth();
 
   // Left sidebar menu items
   const menuItems = [
     {
       key: '1',
       icon: <DashboardOutlined />,
-      label: 'Device Overview',
+      label: 'Server Overview',
     },
     {
       key: '2',
       icon: <DesktopOutlined />,
-      label: 'Host Management',
+      label: 'Server Management',
     },
     {
       key: '3',
+      icon: <ProjectOutlined />,
+      label: 'Project Management',
+    },
+    {
+      key: '4',
       icon: <UserOutlined />,
       label: 'User Management',
     },
     {
-      key: '4',
+      key: '5',
+      icon: <AlertOutlined />,
+      label: 'Alert Management',
+    },
+    {
+      key: '6',
       icon: <SettingOutlined />,
       label: 'System Settings',
     },
@@ -80,6 +96,12 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     setSelectedKey(key);
   };
 
+  const handleUserMenuClick = ({ key }: { key: string }) => {
+    if (key === 'logout') {
+      auth?.logout();
+    }
+  };
+
   // Render corresponding page component based on selected menu item
   const renderContent = () => {
     if (children) {
@@ -92,19 +114,19 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       case '2':
         return <DeviceList />;
       case '3':
-        return <UserList />;
+        return <ProjectManagement />;
       case '4':
+        return <UserList />;
+      case '5':
+        return <AlertManagement />;
+      case '6':
         return <SystemSettings />;
       default:
         return <DeviceOverview />;
     }
   };
 
-  const handleUserMenuClick: MenuProps['onClick'] = ({ key }) => {
-    if (key === 'logout') {
-      console.log('用户退出登录');
-    }
-  };
+
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
@@ -209,7 +231,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                   icon={<UserOutlined />}
                   style={{ backgroundColor: '#1890ff' }}
                 />
-                <span style={{ fontSize: '14px' }}>Administrator</span>
+                <span style={{ fontSize: '14px' }}>{auth?.user?.name || 'User'}</span>
               </div>
             </Dropdown>
           </div>
@@ -229,6 +251,16 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         </Content>
       </Layout>
     </Layout>
+  );
+};
+
+const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
+  return (
+    <AuthProvider>
+      <AuthGuard>
+        <MainLayoutContent>{children}</MainLayoutContent>
+      </AuthGuard>
+    </AuthProvider>
   );
 };
 

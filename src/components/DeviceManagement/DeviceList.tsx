@@ -40,7 +40,7 @@ interface Device {
   lastUpdate: string;
 }
 
-// Mock data
+// Mock data - 扩展到10个主机，与MonitoringDashboard和DeviceOverview保持一致
 const mockDevices: Device[] = [
   {
     id: '1',
@@ -92,6 +92,56 @@ const mockDevices: Device[] = [
     memory: '32GB',
     lastUpdate: '2024-01-15 10:20:00',
   },
+  {
+    id: '6',
+    hostname: 'CACHE-SERVER-01',
+    ipAddress: '192.168.1.15',
+    status: 'online',
+    os: 'Redis Enterprise',
+    cpu: 'Intel i9-10900K',
+    memory: '64GB',
+    lastUpdate: '2024-01-15 10:28:00',
+  },
+  {
+    id: '7',
+    hostname: 'MONITOR-SERVER-01',
+    ipAddress: '192.168.1.16',
+    status: 'online',
+    os: 'Ubuntu 22.04',
+    cpu: 'AMD Ryzen 9 5900X',
+    memory: '32GB',
+    lastUpdate: '2024-01-15 10:32:00',
+  },
+  {
+    id: '8',
+    hostname: 'FILE-SERVER-01',
+    ipAddress: '192.168.1.17',
+    status: 'maintenance',
+    os: 'FreeNAS',
+    cpu: 'Intel Xeon Silver 4214',
+    memory: '256GB',
+    lastUpdate: '2024-01-15 09:15:00',
+  },
+  {
+    id: '9',
+    hostname: 'PROXY-SERVER-01',
+    ipAddress: '192.168.1.18',
+    status: 'online',
+    os: 'NGINX Plus',
+    cpu: 'Intel i7-11700K',
+    memory: '16GB',
+    lastUpdate: '2024-01-15 10:35:00',
+  },
+  {
+    id: '10',
+    hostname: 'ANALYTICS-SERVER-01',
+    ipAddress: '192.168.1.19',
+    status: 'offline',
+    os: 'CentOS Stream 9',
+    cpu: 'AMD EPYC 7542',
+    memory: '512GB',
+    lastUpdate: '2024-01-15 08:45:00',
+  },
 ];
 
 const DeviceList: React.FC = () => {
@@ -135,7 +185,7 @@ const DeviceList: React.FC = () => {
   // Table columns
   const columns: ColumnsType<Device> = [
     {
-      title: 'Hostname',
+      title: 'Server Name',
       dataIndex: 'hostname',
       key: 'hostname',
       sorter: (a, b) => a.hostname.localeCompare(b.hostname),
@@ -270,7 +320,7 @@ const DeviceList: React.FC = () => {
     const newDevices = devices.filter((device) => device.id !== id);
     setDevices(newDevices);
     filterDevices(searchText, statusFilter);
-    message.success('Device deleted successfully');
+    message.success('Server deleted successfully');
   };
 
   // Save device
@@ -286,7 +336,7 @@ const DeviceList: React.FC = () => {
             : device
         );
         setDevices(newDevices);
-        message.success('Device updated successfully');
+        message.success('Server updated successfully');
       } else {
         // Add mode
         const newDevice: Device = {
@@ -296,7 +346,7 @@ const DeviceList: React.FC = () => {
         };
         const newDevices = [...devices, newDevice];
         setDevices(newDevices);
-        message.success('Device added successfully');
+        message.success('Server added successfully');
       }
       
       filterDevices(searchText, statusFilter);
@@ -313,7 +363,7 @@ const DeviceList: React.FC = () => {
         <Row gutter={[16, 16]} align="middle">
           <Col xs={24} sm={12} md={8}>
             <Search
-              placeholder="Search hostname, IP address or operating system"
+              placeholder="Search server name, IP address or operating system"
               allowClear
               enterButton={<SearchOutlined />}
               size="middle"
@@ -347,7 +397,7 @@ const DeviceList: React.FC = () => {
                 icon={<PlusOutlined />}
                 onClick={handleAdd}
               >
-                Add Device
+                Add Server
               </Button>
             </Space>
           </Col>
@@ -373,9 +423,9 @@ const DeviceList: React.FC = () => {
         />
       </Card>
 
-      {/* Add/Edit Device Modal */}
+      {/* Add/Edit Server Modal */}
       <Modal
-        title={editingDevice ? 'Edit Device' : 'Add Device'}
+        title={editingDevice ? 'Edit Server' : 'Add Server'}
         open={isModalVisible}
         onOk={handleSave}
         onCancel={() => setIsModalVisible(false)}
@@ -393,13 +443,13 @@ const DeviceList: React.FC = () => {
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
-                label="Hostname"
+                label="Server Name"
                 name="hostname"
                 rules={[
-                  { required: true, message: 'Please enter hostname' },
+                  { required: true, message: 'Please enter server name' },
                 ]}
               >
-                <Input placeholder="Please enter hostname" />
+                <Input placeholder="Please enter server name" />
               </Form.Item>
             </Col>
             <Col span={12}>

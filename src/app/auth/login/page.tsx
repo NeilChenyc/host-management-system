@@ -1,0 +1,64 @@
+'use client';
+
+import React, { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Card, Row, Col } from 'antd';
+import { AuthManager } from '@/lib/auth';
+import LoginForm from '@/components/Authentication/LoginForm';
+
+const LoginPage: React.FC = () => {
+  const router = useRouter();
+
+  useEffect(() => {
+    // Redirect if already authenticated
+    if (AuthManager.isAuthenticated()) {
+      router.push('/');
+    }
+  }, [router]);
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '20px'
+    }}>
+      <Row justify="center" style={{ width: '100%' }}>
+        <Col xs={20} sm={16} md={12} lg={8} xl={6}>
+          <Card
+            style={{
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+              borderRadius: '12px',
+              border: 'none'
+            }}
+            styles={{ body: { padding: '32px' } }}
+          >
+            <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+              <h1 style={{ 
+                fontSize: '28px', 
+                fontWeight: 'bold', 
+                color: '#1f2937',
+                marginBottom: '8px'
+              }}>
+                Host Management System
+              </h1>
+              <p style={{ 
+                color: '#6b7280', 
+                fontSize: '16px',
+                margin: 0
+              }}>
+                Sign in to your account
+              </p>
+            </div>
+            
+            <LoginForm />
+          </Card>
+        </Col>
+      </Row>
+    </div>
+  );
+};
+
+export default LoginPage;

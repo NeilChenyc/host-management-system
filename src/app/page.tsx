@@ -1,5 +1,10 @@
 import MainLayout from '@/components/Layout/MainLayout';
+import { AuthProvider } from '@/components/Authentication/AuthGuard';
 
 export default function Home() {
-  return <MainLayout />;
+  return (
+    <AuthProvider>
+      <MainLayout />
+    </AuthProvider>
+  );
 }
