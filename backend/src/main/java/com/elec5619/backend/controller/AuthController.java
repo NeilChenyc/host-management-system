@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.HashMap;
 import java.time.LocalDateTime;
 import java.util.Set;
+import java.util.Optional;
 
 /**
  * Authentication controller for user registration and login.
@@ -105,43 +106,30 @@ public class AuthController {
             @Parameter(description = "User login credentials", required = true)
             @Valid @RequestBody LoginDto loginDto) {
         try {
-            // Simple mock implementation for signin
+            // 使用UserService的authenticateUser方法验证用户凭据
+            Optional<UserResponseDto> authenticatedUserOpt = 
+                userService.authenticateUser(loginDto.getUsername(), loginDto.getPassword());
+            
+            if (authenticatedUserOpt.isEmpty()) {
+                // 认证失败，用户不存在或密码不正确
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Invalid username/email or password");
+            }
+            
+            // 认证成功，创建响应对象
+            UserResponseDto user = authenticatedUserOpt.get();
             JwtResponseDto response = new JwtResponseDto();
-            response.setToken("mock-jwt-token");
+            response.setToken("mock-jwt-token"); // 在实际应用中，应该生成真实的JWT令牌
             response.setType("Bearer");
-            response.setId(1L);
-            response.setUsername(loginDto.getUsername());
-            response.setEmail("user@example.com");
-            response.setRoles(new String[]{"ROLE_USER"});
+            response.setId(user.getId());
+            response.setUsername(user.getUsername());
+            response.setEmail(user.getEmail());
+            response.setRoles(user.getRoles().toArray(new String[0]));
             
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body("Signin failed: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * Simplified login endpoint
-     * @return Simple success response
-     */
-    @PostMapping("/login")
-    public ResponseEntity<?> login() {
-        try {
-            // Most basic implementation that always succeeds
-            System.out.println("Login endpoint called successfully");
-            
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("message", "Login endpoint is working!");
-            response.put("timestamp", LocalDateTime.now());
-            
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            System.out.println("Login error: " + e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body("Error: " + e.getMessage());
         }
     }
     

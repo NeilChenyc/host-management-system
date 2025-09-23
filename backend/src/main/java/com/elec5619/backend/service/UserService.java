@@ -7,6 +7,7 @@ import com.elec5619.backend.entity.User;
 import com.elec5619.backend.repository.RoleRepository;
 import com.elec5619.backend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
@@ -25,6 +26,9 @@ public class UserService {
 
     @Autowired
     private RoleRepository roleRepository;
+    
+    // Password encoder for hashing and verifying passwords
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     /**
      * Create a new user
@@ -47,14 +51,16 @@ public class UserService {
         user.setUsername(registrationDto.getUsername());
         user.setEmail(registrationDto.getEmail());
         
-        // For now, store password as plain text (not recommended for production)
-        // In a real application, you should hash the password
-        user.setPasswordHash(registrationDto.getPassword());
+        // Hash the password before storing it
+        user.setPasswordHash(passwordEncoder.encode(registrationDto.getPassword()));
 
         // Set default role (ROLE_USER)
         Set<Role> roles = new HashSet<>();
-        Role userRole = roleRepository.findByName("ROLE_USER")
-                .orElseThrow(() -> new RuntimeException("Default role not found"));
+        Role userRole = roleRepository.findByName("ROLE_USER").orElseGet(() -> {
+            // Create ROLE_USER if it doesn't exist
+            Role newRole = new Role("ROLE_USER");
+            return roleRepository.save(newRole);
+        });
         roles.add(userRole);
         user.setRoles(roles);
 
@@ -104,5 +110,25 @@ public class UserService {
         dto.setRoles(roleNames);
         
         return dto;
+    }
+    
+    /**
+     * Authenticate user by username/email and password
+     * @param usernameOrEmail Username or email of the user
+     * @param password Raw password to verify
+     * @return Optional containing user if authentication is successful
+     */
+    public Optional<UserResponseDto> authenticateUser(String usernameOrEmail, String password) {
+        // First try to find by username
+        Optional<User> userOpt = userRepository.findByUsername(usernameOrEmail);
+        
+        // If not found, try by email
+        if (userOpt.isEmpty()) {
+            userOpt = userRepository.findByEmail(usernameOrEmail);
+        }
+        
+        // Check if user exists and password matches
+        return userOpt.filter(user -> passwordEncoder.matches(password, user.getPasswordHash()))
+                .map(this::convertToUserResponseDto);
     }
 }
