@@ -17,6 +17,7 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())  // 禁用CSRF保护，便于API测试
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()  // 允许所有认证相关的请求
+                .requestMatchers("/api/servers/**").permitAll()  // 允许服务器管理API访问
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/api-docs/**").permitAll()  // 允许Swagger UI访问
                 .anyRequest().authenticated()  // 其他所有请求需要认证
             )

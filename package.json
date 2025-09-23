@@ -1,0 +1,16 @@
+{
+  "name": "reacttest-data-init",
+  "version": "1.0.0",
+  "description": "Data initialization scripts for ReactTest project",
+  "main": "init-mock-data.js",
+  "scripts": {
+    "init-data": "node init-mock-data.js",
+    "check-server": "node -e \"require('./init-mock-data.js').checkServerHealth().then(r => process.exit(r ? 0 : 1))\""
+  },
+  "dependencies": {
+    "axios": "^1.6.0"
+  },
+  "keywords": ["data", "initialization", "mock", "backend"],
+  "author": "ReactTest Team",
+  "license": "MIT"
+}

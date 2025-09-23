@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Table,
   Button,
@@ -22,137 +22,50 @@ import {
   EditOutlined,
   DeleteOutlined,
   ReloadOutlined,
+  EyeOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
+import ServerApiService, { Device } from '../../services/serverApi';
 
 const { Search } = Input;
 const { Option } = Select;
 
-// Device interface
-interface Device {
-  id: string;
-  hostname: string;
-  ipAddress: string;
-  status: 'online' | 'offline' | 'maintenance';
-  os: string;
-  cpu: string;
-  memory: string;
-  lastUpdate: string;
-}
-
-// Mock data - 扩展到10个主机，与MonitoringDashboard和DeviceOverview保持一致
-const mockDevices: Device[] = [
-  {
-    id: '1',
-    hostname: 'WEB-SERVER-01',
-    ipAddress: '192.168.1.10',
-    status: 'online',
-    os: 'Ubuntu 20.04',
-    cpu: 'Intel i7-9700K',
-    memory: '32GB',
-    lastUpdate: '2024-01-15 10:30:00',
-  },
-  {
-    id: '2',
-    hostname: 'DB-SERVER-01',
-    ipAddress: '192.168.1.11',
-    status: 'online',
-    os: 'CentOS 8',
-    cpu: 'AMD Ryzen 7 3700X',
-    memory: '64GB',
-    lastUpdate: '2024-01-15 10:25:00',
-  },
-  {
-    id: '3',
-    hostname: 'APP-SERVER-01',
-    ipAddress: '192.168.1.12',
-    status: 'offline',
-    os: 'Windows Server 2019',
-    cpu: 'Intel i5-8400',
-    memory: '16GB',
-    lastUpdate: '2024-01-15 09:45:00',
-  },
-  {
-    id: '4',
-    hostname: 'BACKUP-SERVER-01',
-    ipAddress: '192.168.1.13',
-    status: 'maintenance',
-    os: 'Ubuntu 22.04',
-    cpu: 'Intel Xeon E5-2680',
-    memory: '128GB',
-    lastUpdate: '2024-01-15 08:15:00',
-  },
-  {
-    id: '5',
-    hostname: 'TEST-SERVER-01',
-    ipAddress: '192.168.1.14',
-    status: 'online',
-    os: 'Debian 11',
-    cpu: 'AMD Ryzen 5 3600',
-    memory: '32GB',
-    lastUpdate: '2024-01-15 10:20:00',
-  },
-  {
-    id: '6',
-    hostname: 'CACHE-SERVER-01',
-    ipAddress: '192.168.1.15',
-    status: 'online',
-    os: 'Redis Enterprise',
-    cpu: 'Intel i9-10900K',
-    memory: '64GB',
-    lastUpdate: '2024-01-15 10:28:00',
-  },
-  {
-    id: '7',
-    hostname: 'MONITOR-SERVER-01',
-    ipAddress: '192.168.1.16',
-    status: 'online',
-    os: 'Ubuntu 22.04',
-    cpu: 'AMD Ryzen 9 5900X',
-    memory: '32GB',
-    lastUpdate: '2024-01-15 10:32:00',
-  },
-  {
-    id: '8',
-    hostname: 'FILE-SERVER-01',
-    ipAddress: '192.168.1.17',
-    status: 'maintenance',
-    os: 'FreeNAS',
-    cpu: 'Intel Xeon Silver 4214',
-    memory: '256GB',
-    lastUpdate: '2024-01-15 09:15:00',
-  },
-  {
-    id: '9',
-    hostname: 'PROXY-SERVER-01',
-    ipAddress: '192.168.1.18',
-    status: 'online',
-    os: 'NGINX Plus',
-    cpu: 'Intel i7-11700K',
-    memory: '16GB',
-    lastUpdate: '2024-01-15 10:35:00',
-  },
-  {
-    id: '10',
-    hostname: 'ANALYTICS-SERVER-01',
-    ipAddress: '192.168.1.19',
-    status: 'offline',
-    os: 'CentOS Stream 9',
-    cpu: 'AMD EPYC 7542',
-    memory: '512GB',
-    lastUpdate: '2024-01-15 08:45:00',
-  },
-];
-
 const DeviceList: React.FC = () => {
-  const [devices, setDevices] = useState<Device[]>(mockDevices);
-  const [filteredDevices, setFilteredDevices] = useState<Device[]>(mockDevices);
+  const [devices, setDevices] = useState<Device[]>([]);
+  const [filteredDevices, setFilteredDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingDevice, setEditingDevice] = useState<Device | null>(null);
   const [form] = Form.useForm();
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  
+  // 组件挂载时加载服务器列表
+  useEffect(() => {
+    loadServers();
+  }, []);
+
+  // 加载服务器列表
+  const loadServers = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const serverList = await ServerApiService.getAllServers();
+      setDevices(serverList);
+      setFilteredDevices(serverList);
+      message.success(`成功加载 ${serverList.length} 台服务器`);
+    } catch (error) {
+      console.error('Failed to load servers:', error);
+      const errorMessage = error instanceof Error ? error.message : '加载服务器列表失败';
+      setError(errorMessage);
+      message.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Status color mapping
   const getStatusColor = (status: string) => {
@@ -163,6 +76,8 @@ const DeviceList: React.FC = () => {
         return 'red';
       case 'maintenance':
         return 'orange';
+      case 'unknown':
+        return 'gray';
       default:
         return 'default';
     }
@@ -177,8 +92,26 @@ const DeviceList: React.FC = () => {
         return 'Offline';
       case 'maintenance':
         return 'Maintenance';
+      case 'unknown':
+        return 'Unknown';
       default:
         return status;
+    }
+  };
+
+  // View device detail handler
+  const handleViewDetail = async (device: Device) => {
+    try {
+      // 获取最新的服务器详情
+      const serverDetail = await ServerApiService.getServerById(device.id);
+      setSelectedDevice(serverDetail);
+      setDetailModalVisible(true);
+    } catch (error) {
+      console.error('Failed to fetch server detail:', error);
+      const errorMessage = error instanceof Error ? error.message : '获取服务器详情失败';
+      message.error(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -206,6 +139,7 @@ const DeviceList: React.FC = () => {
         { text: 'Online', value: 'online' },
         { text: 'Offline', value: 'offline' },
         { text: 'Maintenance', value: 'maintenance' },
+        { text: 'Unknown', value: 'unknown' },
       ],
       onFilter: (value, record) => record.status === value,
     },
@@ -233,10 +167,20 @@ const DeviceList: React.FC = () => {
     {
       title: 'Actions',
       key: 'actions',
+      width: 200,
       render: (_, record) => (
-        <Space size="middle">
+        <Space size="small">
           <Button
             type="link"
+            size="small"
+            icon={<EyeOutlined />}
+            onClick={() => handleViewDetail(record)}
+          >
+            Detail
+          </Button>
+          <Button
+            type="link"
+            size="small"
             icon={<EditOutlined />}
             onClick={() => handleEdit(record)}
           >
@@ -291,14 +235,9 @@ const DeviceList: React.FC = () => {
   };
 
   // Refresh handler
-  const handleRefresh = () => {
-    setLoading(true);
-    setTimeout(() => {
-      setDevices([...mockDevices]);
-      filterDevices(searchText, statusFilter);
-      setLoading(false);
-      message.success('Device list refreshed');
-    }, 1000);
+  const handleRefresh = async () => {
+    await loadServers();
+    message.success('服务器列表已刷新');
   };
 
   // Add device handler
@@ -316,48 +255,69 @@ const DeviceList: React.FC = () => {
   };
 
   // Delete device handler
-  const handleDelete = (id: string) => {
-    const newDevices = devices.filter((device) => device.id !== id);
-    setDevices(newDevices);
-    filterDevices(searchText, statusFilter);
-    message.success('Server deleted successfully');
+  const handleDelete = async (id: string) => {
+    setLoading(true);
+    try {
+      await ServerApiService.deleteServer(id);
+      message.success('服务器删除成功');
+      // 重新加载服务器列表
+      await loadServers();
+    } catch (error) {
+      console.error('Failed to delete server:', error);
+      const errorMessage = error instanceof Error ? error.message : '删除服务器失败';
+      message.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Save device
   const handleSave = async () => {
     try {
       const values = await form.validateFields();
+      setLoading(true);
       
       if (editingDevice) {
-        // Edit mode
-        const newDevices = devices.map((device) =>
-          device.id === editingDevice.id
-            ? { ...device, ...values, lastUpdate: new Date().toLocaleString('zh-CN') }
-            : device
-        );
-        setDevices(newDevices);
-        message.success('Server updated successfully');
+        // Edit mode - 更新服务器
+        await ServerApiService.updateServer(editingDevice.id, values);
+        message.success('服务器更新成功');
       } else {
-        // Add mode
-        const newDevice: Device = {
-          ...values,
-          id: Date.now().toString(),
-          lastUpdate: new Date().toLocaleString('zh-CN'),
-        };
-        const newDevices = [...devices, newDevice];
-        setDevices(newDevices);
-        message.success('Server added successfully');
+        // Add mode - 创建新服务器
+        await ServerApiService.createServer(values);
+        message.success('服务器添加成功');
       }
       
-      filterDevices(searchText, statusFilter);
+      // 重新加载服务器列表
+      await loadServers();
       setIsModalVisible(false);
+      form.resetFields();
     } catch (error) {
-      console.error('Form validation failed:', error);
+      console.error('Failed to save server:', error);
+      const errorMessage = error instanceof Error ? error.message : '保存服务器失败';
+      message.error(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div>
+      {/* Error Alert */}
+      {error && (
+        <Card style={{ marginBottom: 16 }}>
+          <div style={{ color: '#ff4d4f', textAlign: 'center' }}>
+            <strong>错误:</strong> {error}
+            <Button 
+              type="link" 
+              onClick={loadServers}
+              style={{ marginLeft: 8 }}
+            >
+              重试
+            </Button>
+          </div>
+        </Card>
+      )}
+
       {/* Page title and operation area */}
       <Card>
         <Row gutter={[16, 16]} align="middle">
@@ -381,6 +341,7 @@ const DeviceList: React.FC = () => {
               <Option value="online">Online</Option>
               <Option value="offline">Offline</Option>
               <Option value="maintenance">Maintenance</Option>
+              <Option value="unknown">Unknown</Option>
             </Select>
           </Col>
           <Col xs={24} sm={24} md={12}>
@@ -417,7 +378,7 @@ const DeviceList: React.FC = () => {
             showSizeChanger: true,
             showQuickJumper: true,
             showTotal: (total, range) =>
-              `${range[0]}-${range[1]} of ${total} items`,
+              `第 ${range[0]}-${range[1]} 条，共 ${total} 条记录`,
           }}
           scroll={{ x: 1200 }}
         />
@@ -481,6 +442,7 @@ const DeviceList: React.FC = () => {
                   <Option value="online">Online</Option>
                   <Option value="offline">Offline</Option>
                   <Option value="maintenance">Maintenance</Option>
+                  <Option value="unknown">Unknown</Option>
                 </Select>
               </Form.Item>
             </Col>
@@ -521,6 +483,56 @@ const DeviceList: React.FC = () => {
             </Col>
           </Row>
         </Form>
+      </Modal>
+      
+      {/* Server Detail Modal */}
+      <Modal
+        title="Server Details"
+        open={detailModalVisible}
+        onCancel={() => setDetailModalVisible(false)}
+        footer={[
+          <Button key="close" onClick={() => setDetailModalVisible(false)}>
+            Close
+          </Button>,
+        ]}
+        width={600}
+      >
+        {selectedDevice && (
+          <div>
+            <Row gutter={[16, 16]}>
+              <Col span={12}>
+                <strong>Server Name:</strong> {selectedDevice.hostname}
+              </Col>
+              <Col span={12}>
+                <strong>IP Address:</strong> {selectedDevice.ipAddress}
+              </Col>
+            </Row>
+            <Row gutter={[16, 16]}>
+              <Col span={12}>
+                <strong>Status:</strong>{' '}
+                <Tag color={getStatusColor(selectedDevice.status)}>
+                  {getStatusText(selectedDevice.status)}
+                </Tag>
+              </Col>
+              <Col span={12}>
+                <strong>Operating System:</strong> {selectedDevice.os}
+              </Col>
+            </Row>
+            <Row gutter={[16, 16]}>
+              <Col span={12}>
+                <strong>CPU:</strong> {selectedDevice.cpu}
+              </Col>
+              <Col span={12}>
+                <strong>Memory:</strong> {selectedDevice.memory}
+              </Col>
+            </Row>
+            <Row gutter={[16, 16]}>
+              <Col span={24}>
+                <strong>Last Update:</strong> {selectedDevice.lastUpdate}
+              </Col>
+            </Row>
+          </div>
+        )}
       </Modal>
     </div>
   );
