@@ -14,7 +14,13 @@ node_modules/
 # testing
 /coverage
 
+# Ignore backend build (Maven/Gradle)
+backend/target/
+backend/build/
+
 # next.js
+# Ignore Next.js build output
+frontend/.next/
 /.next/
 /out/
 
