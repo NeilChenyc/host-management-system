@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Form, Input, Button, Card, message, Select, Divider } from 'antd';
+import { Form, Input, Button, Card, Modal, Select, Divider, message } from 'antd';
 import { UserOutlined, LockOutlined, MailOutlined, EyeInvisibleOutlined, EyeTwoTone, TeamOutlined } from '@ant-design/icons';
 import Link from 'next/link';
+import { AuthManager } from '@/lib/auth';
 
 const { Option } = Select;
 
@@ -25,25 +26,57 @@ interface RegisterFormProps {
 const RegisterForm: React.FC<RegisterFormProps> = ({ onRegister, loading = false }) => {
   const [form] = Form.useForm();
   const [isLoading, setIsLoading] = useState(false);
+  // 使用 antd v5 的 useMessage，在组件树中提供上下文，确保提示在所有环境下可见
+  const [messageApi, contextHolder] = message.useMessage();
 
+  /**
+   * 处理注册提交逻辑（成功时不弹窗）：
+   * - 成功：使用 antd 的 message 成功提示，然后自动跳转到登录页面（延时 1.2s，便于用户看到提示）
+   * - 失败：保留 Modal.error 弹窗，清晰展示错误信息
+   */
   const handleSubmit = async (values: RegisterFormData) => {
     setIsLoading(true);
     try {
-      // Mock registration logic - replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API call
-      
-      message.success('Registration successful! Please wait for admin approval.');
-      
-      if (onRegister) {
-        onRegister(values);
+      // 准备后端需要的精简字段：username、email、password（后端会设置默认角色）
+      const payload = {
+        username: values.username,
+        email: values.email,
+        password: values.password,
+      };
+  
+      // 调用统一的认证管理器，发起后端注册请求
+      const result = await AuthManager.register(payload);
+  
+      if (result.success) {
+        console.log("success!!register");
+        // 如果父组件传入了 onRegister（例如用于埋点或额外处理），在此安全调用
+        if (onRegister) {
+          try {
+            onRegister(values);
+          } catch (e) {
+            console.error('onRegister callback error:', e);
+          }
+        }
+        // 成功后仅使用轻提示，然后自动跳转到登录页
+        messageApi.success(result.message || 'Registration successful! Please sign in.');
+        setTimeout(() => {
+          window.location.href = '/auth/login';
+        }, 2000);
+      } else {
+        // 使用 Modal 弹窗展示后端返回的错误信息，帮助用户理解失败原因
+        Modal.error({
+          title: 'Registration Failed',
+          content: result.message || 'Registration failed. Please try again.',
+          okText: 'OK',
+        });
       }
-      
-      // Redirect to login page
-      setTimeout(() => {
-        window.location.href = '/auth/login';
-      }, 2000);
     } catch (error) {
-      message.error('Registration failed. Please try again.');
+      // 兜底的异常捕获，使用弹窗避免错误信息被忽略
+      Modal.error({
+        title: 'Registration Failed',
+        content: 'Registration failed. Please try again.',
+        okText: 'OK',
+      });
     } finally {
       setIsLoading(false);
     }
@@ -81,13 +114,18 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onRegister, loading = false
       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       padding: '20px'
     }}>
+      {contextHolder}
       <Card 
         style={{ 
           width: 500, 
           boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
           borderRadius: '8px'
         }}
-        bodyStyle={{ padding: '32px' }}
+        // Ant Design v5+: `bodyStyle` is deprecated. Use the new `styles.body` API instead to style the Card body.
+        styles={{ body: { padding: '32px' } }}
+        // Ant Design v5+: `bordered` 已弃用，使用新的 `variant` 属性
+        // `variant="borderless"` 等价于旧的 bordered={false}
+        variant="borderless"
       >
         <div style={{ textAlign: 'center', marginBottom: '24px' }}>
           <h1 style={{ 

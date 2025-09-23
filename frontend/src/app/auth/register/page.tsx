@@ -33,7 +33,9 @@ const RegisterPage: React.FC = () => {
               borderRadius: '12px',
               border: 'none'
             }}
-            bodyStyle={{ padding: '40px' }}
+            // Ant Design v5+: `bodyStyle` is deprecated. Use the new `styles.body` API instead to style the Card body.
+            styles={{ body: { padding: '40px' } }}
+            bordered={false}
           >
             <div style={{ textAlign: 'center', marginBottom: '30px' }}>
               <h1 style={{ 

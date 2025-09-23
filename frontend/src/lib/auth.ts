@@ -4,6 +4,7 @@ import axios from 'axios';
 // API base URL used for frontend-to-backend requests.
 // Prefer reading from environment variable NEXT_PUBLIC_API_BASE_URL so you can easily switch between dev/staging/prod.
 // Fallback to Spring Boot's common default port (8080) when not provided.
+//设置默认请求地址为localhost:8080/api
 const API_BASE_URL = (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_BASE_URL)
   ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/api`
   : 'http://localhost:8080/api';
@@ -172,6 +173,7 @@ export class AuthManager {
   static async login(username: string, password: string): Promise<{ success: boolean; message: string; user?: User }> {
     try {
       // Attempt real signin endpoint first
+      //使用axios发送POST请求 
       const res = await axios.post(`${API_BASE_URL}/auth/signin`, {
         username,
         password
@@ -180,7 +182,14 @@ export class AuthManager {
       });
 
       const data: any = res.data || {};
-      const token: string = data.token;
+      const token: string | undefined = data.token;
+
+      // 2.1) 如果后端没有返回 token，视为失败并给出清晰的提示（这在联调早期很常见）
+      if (!token) {
+        return { success: false, message: 'Login failed: token is missing in server response.' };
+      }
+
+      // 2.2) 角色数组（如 ["ROLE_USER", "ROLE_ADMIN"]），用于前端权限映射
       const roles: string[] = Array.isArray(data.roles) ? data.roles : [];
 
       // Map backend roles to frontend roles used in our app
@@ -203,39 +212,111 @@ export class AuthManager {
       this.setUser(user);
 
       return { success: true, message: 'Login successful', user };
-    } catch (e) {
-      // Fallback to basic /auth/login endpoint (simple success response)
-      try {
-        const res2 = await axios.post(`${API_BASE_URL}/auth/login`, {
-          username,
-          password
-        }, {
-          headers: { 'Content-Type': 'application/json' }
-        });
+    } catch (error: any) {
+      // 捕获失败并尽可能提取后端返回的详细错误信息
+      // error.response：后端有响应（例如 400/401/500 等）
+      // error.request：请求发出但未收到响应（网络/跨域/后端未启动）
+      // error.message：Axios/JS 层面的错误消息
+      let detailedMessage = 'Login failed. Please check your credentials or server status.';
 
-        const ok = res2?.data?.success === true;
-        if (ok) {
-          // Use a lightweight mock token in demo mode
-          const mockToken = 'mock-token';
-          const user: User = {
-            id: '1',
-            username,
-            name: username.charAt(0).toUpperCase() + username.slice(1),
-            email: `${username}@example.com`,
-            role: 'viewer',
-            permissions: ROLE_PERMISSIONS.viewer
-          };
+      if (error?.response) {
+        const status: number = error.response.status;
+        const data = error.response.data;
 
-          this.setToken(mockToken);
-          this.setUser(user);
+        // 尝试从后端响应体中提取错误信息字段
+        const serverMsg = typeof data === 'string'
+          ? data
+          : (data?.message || data?.error || data?.detail || '');
 
-          return { success: true, message: res2?.data?.message ?? 'Login successful', user };
+        if (status === 401) {
+          detailedMessage = serverMsg || 'Invalid username or password.';
+        } else if (status === 400) {
+          detailedMessage = serverMsg || 'Bad request. Please verify the input format.';
+        } else if (status >= 500) {
+          detailedMessage = serverMsg || 'Server error. Please try again later.';
+        } else {
+          detailedMessage = serverMsg || `Request failed with status ${status}.`;
         }
-      } catch {
-        // Ignore and report generic failure below
+      } else if (error?.request) {
+        // 请求已发出但没有收到响应（大多是网络问题或后端未启动/地址不对）
+        detailedMessage = 'Unable to reach the server. Please confirm the backend is running and NEXT_PUBLIC_API_BASE_URL is correct.';
+      } else if (error?.message) {
+        // 其他 Axios/JS 层面错误
+        detailedMessage = error.message;
       }
 
-      return { success: false, message: 'Login failed. Please check your credentials or server status.' };
+      return { success: false, message: detailedMessage };
+    }
+  }
+
+  /**
+   * Register a new user by calling the backend signup API.
+   *
+   * What it does:
+   * - Sends a POST request to `${API_BASE_URL}/auth/signup` with { username, email, password }.
+   * - Expects the backend to return a `UserResponseDto` (id, username, email, roles, ...).
+   * - Maps backend roles (e.g., ROLE_ADMIN/ROLE_OPERATOR/ROLE_USER) to our app roles
+   *   ('admin' | 'operator' | 'viewer'), and prepares a `User` object for UI feedback.
+   * - Does NOT log the user in automatically; the caller should redirect to the login page.
+   *
+   * Error handling:
+   * - Provides detailed error messages based on HTTP status codes and server response body.
+   * - Common cases: 400 (validation), 409 (conflict), 500 (server errors).
+   *
+   * Returns: { success, message, user? }
+   */
+  static async register(payload: { username: string; email: string; password: string; roles?: string[] }): Promise<{ success: boolean; message: string; user?: User }> {
+    try {
+      const res = await axios.post(`${API_BASE_URL}/auth/signup`, payload, {
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      const data: any = res.data || {};
+      const rolesFromServer: string[] = Array.isArray(data.roles) ? data.roles : [];
+
+      const mappedRole: 'admin' | 'operator' | 'viewer' =
+        rolesFromServer.includes('ROLE_ADMIN') ? 'admin' :
+        rolesFromServer.includes('ROLE_OPERATOR') ? 'operator' :
+        'viewer';
+
+      const user: User = {
+        id: String(data.id ?? ''),
+        username: data.username ?? payload.username,
+        name: data.username ?? payload.username,
+        email: data.email ?? payload.email,
+        role: mappedRole,
+        permissions: ROLE_PERMISSIONS[mappedRole]
+      };
+
+      // 这里不进行自动登录，也不保存 token；注册后通常需要用户主动登录
+      return { success: true, message: 'Registration successful! Please sign in.', user };
+    } catch (error: any) {
+      let detailedMessage = 'Registration failed. Please try again later.';
+
+      if (error?.response) {
+        const status: number = error.response.status;
+        const data = error.response.data;
+        const serverMsg = typeof data === 'string'
+          ? data
+          : (data?.message || data?.error || data?.detail || '');
+
+        if (status === 400) {
+          detailedMessage = serverMsg || 'Invalid input. Please check your username, email, and password.';
+        // } else if (status === 409) {
+        //   detailedMessage = serverMsg || 'User already exists. Try a different username or email.';
+        // } else if (status >= 500) {
+        //   detailedMessage = serverMsg || 'Server error. Please try again later.';
+        // } 
+        }else {
+          detailedMessage = serverMsg || `Request failed with status ${status}.`;
+        }
+      } else if (error?.request) {
+        detailedMessage = 'Unable to reach the server. Please ensure the backend is running on the correct URL.';
+      } else if (error?.message) {
+        detailedMessage = error.message;
+      }
+
+      return { success: false, message: detailedMessage };
     }
   }
 
