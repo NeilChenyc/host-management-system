@@ -1,4 +1,12 @@
 // Authentication utilities for JWT token management and permission verification
+import axios from 'axios';
+
+// API base URL used for frontend-to-backend requests.
+// Prefer reading from environment variable NEXT_PUBLIC_API_BASE_URL so you can easily switch between dev/staging/prod.
+// Fallback to Spring Boot's common default port (8080) when not provided.
+const API_BASE_URL = (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_BASE_URL)
+  ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/api`
+  : 'http://localhost:8080/api';
 
 export interface User {
   id: string;
@@ -95,13 +103,28 @@ export class AuthManager {
   }
 
   // Check if token is expired
+  /**
+   * Check if a JWT token is expired.
+   * This version is defensive: if the token is not a valid JWT (e.g., a mock token without three parts),
+   * it will assume the token is NOT expired to avoid accidental logout in demo mode.
+   *
+   * Why: Our backend's mock /signin returns "mock-jwt-token" for testing, which is not a real JWT,
+   * and the previous implementation would treat it as expired immediately.
+   */
   static isTokenExpired(token: string): boolean {
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
+      const parts = token.split('.');
+      // If token is not in JWT format (header.payload.signature), treat it as not expired
+      if (parts.length !== 3) {
+        return false;
+      }
+      const payload = JSON.parse(atob(parts[1]));
       const currentTime = Date.now() / 1000;
-      return payload.exp < currentTime;
+      // If payload.exp exists and is a number, compare with current time; otherwise assume not expired
+      return typeof payload.exp === 'number' ? payload.exp < currentTime : false;
     } catch {
-      return true;
+      // On any parsing error, assume not expired to keep user logged in
+      return false;
     }
   }
 
@@ -132,30 +155,87 @@ export class AuthManager {
   }
 
   // Login
+  /**
+   * Perform login by calling backend API and storing JWT + user info locally.
+   *
+   * Flow:
+   * 1) Try POST `${API_BASE_URL}/auth/signin` with { username, password }.
+   *    - Expected response (JwtResponseDto): { token, type, id, username, email, roles }
+   *    - Save token to localStorage; map backend roles (e.g., ROLE_ADMIN/ROLE_OPERATOR/ROLE_USER)
+   *      to our app roles ('admin' | 'operator' | 'viewer') and assign permissions.
+   * 2) If /auth/signin fails (e.g., backend not ready), fall back to POST `${API_BASE_URL}/auth/login`.
+   *    - This endpoint returns a simple success flag. We'll store a mock token and basic user info so
+   *      the rest of the app can run for demo/testing.
+   *
+   * Returns: { success, message, user? }
+   */
   static async login(username: string, password: string): Promise<{ success: boolean; message: string; user?: User }> {
     try {
-      // Demo login - accepts any username and password
-      if (username && password) {
-        const mockToken = this.generateMockToken('admin');
-        const user: User = {
-          id: '1',
-          username: username,
-          name: username.charAt(0).toUpperCase() + username.slice(1),
-          email: `${username}@example.com`,
-          role: 'admin',
-          department: 'Demo',
-          permissions: ROLE_PERMISSIONS.admin
-        };
-        
-        this.setToken(mockToken);
-        this.setUser(user);
-        
-        return { success: true, message: 'Login successful', user };
-      } else {
-        return { success: false, message: 'Please enter both username and password' };
+      // Attempt real signin endpoint first
+      const res = await axios.post(`${API_BASE_URL}/auth/signin`, {
+        username,
+        password
+      }, {
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      const data: any = res.data || {};
+      const token: string = data.token;
+      const roles: string[] = Array.isArray(data.roles) ? data.roles : [];
+
+      // Map backend roles to frontend roles used in our app
+      const mappedRole: 'admin' | 'operator' | 'viewer' =
+        roles.includes('ROLE_ADMIN') ? 'admin' :
+        roles.includes('ROLE_OPERATOR') ? 'operator' :
+        'viewer';
+
+      const user: User = {
+        id: String(data.id ?? '1'),
+        username: data.username ?? username,
+        name: data.username ?? username,
+        email: data.email ?? `${username}@example.com`,
+        role: mappedRole,
+        permissions: ROLE_PERMISSIONS[mappedRole]
+      };
+
+      // Persist token and user
+      this.setToken(token);
+      this.setUser(user);
+
+      return { success: true, message: 'Login successful', user };
+    } catch (e) {
+      // Fallback to basic /auth/login endpoint (simple success response)
+      try {
+        const res2 = await axios.post(`${API_BASE_URL}/auth/login`, {
+          username,
+          password
+        }, {
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        const ok = res2?.data?.success === true;
+        if (ok) {
+          // Use a lightweight mock token in demo mode
+          const mockToken = 'mock-token';
+          const user: User = {
+            id: '1',
+            username,
+            name: username.charAt(0).toUpperCase() + username.slice(1),
+            email: `${username}@example.com`,
+            role: 'viewer',
+            permissions: ROLE_PERMISSIONS.viewer
+          };
+
+          this.setToken(mockToken);
+          this.setUser(user);
+
+          return { success: true, message: res2?.data?.message ?? 'Login successful', user };
+        }
+      } catch {
+        // Ignore and report generic failure below
       }
-    } catch (error) {
-      return { success: false, message: 'Login failed. Please try again.' };
+
+      return { success: false, message: 'Login failed. Please check your credentials or server status.' };
     }
   }
 
