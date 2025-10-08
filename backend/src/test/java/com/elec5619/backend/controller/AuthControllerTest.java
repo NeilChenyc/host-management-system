@@ -1,6 +1,5 @@
 package com.elec5619.backend.controller;
 
-import com.elec5619.backend.config.TestSecurityConfig;
 import com.elec5619.backend.dto.JwtResponseDto;
 import com.elec5619.backend.dto.LoginDto;
 import com.elec5619.backend.dto.UserRegistrationDto;
@@ -12,8 +11,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Optional;
@@ -24,9 +23,13 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import com.elec5619.backend.config.TestSecurityConfig;
+import org.springframework.context.annotation.Import;
 
 @WebMvcTest(AuthController.class)
 @Import(TestSecurityConfig.class)
+@ActiveProfiles("test")
 class AuthControllerTest {
 
     @Autowired
@@ -79,6 +82,7 @@ class AuthControllerTest {
         when(userService.createUser(any(UserRegistrationDto.class))).thenReturn(mockUserResponse);
 
         mockMvc.perform(post("/api/auth/signup")
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(validRegistrationDto)))
                 .andExpect(status().isCreated())
@@ -97,6 +101,7 @@ class AuthControllerTest {
         invalidDto.setEmail("invalid-email"); // Invalid email
 
         mockMvc.perform(post("/api/auth/signup")
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(invalidDto)))
                 .andExpect(status().isBadRequest());
@@ -108,6 +113,7 @@ class AuthControllerTest {
                 .thenThrow(new RuntimeException("Username already exists"));
 
         mockMvc.perform(post("/api/auth/signup")
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(validRegistrationDto)))
                 .andExpect(status().isInternalServerError());
@@ -119,6 +125,7 @@ class AuthControllerTest {
                 .thenReturn(Optional.of(mockUserResponse));
 
         mockMvc.perform(post("/api/auth/signin")
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(validLoginDto)))
                 .andExpect(status().isOk())
@@ -137,6 +144,7 @@ class AuthControllerTest {
                 .thenReturn(Optional.empty());
 
         mockMvc.perform(post("/api/auth/signin")
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(validLoginDto)))
                 .andExpect(status().isUnauthorized())
@@ -150,6 +158,7 @@ class AuthControllerTest {
         invalidDto.setPassword(""); // Empty password
 
         mockMvc.perform(post("/api/auth/signin")
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(invalidDto)))
                 .andExpect(status().isBadRequest());
@@ -161,6 +170,7 @@ class AuthControllerTest {
                 .thenThrow(new RuntimeException("Database error"));
 
         mockMvc.perform(post("/api/auth/signin")
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(validLoginDto)))
                 .andExpect(status().isInternalServerError())

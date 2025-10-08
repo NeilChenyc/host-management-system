@@ -1,6 +1,5 @@
 package com.elec5619.backend.controller;
 
-import com.elec5619.backend.config.TestSecurityConfig;
 import com.elec5619.backend.dto.UserResponseDto;
 import com.elec5619.backend.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -9,8 +8,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
@@ -22,9 +21,13 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import com.elec5619.backend.config.TestSecurityConfig;
+import org.springframework.context.annotation.Import;
 
 @WebMvcTest(UserController.class)
 @Import(TestSecurityConfig.class)
+@ActiveProfiles("test")
 class UserControllerTest {
 
     @Autowired
@@ -105,6 +108,7 @@ class UserControllerTest {
         Set<String> newRoles = Set.of("ROLE_USER", "ROLE_ADMIN");
         
         mockMvc.perform(put("/api/users/1/roles")
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(newRoles)))
                 .andExpect(status().isOk())
@@ -120,6 +124,7 @@ class UserControllerTest {
         Set<String> emptyRoles = Set.of();
         
         mockMvc.perform(put("/api/users/1/roles")
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(emptyRoles)))
                 .andExpect(status().isOk())
@@ -131,6 +136,7 @@ class UserControllerTest {
     @Test
     void testUpdateUserRoles_InvalidJson() throws Exception {
         mockMvc.perform(put("/api/users/1/roles")
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("invalid json"))
                 .andExpect(status().isBadRequest());
@@ -143,6 +149,7 @@ class UserControllerTest {
         Set<String> newRoles = Set.of("ROLE_USER");
         
         mockMvc.perform(put("/api/users/1/roles")
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(newRoles)))
                 .andExpect(status().isOk());
@@ -150,7 +157,8 @@ class UserControllerTest {
 
     @Test
     void testDeleteUser_Success() throws Exception {
-        mockMvc.perform(delete("/api/users/1"))
+        mockMvc.perform(delete("/api/users/1")
+                .with(csrf()))
                 .andExpect(status().isOk());
     }
 
@@ -171,6 +179,7 @@ class UserControllerTest {
         Set<String> newRoles = Set.of("ROLE_USER");
         
         mockMvc.perform(put("/api/users/invalid/roles")
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(newRoles)))
                 .andExpect(status().isBadRequest());
@@ -178,7 +187,8 @@ class UserControllerTest {
 
     @Test
     void testDeleteUser_InvalidId() throws Exception {
-        mockMvc.perform(delete("/api/users/invalid"))
+        mockMvc.perform(delete("/api/users/invalid")
+                .with(csrf()))
                 .andExpect(status().isBadRequest());
     }
 }

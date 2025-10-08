@@ -1,6 +1,5 @@
 package com.elec5619.backend.integration;
 
-import com.elec5619.backend.config.TestSecurityConfig;
 import com.elec5619.backend.dto.LoginDto;
 import com.elec5619.backend.dto.UserRegistrationDto;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -8,7 +7,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureWebMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -19,11 +17,14 @@ import java.util.Set;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import com.elec5619.backend.config.TestSecurityConfig;
+import org.springframework.context.annotation.Import;
 
 @SpringBootTest
 @AutoConfigureWebMvc
-@ActiveProfiles("test")
 @Import(TestSecurityConfig.class)
+@ActiveProfiles("test")
 class ApiIntegrationTest {
 
     @Autowired
@@ -49,6 +50,7 @@ class ApiIntegrationTest {
         registrationDto.setRoles(Set.of("ROLE_USER"));
 
         mockMvc.perform(post("/api/auth/signup")
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(registrationDto)))
                 .andExpect(status().isCreated())
@@ -112,6 +114,7 @@ class ApiIntegrationTest {
         loginDto.setPassword("wrongpassword");
 
         mockMvc.perform(post("/api/auth/signin")
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(loginDto)))
                 .andExpect(status().isUnauthorized());
@@ -126,6 +129,7 @@ class ApiIntegrationTest {
         invalidDto.setEmail("invalid-email"); // Invalid email
 
         mockMvc.perform(post("/api/auth/signup")
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(invalidDto)))
                 .andExpect(status().isBadRequest());
@@ -136,6 +140,7 @@ class ApiIntegrationTest {
         emptyLoginDto.setPassword("");
 
         mockMvc.perform(post("/api/auth/signin")
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(emptyLoginDto)))
                 .andExpect(status().isBadRequest());
