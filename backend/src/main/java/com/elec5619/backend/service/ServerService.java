@@ -31,7 +31,7 @@ public class ServerService {
         server.setOperatingSystem(dto.getOperatingSystem());
         server.setCpu(dto.getCpu());
         server.setMemory(dto.getMemory());
-        server.setStatus(ServerStatus.UNKNOWN);
+        server.setStatus(ServerStatus.UP);
         Server saved = serverRepository.save(server);
         return toResponse(saved);
     }
