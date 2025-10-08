@@ -1,0 +1,31 @@
+(globalThis.TURBOPACK_CHUNK_LISTS || (globalThis.TURBOPACK_CHUNK_LISTS = [])).push({
+    script: typeof document === "object" ? document.currentScript : undefined,
+    chunks: [
+  "static/chunks/src_c6e802ac._.js",
+  "static/chunks/node_modules_antd_es_form_ad4d5c44._.js",
+  "static/chunks/node_modules_antd_es_date-picker_aea21c63._.js",
+  "static/chunks/node_modules_antd_es_modal_e17af4eb._.js",
+  "static/chunks/node_modules_antd_es_table_d3e296ba._.js",
+  "static/chunks/node_modules_antd_es_input_bf985b2f._.js",
+  "static/chunks/node_modules_antd_es_57658605._.js",
+  "static/chunks/node_modules_aec1143c._.js",
+  "static/chunks/node_modules_rc-menu_es_624e5341._.js",
+  "static/chunks/node_modules_rc-field-form_es_72abd044._.js",
+  "static/chunks/node_modules_rc-picker_es_050fe50e._.js",
+  "static/chunks/node_modules_axios_lib_99e19c7d._.js",
+  "static/chunks/node_modules_rc-tabs_es_cf9d1fcf._.js",
+  "static/chunks/node_modules_rc-select_es_619a1668._.js",
+  "static/chunks/node_modules_rc-table_es_b2044914._.js",
+  "static/chunks/node_modules_rc-tree_es_94580923._.js",
+  "static/chunks/node_modules_recharts_es6_util_312fde1d._.js",
+  "static/chunks/node_modules_recharts_es6_state_19451915._.js",
+  "static/chunks/node_modules_recharts_es6_component_aabfc5e3._.js",
+  "static/chunks/node_modules_recharts_es6_cartesian_243b75ba._.js",
+  "static/chunks/node_modules_recharts_es6_d8612732._.js",
+  "static/chunks/node_modules_rc-tree-select_es_06d1242a._.js",
+  "static/chunks/node_modules_@ant-design_ffe29945._.js",
+  "static/chunks/node_modules_@rc-component_6e089f93._.js",
+  "static/chunks/node_modules_7e07b801._.js"
+],
+    source: "dynamic"
+});

@@ -1,21 +1,15 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Form, Input, Button, Card, Modal, Select, Divider, message } from 'antd';
-import { UserOutlined, LockOutlined, MailOutlined, EyeInvisibleOutlined, EyeTwoTone, TeamOutlined } from '@ant-design/icons';
+import { Form, Input, Button, Card, Modal, Divider, message } from 'antd';
+import { UserOutlined, LockOutlined, MailOutlined, EyeInvisibleOutlined, EyeTwoTone } from '@ant-design/icons';
 import Link from 'next/link';
 import { AuthManager } from '@/lib/auth';
-
-const { Option } = Select;
 
 interface RegisterFormData {
   username: string;
   email: string;
   password: string;
-  confirmPassword: string;
-  fullName: string;
-  department: string;
-  role: string;
 }
 
 interface RegisterFormProps {
@@ -95,16 +89,6 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onRegister, loading = false
     return Promise.resolve();
   };
 
-  const validateConfirmPassword = (_: any, value: string) => {
-    if (!value) {
-      return Promise.reject(new Error('Please confirm your password!'));
-    }
-    if (value !== form.getFieldValue('password')) {
-      return Promise.reject(new Error('Passwords do not match!'));
-    }
-    return Promise.resolve();
-  };
-
   return (
     <div style={{ 
       minHeight: '100vh', 
@@ -148,20 +132,6 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onRegister, loading = false
           layout="vertical"
         >
           <Form.Item
-            label="Full Name"
-            name="fullName"
-            rules={[
-              { required: true, message: 'Please input your full name!' },
-              { min: 2, message: 'Name must be at least 2 characters!' }
-            ]}
-          >
-            <Input 
-              prefix={<UserOutlined />} 
-              placeholder="Enter your full name" 
-            />
-          </Form.Item>
-
-          <Form.Item
             label="Username"
             name="username"
             rules={[
@@ -191,40 +161,6 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onRegister, loading = false
           </Form.Item>
 
           <Form.Item
-            label="Department"
-            name="department"
-            rules={[
-              { required: true, message: 'Please select your department!' }
-            ]}
-          >
-            <Select 
-              placeholder="Select your department"
-              suffixIcon={<TeamOutlined />}
-            >
-              <Option value="engineering">Engineering</Option>
-              <Option value="operations">Operations</Option>
-              <Option value="security">Security</Option>
-              <Option value="management">Management</Option>
-              <Option value="support">Support</Option>
-              <Option value="other">Other</Option>
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            label="Requested Role"
-            name="role"
-            rules={[
-              { required: true, message: 'Please select a role!' }
-            ]}
-          >
-            <Select placeholder="Select requested role">
-              <Option value="viewer">Viewer - Read-only access</Option>
-              <Option value="operator">Operator - Basic operations</Option>
-              <Option value="admin">Administrator - Full access</Option>
-            </Select>
-          </Form.Item>
-
-          <Form.Item
             label="Password"
             name="password"
             rules={[{ validator: validatePassword }]}
@@ -232,18 +168,6 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onRegister, loading = false
             <Input.Password
               prefix={<LockOutlined />}
               placeholder="Create a strong password"
-              iconRender={(visible) => (visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />)}
-            />
-          </Form.Item>
-
-          <Form.Item
-            label="Confirm Password"
-            name="confirmPassword"
-            rules={[{ validator: validateConfirmPassword }]}
-          >
-            <Input.Password
-              prefix={<LockOutlined />}
-              placeholder="Confirm your password"
               iconRender={(visible) => (visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />)}
             />
           </Form.Item>

@@ -19,6 +19,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()  // 允许所有认证相关的请求
                 .requestMatchers("/api/public/**").permitAll()  // 允许所有公共请求
                 .requestMatchers("/api/users/**").permitAll()  // 允许所有用户管理请求（用于测试）
+                .requestMatchers("/api/servers/**").permitAll()  // 允许服务器管理API访问
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/api-docs/**").permitAll()  // 允许Swagger UI访问
                 .anyRequest().authenticated()  // 其他所有请求需要认证
             )
