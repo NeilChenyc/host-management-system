@@ -8,15 +8,14 @@ import com.elec5619.backend.service.AlertEventService;
 import com.elec5619.backend.repository.ServerMetricsRepository;
 import com.elec5619.backend.service.AlertRuleService;
 import com.elec5619.backend.service.AlertSystemService;
+import com.elec5619.backend.service.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Logger;
 
 /**
@@ -29,15 +28,17 @@ public class AlertSystemServiceImpl implements AlertSystemService {
     private final AlertRuleService alertRuleService;
     private final AlertEventService alertEventService;
     private final ServerMetricsRepository serverMetricsRepository;
+    private final NotificationService notificationService;
 
     private static final Logger logger = Logger.getLogger(AlertSystemServiceImpl.class.getName());
 
     @Autowired
     public AlertSystemServiceImpl(AlertRuleService alertRuleService, AlertEventService alertEventService,
-                                 ServerMetricsRepository serverMetricsRepository) {
+                                 ServerMetricsRepository serverMetricsRepository, NotificationService notificationService) {
         this.alertRuleService = alertRuleService;
         this.alertEventService = alertEventService;
         this.serverMetricsRepository = serverMetricsRepository;
+        this.notificationService = notificationService;
     }
 
     @Override
@@ -86,6 +87,12 @@ public class AlertSystemServiceImpl implements AlertSystemService {
             }
             
             logger.info("Metric evaluation completed. Triggered " + triggeredAlerts.size() + " alerts");
+            
+            // Send notifications for triggered alerts
+            if (!triggeredAlerts.isEmpty()) {
+                notificationService.sendAlertNotifications(triggeredAlerts);
+            }
+            
             return triggeredAlerts;
         } catch (Exception e) {
             logger.severe("Error evaluating provided metrics: " + e.getMessage());
@@ -142,6 +149,12 @@ public class AlertSystemServiceImpl implements AlertSystemService {
             }
             
             logger.info("Metric evaluation completed. Triggered " + triggeredEvents.size() + " alerts for server ID: " + serverId);
+            
+            // Send notifications for triggered alerts
+            if (!triggeredEvents.isEmpty()) {
+                notificationService.sendAlertNotifications(triggeredEvents);
+            }
+            
             return triggeredEvents;
         } catch (Exception e) {
             logger.severe("Error evaluating metrics for server ID: " + serverId + ": " + e.getMessage());
