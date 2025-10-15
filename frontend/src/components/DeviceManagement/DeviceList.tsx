@@ -68,8 +68,10 @@ const DeviceList: React.FC = () => {
   };
 
   // Status color mapping
-  const getStatusColor = (status: string) => {
-    switch (status) {
+  const getStatusColor = (status: string | undefined | null) => {
+    // 确保status是字符串类型且不为undefined或null
+    const statusValue = String(status || 'unknown').toLowerCase();
+    switch (statusValue) {
       case 'online':
         return 'green';
       case 'offline':
@@ -84,8 +86,10 @@ const DeviceList: React.FC = () => {
   };
 
   // Status text mapping
-  const getStatusText = (status: string) => {
-    switch (status) {
+  const getStatusText = (status: string | undefined | null) => {
+    // 确保status是字符串类型且不为undefined或null
+    const statusValue = String(status || 'unknown').toLowerCase();
+    switch (statusValue) {
       case 'online':
         return 'Online';
       case 'offline':
@@ -95,7 +99,7 @@ const DeviceList: React.FC = () => {
       case 'unknown':
         return 'Unknown';
       default:
-        return status;
+        return statusValue.charAt(0).toUpperCase() + statusValue.slice(1);
     }
   };
 

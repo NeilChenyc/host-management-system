@@ -200,6 +200,7 @@ const DeviceOverview: React.FC = () => {
     online: 'green',
     offline: 'red',
     maintenance: 'orange',
+    unknown: 'gray'
   };
 
   // Status text mapping
@@ -207,6 +208,7 @@ const DeviceOverview: React.FC = () => {
     online: 'Online',
     offline: 'Offline',
     maintenance: 'Maintenance',
+    unknown: 'Unknown'
   };
 
   // Device category mapping
@@ -216,6 +218,18 @@ const DeviceOverview: React.FC = () => {
     application: 'Application Server',
     backup: 'Backup Server',
     test: 'Test Server',
+  };
+
+  // 获取状态颜色，处理undefined或null的情况
+  const getStatusColor = (status: string | undefined | null): string => {
+    const statusValue = String(status || 'unknown').toLowerCase() as keyof typeof statusColors;
+    return statusColors[statusValue] || statusColors.unknown;
+  };
+
+  // 获取状态文本，处理undefined或null的情况
+  const getStatusText = (status: string | undefined | null): string => {
+    const statusValue = String(status || 'unknown').toLowerCase() as keyof typeof statusTexts;
+    return statusTexts[statusValue] || 'Unknown';
   };
 
   // Calculate statistics
@@ -276,17 +290,7 @@ const DeviceOverview: React.FC = () => {
       key: 'ipAddress',
       width: 120,
     },
-    {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      width: 80,
-      render: (status: keyof typeof statusColors) => (
-        <Tag color={statusColors[status]}>
-          {statusTexts[status]}
-        </Tag>
-      ),
-    },
+    {      title: 'Status',      dataIndex: 'status',      key: 'status',      width: 80,      render: (status: string | undefined | null) => (        <Tag color={getStatusColor(status)}>          {getStatusText(status)}        </Tag>      ),    },
     {
       title: 'Category',
       dataIndex: 'category',
