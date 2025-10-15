@@ -6,9 +6,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -37,7 +36,7 @@ public class Server {
     @Column(name = "ip_address", nullable = false, length = 255)
     private String ipAddress;
 
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = com.elec5619.backend.entity.converter.ServerStatusConverter.class)
     @Column(name = "status", nullable = false, length = 20)
     private ServerStatus status = ServerStatus.UNKNOWN;
 
