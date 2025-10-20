@@ -131,7 +131,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, loading = false }) => {
           <Divider>Or</Divider>
 
           <div style={{ textAlign: 'center' }}>
-            <span style={{ color: '#666' }}>Don't have an account? </span>
+            <span style={{ color: '#666' }}>Don ot have an account? </span>
             <Link href="/auth/register" style={{ color: '#1890ff', fontWeight: 'medium' }}>
               Sign up now
             </Link>

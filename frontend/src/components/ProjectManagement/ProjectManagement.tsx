@@ -37,7 +37,7 @@ import {
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
-import { useAuth } from '@/components/Authentication/AuthGuard';
+import { AuthManager } from '@/lib/auth';
 
 const { Search } = Input;
 const { Option } = Select;
@@ -79,7 +79,7 @@ interface Project {
 }
 
 const ProjectManagement: React.FC = () => {
-  const { user, hasPermission } = useAuth();
+  
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
@@ -356,7 +356,7 @@ const ProjectManagement: React.FC = () => {
       key: 'actions',
       render: (_, record) => (
         <Space>
-          {hasPermission('project:write') && (
+          {(
             <Tooltip title="Edit">
               <Button 
                 type="text" 
@@ -365,7 +365,7 @@ const ProjectManagement: React.FC = () => {
               />
             </Tooltip>
           )}
-          {hasPermission('project:delete') && (
+          {(
             <Popconfirm
               title="Are you sure you want to delete this project?"
               onConfirm={() => handleDeleteProject(record.id)}
@@ -454,7 +454,7 @@ const ProjectManagement: React.FC = () => {
                 >
                   Refresh
                 </Button>
-                {hasPermission('project:write') && (
+                {(
                   <Button 
                     type="primary" 
                     icon={<PlusOutlined />}
