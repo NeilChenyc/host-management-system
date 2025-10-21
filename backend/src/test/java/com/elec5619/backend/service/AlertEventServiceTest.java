@@ -3,6 +3,7 @@ package com.elec5619.backend.service;
 import com.elec5619.backend.entity.AlertEvent;
 import com.elec5619.backend.entity.AlertRule;
 import com.elec5619.backend.repository.AlertEventRepository;
+import com.elec5619.backend.service.impl.AlertEventServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,7 +30,7 @@ class AlertEventServiceTest {
     private AlertEventRepository alertEventRepository;
 
     @InjectMocks
-    private AlertEventService alertEventService;
+    private AlertEventServiceImpl alertEventService;
 
     private AlertEvent testAlertEvent;
     private AlertRule testAlertRule;

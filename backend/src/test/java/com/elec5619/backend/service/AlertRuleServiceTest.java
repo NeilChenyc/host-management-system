@@ -64,13 +64,23 @@ class AlertRuleServiceTest {
             }
 
             @Override
-            public List<AlertRule> getEnabledAlertRules() {
+            public List<AlertRule> getAlertRulesByEnabled(Boolean enabled) {
                 return null; // Not implemented for this test
             }
 
             @Override
-            public boolean validateAlertRule(AlertRule alertRule) {
-                return true; // Not implemented for this test
+            public List<AlertRule> getAlertRulesBySeverity(String severity) {
+                return null; // Not implemented for this test
+            }
+
+            @Override
+            public AlertRule toggleAlertRuleStatus(Long ruleId, Boolean enabled) {
+                return null; // Not implemented for this test
+            }
+
+            @Override
+            public List<AlertRule> getAlertRulesByProjectId(Long projectId) {
+                return null; // Not implemented for this test
             }
         };
 

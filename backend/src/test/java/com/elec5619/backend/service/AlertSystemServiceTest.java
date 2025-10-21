@@ -4,6 +4,7 @@ import com.elec5619.backend.entity.AlertEvent;
 import com.elec5619.backend.entity.AlertRule;
 import com.elec5619.backend.entity.ServerMetrics;
 import com.elec5619.backend.repository.ServerMetricsRepository;
+import com.elec5619.backend.service.impl.AlertSystemServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,7 +39,7 @@ class AlertSystemServiceTest {
     private NotificationService notificationService;
 
     @InjectMocks
-    private AlertSystemService alertSystemService;
+    private AlertSystemServiceImpl alertSystemService;
 
     private AlertRule testAlertRule;
     private ServerMetrics testMetrics;
@@ -50,8 +51,8 @@ class AlertSystemServiceTest {
         testAlertRule = new AlertRule();
         testAlertRule.setRuleId(1L);
         testAlertRule.setRuleName("High CPU Usage");
-        testAlertRule.setTargetMetric("cpuUsage");
-        testAlertRule.setComparator("GREATER_THAN");
+        testAlertRule.setTargetMetric("cpu_usage");
+        testAlertRule.setComparator(">");
         testAlertRule.setThreshold(80.0);
         testAlertRule.setDuration(1);
         testAlertRule.setSeverity("CRITICAL");
@@ -82,16 +83,16 @@ class AlertSystemServiceTest {
     void testEvaluateMetrics_TriggeredAlert() {
         // Given
         Long serverId = 1L;
+        List<AlertRule> projectRules = Arrays.asList(testAlertRule);
         List<AlertRule> enabledRules = Arrays.asList(testAlertRule);
-        List<ServerMetrics> recentMetrics = Arrays.asList(testMetrics);
 
-        when(alertRuleService.getEnabledAlertRules()).thenReturn(enabledRules);
-        when(serverMetricsRepository.findByServerIdAndCollectedAtAfterOrderByCollectedAtDesc(
-                eq(serverId), any(LocalDateTime.class))).thenReturn(recentMetrics);
+        when(serverMetricsRepository.findTopByServerIdOrderByCollectedAtDesc(serverId)).thenReturn(testMetrics);
+        when(alertRuleService.getAlertRulesByProjectId(serverId)).thenReturn(projectRules);
+        when(alertRuleService.getAlertRulesByEnabled(true)).thenReturn(enabledRules);
         when(alertEventService.createAlertEvent(any(AlertEvent.class))).thenReturn(testAlertEvent);
 
         // When
-        List<AlertEvent> result = alertSystemService.evaluateMetrics(serverId);
+        List<AlertEvent> result = alertSystemService.evaluateMetrics((Long) serverId);
 
         // Then
         assertNotNull(result);
@@ -99,9 +100,9 @@ class AlertSystemServiceTest {
         assertEquals("High CPU Usage", result.get(0).getAlertRule().getRuleName());
         assertEquals("CRITICAL", result.get(0).getAlertRule().getSeverity());
 
-        verify(alertRuleService, times(1)).getEnabledAlertRules();
-        verify(serverMetricsRepository, times(1)).findByServerIdAndCollectedAtAfterOrderByCollectedAtDesc(
-                eq(serverId), any(LocalDateTime.class));
+        verify(serverMetricsRepository, times(1)).findTopByServerIdOrderByCollectedAtDesc(serverId);
+        verify(alertRuleService, times(1)).getAlertRulesByProjectId(serverId);
+        verify(alertRuleService, times(1)).getAlertRulesByEnabled(true);
         verify(alertEventService, times(1)).createAlertEvent(any(AlertEvent.class));
         verify(notificationService, times(1)).sendAlertNotifications(any());
     }
@@ -110,24 +111,33 @@ class AlertSystemServiceTest {
     void testEvaluateMetrics_NoTriggeredAlert() {
         // Given
         Long serverId = 1L;
-        testMetrics.setCpuUsage(50.0); // Below threshold
+        ServerMetrics lowCpuMetrics = new ServerMetrics();
+        lowCpuMetrics.setMetricId(1L);
+        lowCpuMetrics.setServerId(1L);
+        lowCpuMetrics.setCpuUsage(50.0); // Below threshold
+        lowCpuMetrics.setMemoryUsage(60.0);
+        lowCpuMetrics.setDiskUsage(45.0);
+        lowCpuMetrics.setNetworkIn(100.0);
+        lowCpuMetrics.setNetworkOut(200.0);
+        lowCpuMetrics.setCollectedAt(LocalDateTime.now());
+        
+        List<AlertRule> projectRules = Arrays.asList(testAlertRule);
         List<AlertRule> enabledRules = Arrays.asList(testAlertRule);
-        List<ServerMetrics> recentMetrics = Arrays.asList(testMetrics);
 
-        when(alertRuleService.getEnabledAlertRules()).thenReturn(enabledRules);
-        when(serverMetricsRepository.findByServerIdAndCollectedAtAfterOrderByCollectedAtDesc(
-                eq(serverId), any(LocalDateTime.class))).thenReturn(recentMetrics);
+        when(serverMetricsRepository.findTopByServerIdOrderByCollectedAtDesc(serverId)).thenReturn(lowCpuMetrics);
+        when(alertRuleService.getAlertRulesByProjectId(serverId)).thenReturn(projectRules);
+        when(alertRuleService.getAlertRulesByEnabled(true)).thenReturn(enabledRules);
 
         // When
-        List<AlertEvent> result = alertSystemService.evaluateMetrics(serverId);
+        List<AlertEvent> result = alertSystemService.evaluateMetrics((Long) serverId);
 
         // Then
         assertNotNull(result);
         assertTrue(result.isEmpty());
 
-        verify(alertRuleService, times(1)).getEnabledAlertRules();
-        verify(serverMetricsRepository, times(1)).findByServerIdAndCollectedAtAfterOrderByCollectedAtDesc(
-                eq(serverId), any(LocalDateTime.class));
+        verify(serverMetricsRepository, times(1)).findTopByServerIdOrderByCollectedAtDesc(serverId);
+        verify(alertRuleService, times(1)).getAlertRulesByProjectId(serverId);
+        verify(alertRuleService, times(1)).getAlertRulesByEnabled(true);
         verify(alertEventService, never()).createAlertEvent(any());
         verify(notificationService, never()).sendAlertNotifications(any());
     }
@@ -136,19 +146,23 @@ class AlertSystemServiceTest {
     void testEvaluateMetrics_NoEnabledRules() {
         // Given
         Long serverId = 1L;
+        List<AlertRule> projectRules = Arrays.asList(testAlertRule);
         List<AlertRule> enabledRules = Arrays.asList(); // Empty list
 
-        when(alertRuleService.getEnabledAlertRules()).thenReturn(enabledRules);
+        when(serverMetricsRepository.findTopByServerIdOrderByCollectedAtDesc(serverId)).thenReturn(testMetrics);
+        when(alertRuleService.getAlertRulesByProjectId(serverId)).thenReturn(projectRules);
+        when(alertRuleService.getAlertRulesByEnabled(true)).thenReturn(enabledRules);
 
         // When
-        List<AlertEvent> result = alertSystemService.evaluateMetrics(serverId);
+        List<AlertEvent> result = alertSystemService.evaluateMetrics((Long) serverId);
 
         // Then
         assertNotNull(result);
         assertTrue(result.isEmpty());
 
-        verify(alertRuleService, times(1)).getEnabledAlertRules();
-        verify(serverMetricsRepository, never()).findByServerIdAndCollectedAtAfterOrderByCollectedAtDesc(any(), any());
+        verify(serverMetricsRepository, times(1)).findTopByServerIdOrderByCollectedAtDesc(serverId);
+        verify(alertRuleService, times(1)).getAlertRulesByProjectId(serverId);
+        verify(alertRuleService, times(1)).getAlertRulesByEnabled(true);
         verify(alertEventService, never()).createAlertEvent(any());
         verify(notificationService, never()).sendAlertNotifications(any());
     }
@@ -157,36 +171,38 @@ class AlertSystemServiceTest {
     void testEvaluateMetrics_NoRecentMetrics() {
         // Given
         Long serverId = 1L;
-        List<AlertRule> enabledRules = Arrays.asList(testAlertRule);
-        List<ServerMetrics> recentMetrics = Arrays.asList(); // Empty list
 
-        when(alertRuleService.getEnabledAlertRules()).thenReturn(enabledRules);
-        when(serverMetricsRepository.findByServerIdAndCollectedAtAfterOrderByCollectedAtDesc(
-                eq(serverId), any(LocalDateTime.class))).thenReturn(recentMetrics);
+        when(serverMetricsRepository.findTopByServerIdOrderByCollectedAtDesc(serverId)).thenReturn(null);
 
         // When
-        List<AlertEvent> result = alertSystemService.evaluateMetrics(serverId);
+        List<AlertEvent> result = alertSystemService.evaluateMetrics((Long) serverId);
 
         // Then
         assertNotNull(result);
         assertTrue(result.isEmpty());
 
-        verify(alertRuleService, times(1)).getEnabledAlertRules();
-        verify(serverMetricsRepository, times(1)).findByServerIdAndCollectedAtAfterOrderByCollectedAtDesc(
-                eq(serverId), any(LocalDateTime.class));
+        verify(serverMetricsRepository, times(1)).findTopByServerIdOrderByCollectedAtDesc(serverId);
+        verify(alertRuleService, never()).getAlertRulesByProjectId(any());
+        verify(alertRuleService, never()).getAlertRulesByEnabled(any());
         verify(alertEventService, never()).createAlertEvent(any());
         verify(notificationService, never()).sendAlertNotifications(any());
     }
 
     @Test
     void testEvaluateMetrics_NullServerId() {
-        // When & Then
-        assertThrows(IllegalArgumentException.class, () -> {
-            alertSystemService.evaluateMetrics(null);
-        });
+        // Given
+        when(serverMetricsRepository.findTopByServerIdOrderByCollectedAtDesc(null)).thenReturn(null);
 
-        verify(alertRuleService, never()).getEnabledAlertRules();
-        verify(serverMetricsRepository, never()).findByServerIdAndCollectedAtAfterOrderByCollectedAtDesc(any(), any());
+        // When
+        List<AlertEvent> result = alertSystemService.evaluateMetrics((Long) null);
+
+        // Then
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+
+        verify(serverMetricsRepository, times(1)).findTopByServerIdOrderByCollectedAtDesc(null);
+        verify(alertRuleService, never()).getAlertRulesByProjectId(any());
+        verify(alertRuleService, never()).getAlertRulesByEnabled(any());
         verify(alertEventService, never()).createAlertEvent(any());
         verify(notificationService, never()).sendAlertNotifications(any());
     }

@@ -45,7 +45,7 @@ class AlertEvaluationSchedulerTest {
         testServer.setId(1L);
         testServer.setServerName("Test Server");
         testServer.setIpAddress("192.168.1.100");
-        testServer.setStatus(ServerStatus.UP);
+        testServer.setStatus(ServerStatus.online);
 
         // Setup test alert rule
         testAlertRule = new AlertRule();

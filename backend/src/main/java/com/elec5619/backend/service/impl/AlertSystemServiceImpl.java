@@ -143,7 +143,8 @@ public class AlertSystemServiceImpl implements AlertSystemService {
                 if (evaluateRuleAgainstMetrics(rule, latestMetrics)) {
                     // Create a new alert event if the rule is triggered
                     AlertEvent alertEvent = createAlertEvent(rule, latestMetrics);
-                    triggeredEvents.add(alertEvent);
+                    AlertEvent createdEvent = alertEventService.createAlertEvent(alertEvent);
+                    triggeredEvents.add(createdEvent);
                     logger.info("Rule triggered: " + rule.getRuleName() + " for server ID: " + serverId);
                 }
             }
