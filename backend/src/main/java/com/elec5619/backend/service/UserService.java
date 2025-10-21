@@ -11,6 +11,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -69,6 +70,16 @@ public class UserService {
 
         // Convert to DTO and return
         return convertToUserResponseDto(savedUser);
+    }
+
+    /**
+     * Get all users
+     * @return List of all users
+     */
+    public List<UserResponseDto> getAllUsers() {
+        return userRepository.findAll().stream()
+                .map(this::convertToUserResponseDto)
+                .collect(java.util.stream.Collectors.toList());
     }
 
     /**
