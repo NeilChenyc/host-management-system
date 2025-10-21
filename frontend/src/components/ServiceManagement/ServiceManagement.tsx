@@ -45,7 +45,7 @@ import {
   SyncOutlined
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { useAuth } from '@/components/Authentication/AuthGuard';
+import { AuthManager } from '@/lib/auth';
 
 const { Search } = Input;
 const { Option } = Select;
@@ -99,7 +99,7 @@ interface Service {
 }
 
 const ServiceManagement: React.FC = () => {
-  const { user, hasPermission } = useAuth();
+  const user = AuthManager.getUser();
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
@@ -570,7 +570,7 @@ const ServiceManagement: React.FC = () => {
       key: 'actions',
       render: (_, record) => (
         <Space>
-          {record.status === 'stopped' && hasPermission('service:write') && (
+          {record.status === 'stopped' && (
             <Tooltip title="Start">
               <Button 
                 type="text" 
@@ -579,7 +579,7 @@ const ServiceManagement: React.FC = () => {
               />
             </Tooltip>
           )}
-          {record.status === 'running' && hasPermission('service:write') && (
+          {record.status === 'running' && (
             <Tooltip title="Stop">
               <Button 
                 type="text" 
@@ -588,7 +588,7 @@ const ServiceManagement: React.FC = () => {
               />
             </Tooltip>
           )}
-          {hasPermission('service:write') && (
+          {(
             <Tooltip title="Restart">
               <Button 
                 type="text" 
@@ -597,7 +597,7 @@ const ServiceManagement: React.FC = () => {
               />
             </Tooltip>
           )}
-          {hasPermission('service:write') && (
+          {(
             <Tooltip title="Edit">
               <Button 
                 type="text" 
@@ -606,7 +606,7 @@ const ServiceManagement: React.FC = () => {
               />
             </Tooltip>
           )}
-          {hasPermission('service:delete') && (
+          {(
             <Popconfirm
               title="Are you sure you want to delete this service?"
               onConfirm={() => handleDeleteService(record.id)}
@@ -691,7 +691,7 @@ const ServiceManagement: React.FC = () => {
                 >
                   Refresh
                 </Button>
-                {hasPermission('service:write') && (
+                {(
                   <Button 
                     type="primary" 
                     icon={<PlusOutlined />}
