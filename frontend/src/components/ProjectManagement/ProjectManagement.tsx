@@ -324,7 +324,7 @@ const ProjectManagement: React.FC = () => {
         onOk={handleModalOk}
         onCancel={() => { setIsModalVisible(false); form.resetFields(); }}
         width={800}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={form} layout="vertical" initialValues={{ status: 'PLANNED' }}>
           <Row gutter={16}>

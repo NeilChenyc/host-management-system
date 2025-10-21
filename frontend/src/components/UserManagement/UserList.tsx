@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Table,
   Button,
@@ -19,7 +19,6 @@ import {
   Drawer,
   Checkbox,
   TreeSelect,
-  DatePicker,
 } from 'antd';
 import {
   PlusOutlined,
@@ -28,12 +27,16 @@ import {
   DeleteOutlined,
   ReloadOutlined,
   UserOutlined,
-  KeyOutlined,
-  TeamOutlined,
   EyeOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import dayjs from 'dayjs';
+import {
+  getAllUsers,
+  registerUser,
+  updateUserRoles,
+  deleteUser as apiDeleteUser,
+  mapToAppRole,
+} from '../../services/userApi';
 
 const { Search } = Input;
 const { Option } = Select;
@@ -71,92 +74,20 @@ interface Permission {
   category: string;
 }
 
-// Mock user data
-const mockUsers: User[] = [
-  {
-    id: '1',
-    username: 'admin',
-    realName: 'System Administrator',
-    email: 'admin@example.com',
-    phone: '13800138000',
-    role: 'admin',
-    group: 'system-admin',
-    status: 'active',
-    lastLogin: '2024-01-15 10:30:00',
-    createTime: '2023-01-01 00:00:00',
-    permissions: ['user:read', 'user:write', 'device:read', 'device:write', 'system:read', 'system:write'],
-    description: 'System Super Administrator',
-  },
-  {
-    id: '2',
-    username: 'operator1',
-    realName: 'DevOps Engineer',
-    email: 'operator1@example.com',
-    phone: '13800138001',
-    role: 'operator',
-    group: 'ops-team',
-    status: 'active',
-    lastLogin: '2024-01-15 09:45:00',
-    createTime: '2023-06-15 10:00:00',
-    permissions: ['device:read', 'device:write', 'system:read'],
-    description: 'Responsible for device operations management',
-  },
-  {
-    id: '3',
-    username: 'viewer1',
-    realName: 'Monitor Operator',
-    email: 'viewer1@example.com',
-    phone: '13800138002',
-    role: 'viewer',
-    group: 'monitor-team',
-    status: 'active',
-    lastLogin: '2024-01-15 08:20:00',
-    createTime: '2023-09-01 14:30:00',
-    permissions: ['device:read', 'system:read'],
-    description: 'Responsible for system monitoring',
-  },
-  {
-    id: '4',
-    username: 'testuser',
-    realName: 'Test User',
-    email: 'test@example.com',
-    phone: '13800138003',
-    role: 'viewer',
-    group: 'test-team',
-    status: 'inactive',
-    lastLogin: '2024-01-10 16:00:00',
-    createTime: '2023-12-01 09:00:00',
-    permissions: ['device:read'],
-    description: 'Test Account',
-  },
-];
-
-// Mock user group data
-const mockUserGroups: UserGroup[] = [
-  {
-    value: 'system-admin',
-    title: 'System Admin Group',
-  },
-  {
-    value: 'ops-team',
-    title: 'Operations Team',
-    children: [
+// 用户分组（静态选项，用于 UI）
+const USER_GROUPS: UserGroup[] = [
+  { value: 'system-admin', title: 'System Admin Group' },
+  { value: 'ops-team', title: 'Operations Team', children: [
       { value: 'ops-senior', title: 'Senior Operations' },
       { value: 'ops-junior', title: 'Junior Operations' },
-    ],
+    ]
   },
-  {
-    value: 'monitor-team',
-    title: 'Monitor Team',
-  },
-  {
-    value: 'test-team',
-    title: 'Test Team',
-  },
+  { value: 'monitor-team', title: 'Monitor Team' },
+  { value: 'test-team', title: 'Test Team' },
 ];
 
-// Mock permission data
-const mockPermissions: Permission[] = [
+// 权限（静态选项，用于 UI）
+const PERMISSIONS: Permission[] = [
   { id: 'user:read', name: 'User View', description: 'View user information', category: 'User Management' },
   { id: 'user:write', name: 'User Edit', description: 'Edit user information', category: 'User Management' },
   { id: 'device:read', name: 'Device View', description: 'View device information', category: 'Device Management' },
@@ -166,8 +97,8 @@ const mockPermissions: Permission[] = [
 ];
 
 const UserList: React.FC = () => {
-  const [users, setUsers] = useState<User[]>(mockUsers);
-  const [filteredUsers, setFilteredUsers] = useState<User[]>(mockUsers);
+  const [users, setUsers] = useState<User[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
@@ -177,6 +108,42 @@ const UserList: React.FC = () => {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [form] = Form.useForm();
+
+  useEffect(() => {
+    fetchUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const list = await getAllUsers();
+      const mapped: User[] = (list || []).map((u) => ({
+        id: String(u.id),
+        username: u.username,
+        realName: u.username,
+        email: u.email,
+        phone: '',
+        role: mapToAppRole(u.roles),
+        group: 'test-team',
+        status: 'active',
+        lastLogin: 'N/A',
+        createTime: u.createdAt || new Date().toISOString().slice(0, 19).replace('T', ' '),
+        permissions: mapToAppRole(u.roles) === 'admin'
+          ? ['user:read', 'user:write', 'device:read', 'device:write', 'system:read', 'system:write']
+          : mapToAppRole(u.roles) === 'operator'
+          ? ['device:read', 'device:write', 'system:read']
+          : ['device:read', 'system:read'],
+        description: '',
+      }));
+      setUsers(mapped);
+      setFilteredUsers(mapped);
+    } catch (e: any) {
+      message.error(e?.message || 'Failed to load users');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Role tag color mapping
   const roleColors = {
@@ -206,130 +173,80 @@ const UserList: React.FC = () => {
     locked: 'Locked',
   };
 
+  // 提取后端错误信息（支持 GlobalExceptionHandler 返回格式）
+  const getApiErrorMessage = (error: any): string => {
+    const data = error?.response?.data;
+    if (data?.details && typeof data.details === 'object') {
+      const firstDetailMsg = Object.values(data.details)[0] as any;
+      if (typeof firstDetailMsg === 'string') return firstDetailMsg;
+    }
+    if (typeof data?.message === 'string' && data.message) return data.message;
+    return error?.message || 'Request failed';
+  };
+
   // Table column definitions
-  const columns: ColumnsType<User> = [
-    {
-      title: 'User Info',
-      key: 'userInfo',
-      width: 200,
-      render: (_, record) => (
-        <Space>
-          <Avatar
-            size="small"
-            src={record.avatar}
-            icon={<UserOutlined />}
-            style={{ backgroundColor: '#1890ff' }}
-          />
-          <div>
-            <div style={{ fontWeight: 500 }}>{record.realName}</div>
-            <div style={{ fontSize: '12px', color: '#666' }}>@{record.username}</div>
-          </div>
-        </Space>
-      ),
-    },
-    {
-      title: 'Contact',
-      key: 'contact',
-      width: 180,
-      render: (_, record) => (
-        <div>
-          <div style={{ fontSize: '13px' }}>{record.email}</div>
-          <div style={{ fontSize: '12px', color: '#666' }}>{record.phone}</div>
+const columns: ColumnsType<User> = [
+  {
+    title: 'Username',
+    dataIndex: 'username',
+    key: 'username',
+    width: 160,
+    render: (text: string) => <span style={{ fontWeight: 500 }}>{text}</span>,
+  },
+  {
+    title: 'Email',
+    dataIndex: 'email',
+    key: 'email',
+    width: 220,
+  },
+  {
+    title: 'Role',
+    dataIndex: 'role',
+    key: 'role',
+    width: 120,
+    render: (role: keyof typeof roleColors) => (
+      <Tag color={roleColors[role]}>
+        {roleTexts[role]}
+      </Tag>
+    ),
+    filters: [
+      { text: 'Administrator', value: 'admin' },
+      { text: 'Operator', value: 'operator' },
+      { text: 'Viewer', value: 'viewer' },
+    ],
+    onFilter: (value, record) => record.role === value,
+  },
+  {
+    title: 'Status',
+    key: 'status',
+    width: 120,
+    render: () => (
+      <Tag color="default">current unknown</Tag>
+    ),
+  },
+  {
+    title: 'LastLogin',
+    key: 'lastLogin',
+    width: 160,
+    render: () => (
+      <span>current unknown</span>
+    ),
+  },
+  {
+    title: 'Contact',
+    key: 'contact',
+    width: 200,
+    render: (_, record) => (
+      <div>
+        <div style={{ fontSize: '13px' }}>{record.email}</div>
+        <div style={{ fontSize: '12px', color: '#666' }}>
+          {record.phone ? record.phone : 'current unknown'}
         </div>
-      ),
-    },
-    {
-      title: 'Role',
-      dataIndex: 'role',
-      key: 'role',
-      width: 100,
-      render: (role: keyof typeof roleColors) => (
-        <Tag color={roleColors[role]}>
-          {roleTexts[role]}
-        </Tag>
-      ),
-      filters: [
-        { text: 'Administrator', value: 'admin' },
-        { text: 'Operator', value: 'operator' },
-        { text: 'Viewer', value: 'viewer' },
-      ],
-      onFilter: (value, record) => record.role === value,
-    },
-    {
-      title: 'User Group',
-      dataIndex: 'group',
-      key: 'group',
-      width: 120,
-      render: (group: string) => {
-        const groupInfo = findGroupByValue(mockUserGroups, group);
-        return <Tag color="blue">{groupInfo?.title || group}</Tag>;
-      },
-    },
-    {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      width: 80,
-      render: (status: keyof typeof statusColors) => (
-        <Tag color={statusColors[status]}>
-          {statusTexts[status]}
-        </Tag>
-      ),
-      filters: [
-        { text: 'Active', value: 'active' },
-        { text: 'Inactive', value: 'inactive' },
-        { text: 'Locked', value: 'locked' },
-      ],
-      onFilter: (value, record) => record.status === value,
-    },
-    {
-      title: 'Last Login',
-      dataIndex: 'lastLogin',
-      key: 'lastLogin',
-      width: 150,
-      sorter: (a, b) => new Date(a.lastLogin).getTime() - new Date(b.lastLogin).getTime(),
-    },
-    {
-      title: 'Actions',
-      key: 'action',
-      width: 200,
-      render: (_, record) => (
-        <Space size="small">
-          <Button
-            type="link"
-            size="small"
-            icon={<EyeOutlined />}
-            onClick={() => handleViewPermissions(record)}
-          >
-            Permissions
-          </Button>
-          <Button
-            type="link"
-            size="small"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-          >
-            Edit
-          </Button>
-          <Popconfirm
-            title="Are you sure you want to delete this user?"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Yes"
-            cancelText="No"
-          >
-            <Button
-              type="link"
-              size="small"
-              danger
-              icon={<DeleteOutlined />}
-            >
-              Delete
-            </Button>
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
+      </div>
+    ),
+  },
+];
+
 
   // Find user group information
   const findGroupByValue = (groups: UserGroup[], value: string): UserGroup | null => {
@@ -346,23 +263,17 @@ const UserList: React.FC = () => {
   // Search functionality
   const handleSearch = (value: string) => {
     setSearchText(value);
-    filterUsers(value, roleFilter, statusFilter);
+    filterUsers(value, roleFilter);
   };
 
   // Role filtering
   const handleRoleFilter = (value: string) => {
     setRoleFilter(value);
-    filterUsers(searchText, value, statusFilter);
-  };
-
-  // Status filtering
-  const handleStatusFilter = (value: string) => {
-    setStatusFilter(value);
-    filterUsers(searchText, roleFilter, value);
+    filterUsers(searchText, value);
   };
 
   // Filter users
-  const filterUsers = (search: string, role: string, status: string) => {
+  const filterUsers = (search: string, role: string) => {
     let filtered = users;
 
     if (search) {
@@ -378,20 +289,15 @@ const UserList: React.FC = () => {
       filtered = filtered.filter((user) => user.role === role);
     }
 
-    if (status !== 'all') {
-      filtered = filtered.filter((user) => user.status === status);
-    }
-
     setFilteredUsers(filtered);
   };
 
   // Refresh data
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      message.success('Data refreshed successfully');
-    }, 1000);
+    await fetchUsers();
+    setLoading(false);
+    message.success('Data refreshed successfully');
   };
 
   // Add user
@@ -406,7 +312,6 @@ const UserList: React.FC = () => {
     setEditingUser(user);
     form.setFieldsValue({
       ...user,
-      createTime: dayjs(user.createTime),
     });
     setIsModalVisible(true);
   };
@@ -418,52 +323,72 @@ const UserList: React.FC = () => {
   };
 
   // Delete user
-  const handleDelete = (id: string) => {
-    const newUsers = users.filter((user) => user.id !== id);
-    setUsers(newUsers);
-    setFilteredUsers(newUsers.filter(user => {
-      const matchSearch = !searchText || 
-        user.username.toLowerCase().includes(searchText.toLowerCase()) ||
-        user.realName.toLowerCase().includes(searchText.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchText.toLowerCase());
-      const matchRole = roleFilter === 'all' || user.role === roleFilter;
-      const matchStatus = statusFilter === 'all' || user.status === statusFilter;
-      return matchSearch && matchRole && matchStatus;
-    }));
-    message.success('User deleted successfully');
+  const handleDelete = async (id: string) => {
+    try {
+      setLoading(true);
+      await apiDeleteUser(id);
+      const newUsers = users.filter((user) => user.id !== id);
+      setUsers(newUsers);
+      setFilteredUsers(newUsers.filter(user => {
+        const matchSearch = !searchText || 
+          user.username.toLowerCase().includes(searchText.toLowerCase()) ||
+          user.realName.toLowerCase().includes(searchText.toLowerCase()) ||
+          user.email.toLowerCase().includes(searchText.toLowerCase());
+        const matchRole = roleFilter === 'all' || user.role === roleFilter;
+        return matchSearch && matchRole;
+      }));
+      message.success('User deleted successfully');
+    } catch (e: any) {
+      message.error(getApiErrorMessage(e) || 'Failed to delete user');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Save user
   const handleSave = async () => {
     try {
       const values = await form.validateFields();
-      const userData = {
-        ...values,
-        createTime: values.createTime.format('YYYY-MM-DD HH:mm:ss'),
-        id: editingUser?.id || Date.now().toString(),
-        lastLogin: editingUser?.lastLogin || new Date().toLocaleString('zh-CN'),
-      };
 
       if (editingUser) {
-        // Edit user
+        // Update roles only (backend supports updating roles)
+        const updated = await updateUserRoles(editingUser.id, values.role);
         const newUsers = users.map((user) =>
-          user.id === editingUser.id ? { ...user, ...userData } : user
+          user.id === editingUser.id
+            ? {
+                ...user,
+                username: values.username,
+                realName: values.realName,
+                email: values.email,
+                phone: values.phone,
+                role: mapToAppRole(updated.roles),
+                group: values.group,
+                status: values.status,
+                permissions: values.permissions,
+                description: values.description,
+              }
+            : user
         );
         setUsers(newUsers);
-        filterUsers(searchText, roleFilter, statusFilter);
+        filterUsers(searchText, roleFilter);
         message.success('User information updated successfully');
       } else {
-        // Add user
-        const newUsers = [...users, userData as User];
-        setUsers(newUsers);
-        filterUsers(searchText, roleFilter, statusFilter);
+        // Create user via auth/signup
+        await registerUser({
+          username: values.username,
+          email: values.email,
+          password: values.password,
+          role: values.role,
+        });
+        // 注册成功后刷新列表以获取真实后端数据（包含真实ID与角色）
+        await fetchUsers();
         message.success('User added successfully');
       }
 
       setIsModalVisible(false);
       form.resetFields();
-    } catch (error) {
-      console.error('Form validation failed:', error);
+    } catch (error: any) {
+      message.error(getApiErrorMessage(error) || 'Failed to save user');
     }
   };
 
@@ -474,7 +399,7 @@ const UserList: React.FC = () => {
         user.id === selectedUser.id ? { ...user, permissions } : user
       );
       setUsers(newUsers);
-      filterUsers(searchText, roleFilter, statusFilter);
+      filterUsers(searchText, roleFilter);
       message.success('Permissions updated successfully');
     }
   };
@@ -505,19 +430,7 @@ const UserList: React.FC = () => {
               <Option value="viewer">查看者</Option>
             </Select>
           </Col>
-          <Col xs={12} sm={4} md={3}>
-            <Select
-              value={statusFilter}
-              onChange={handleStatusFilter}
-              style={{ width: '100%' }}
-              placeholder="状态筛选"
-            >
-              <Option value="all">All Status</Option>
-              <Option value="active">正常</Option>
-              <Option value="inactive">停用</Option>
-              <Option value="locked">锁定</Option>
-            </Select>
-          </Col>
+          {/* 移除状态筛选，仅保留角色筛选 */}
           <Col xs={24} sm={8} md={12}>
             <Space style={{ float: 'right' }}>
               <Button
@@ -623,6 +536,22 @@ const UserList: React.FC = () => {
               </Form.Item>
             </Col>
           </Row>
+          {!editingUser && (
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item
+                  name="password"
+                  label="Password"
+                  rules={[
+                    { required: true, message: 'Please enter password' },
+                    { min: 6, max: 100, message: 'Password must be between 6 and 100 characters' },
+                  ]}
+                >
+                  <Input.Password placeholder="Please enter password" />
+                </Form.Item>
+              </Col>
+            </Row>
+          )}
           <Row gutter={16}>
             <Col span={8}>
               <Form.Item
@@ -644,7 +573,7 @@ const UserList: React.FC = () => {
                 rules={[{ required: true, message: 'Please select user group' }]}
               >
                 <TreeSelect
-                  treeData={mockUserGroups}
+                  treeData={USER_GROUPS}
                   placeholder="Please select user group"
                   treeDefaultExpandAll
                 />
@@ -671,7 +600,7 @@ const UserList: React.FC = () => {
           >
             <Checkbox.Group>
               <Row>
-                {mockPermissions.map((permission) => (
+                {PERMISSIONS.map((permission) => (
                   <Col span={8} key={permission.id} style={{ marginBottom: 8 }}>
                     <Checkbox value={permission.id}>
                       {permission.name}
@@ -702,15 +631,15 @@ const UserList: React.FC = () => {
                 <div><strong>Username:</strong> {selectedUser.username}</div>
                 <div><strong>Real Name:</strong> {selectedUser.realName}</div>
                 <div><strong>Role:</strong> <Tag color={roleColors[selectedUser.role]}>{roleTexts[selectedUser.role]}</Tag></div>
-                <div><strong>User Group:</strong> <Tag color="blue">{findGroupByValue(mockUserGroups, selectedUser.group)?.title}</Tag></div>
-                <div><strong>Status:</strong> <Tag color={statusColors[selectedUser.status]}>{statusTexts[selectedUser.status]}</Tag></div>
+                <div><strong>User Group:</strong> <Tag color="blue">{findGroupByValue(USER_GROUPS, selectedUser.group)?.title}</Tag></div>
+                <div><strong>Status:</strong> <Tag color="default">current unknown</Tag></div>
               </Space>
             </Card>
             
             <Card size="small" title="Permission List">
               <Space direction="vertical" size="small" style={{ width: '100%' }}>
                 {selectedUser.permissions.map((permissionId) => {
-                  const permission = mockPermissions.find(p => p.id === permissionId);
+                  const permission = PERMISSIONS.find(p => p.id === permissionId);
                   return permission ? (
                     <div key={permissionId} style={{ padding: '8px', border: '1px solid #f0f0f0', borderRadius: '4px' }}>
                       <div style={{ fontWeight: 500 }}>{permission.name}</div>
