@@ -6,6 +6,7 @@ import com.elec5619.backend.repository.ServerMetricsRepository;
 import com.elec5619.backend.repository.ServerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -98,6 +99,7 @@ public class ServerMetricsService {
     /**
      * Clean up old metrics (older than specified days)
      */
+    @Transactional
     public void cleanupOldMetrics(int daysToKeep) {
         LocalDateTime cutoffTime = LocalDateTime.now().minusDays(daysToKeep);
         serverMetricsRepository.deleteByCollectedAtBefore(cutoffTime);
