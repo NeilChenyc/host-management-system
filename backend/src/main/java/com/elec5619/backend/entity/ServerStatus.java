@@ -4,10 +4,10 @@ package com.elec5619.backend.entity;
  * Enumeration representing the current operational status of a server.
  */
 public enum ServerStatus {
-    UP,
-    DOWN,
-    MAINTENANCE,
-    UNKNOWN
+    online,
+    offline,
+    maintenance,
+    unknown
 }
 
 

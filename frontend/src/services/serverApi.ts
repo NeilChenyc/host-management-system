@@ -6,7 +6,7 @@ export interface ServerResponseDto {
   id: number;
   serverName: string;
   ipAddress: string;
-  status: 'UP' | 'DOWN' | 'MAINTENANCE' | 'UNKNOWN';
+  status: 'online' | 'offline' | 'maintenance' | 'unknown';
   operatingSystem: string;
   cpu: string;
   memory: string;
@@ -21,6 +21,7 @@ export interface ServerCreateDto {
   operatingSystem?: string;
   cpu?: string;
   memory?: string;
+  status?: 'online' | 'offline' | 'maintenance' | 'unknown';
 }
 
 export interface ServerUpdateDto {
@@ -29,6 +30,7 @@ export interface ServerUpdateDto {
   operatingSystem?: string;
   cpu?: string;
   memory?: string;
+  status?: 'online' | 'offline' | 'maintenance' | 'unknown';
 }
 
 // 前端数据类型定义（与现有组件兼容）
@@ -49,22 +51,22 @@ const API_BASE_URL = 'http://localhost:8080/api';
 // 状态映射函数
 const mapBackendStatusToFrontend = (backendStatus: ServerResponseDto['status']): Device['status'] => {
   const statusMap: Record<ServerResponseDto['status'], Device['status']> = {
-    'UP': 'online',
-    'DOWN': 'offline',
-    'MAINTENANCE': 'maintenance',
-    'UNKNOWN': 'unknown'
+    'online': 'online',
+    'offline': 'offline',
+    'maintenance': 'maintenance',
+    'unknown': 'unknown'
   };
   return statusMap[backendStatus] || 'unknown';
 };
 
 const mapFrontendStatusToBackend = (frontendStatus: Device['status']): ServerResponseDto['status'] => {
   const statusMap: Record<Device['status'], ServerResponseDto['status']> = {
-    'online': 'UP',
-    'offline': 'DOWN',
-    'maintenance': 'MAINTENANCE',
-    'unknown': 'UNKNOWN'
+    'online': 'online',
+    'offline': 'offline',
+    'maintenance': 'maintenance',
+    'unknown': 'unknown'
   };
-  return statusMap[frontendStatus] || 'UNKNOWN';
+  return statusMap[frontendStatus] || 'unknown';
 };
 
 // 数据转换函数
@@ -87,7 +89,8 @@ const convertDeviceToServerCreate = (device: Omit<Device, 'id' | 'lastUpdate'>):
     ipAddress: device.ipAddress,
     operatingSystem: device.os,
     cpu: device.cpu,
-    memory: device.memory
+    memory: device.memory,
+    status: mapFrontendStatusToBackend(device.status)
   };
 };
 
@@ -99,6 +102,7 @@ const convertDeviceToServerUpdate = (device: Partial<Device>): ServerUpdateDto =
   if (device.os !== undefined) updateDto.operatingSystem = device.os;
   if (device.cpu !== undefined) updateDto.cpu = device.cpu;
   if (device.memory !== undefined) updateDto.memory = device.memory;
+  if (device.status !== undefined) updateDto.status = mapFrontendStatusToBackend(device.status);
   
   return updateDto;
 };

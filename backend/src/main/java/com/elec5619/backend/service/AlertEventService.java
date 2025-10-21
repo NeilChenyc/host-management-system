@@ -1,9 +1,10 @@
 package com.elec5619.backend.service;
 
-import com.elec5619.backend.entity.AlertEvent;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+
+import com.elec5619.backend.entity.AlertEvent;
 
 /**
  * Service interface for AlertEvent entity.

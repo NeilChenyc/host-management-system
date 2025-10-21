@@ -38,7 +38,7 @@ public class Server {
 
     @Convert(converter = com.elec5619.backend.entity.converter.ServerStatusConverter.class)
     @Column(name = "status", nullable = false, length = 20)
-    private ServerStatus status = ServerStatus.UNKNOWN;
+    private ServerStatus status = ServerStatus.unknown;
 
     @Column(name = "operating_system", length = 100)
     private String operatingSystem;

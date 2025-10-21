@@ -1,6 +1,9 @@
 package com.elec5619.backend.dto;
 
+import com.elec5619.backend.entity.ServerStatus;
+
 import jakarta.validation.constraints.Size;
+
 
 public class ServerUpdateDto {
 
@@ -15,6 +18,8 @@ public class ServerUpdateDto {
     private String cpu;
 
     private String memory;
+
+    private ServerStatus status;
 
     public String getServerName() {
         return serverName;
@@ -54,6 +59,14 @@ public class ServerUpdateDto {
 
     public void setMemory(String memory) {
         this.memory = memory;
+    }
+
+    public ServerStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(ServerStatus status) {
+        this.status = status;
     }
 }
 
