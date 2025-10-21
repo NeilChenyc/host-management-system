@@ -34,11 +34,17 @@ public class ServerMetricsController {
     }
 
     /**
-     * Get all metrics for a specific server
+     * Get all metrics for a specific server (with pagination)
      */
     @GetMapping("/{serverId}/metrics")
-    public ResponseEntity<List<ServerMetrics>> getServerMetrics(@PathVariable Long serverId) {
-        List<ServerMetrics> metrics = serverMetricsService.getMetricsForServer(serverId);
+    public ResponseEntity<List<ServerMetrics>> getServerMetrics(
+            @PathVariable Long serverId,
+            @RequestParam(defaultValue = "100") int limit,
+            @RequestParam(defaultValue = "0") int offset) {
+        
+        // Limit the number of records to prevent large responses
+        int maxLimit = Math.min(limit, 1000); // Maximum 1000 records
+        List<ServerMetrics> metrics = serverMetricsService.getMetricsForServer(serverId, maxLimit, offset);
         return ResponseEntity.ok(metrics);
     }
 

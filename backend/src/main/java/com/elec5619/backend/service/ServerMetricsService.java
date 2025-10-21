@@ -40,10 +40,10 @@ public class ServerMetricsService {
     }
 
     /**
-     * Get all metrics for a server
+     * Get all metrics for a server with pagination
      */
-    public List<ServerMetrics> getMetricsForServer(Long serverId) {
-        return serverMetricsRepository.findByServerIdOrderByCollectedAtDesc(serverId);
+    public List<ServerMetrics> getMetricsForServer(Long serverId, int limit, int offset) {
+        return serverMetricsRepository.findMetricsByServerIdWithPagination(serverId, limit, offset);
     }
 
     /**

@@ -12,6 +12,7 @@ import com.elec5619.backend.dto.ServerResponseDto;
 import com.elec5619.backend.dto.ServerUpdateDto;
 import com.elec5619.backend.entity.Server;
 import com.elec5619.backend.entity.ServerStatus;
+import com.elec5619.backend.exception.ServerNameAlreadyExistsException;
 import com.elec5619.backend.repository.ServerRepository;
 
 @Service
@@ -22,7 +23,7 @@ public class ServerService {
 
     public ServerResponseDto create(ServerCreateDto dto) {
         if (serverRepository.findByServerName(dto.getServerName()).isPresent()) {
-            throw new RuntimeException("Server name already exists");
+            throw new ServerNameAlreadyExistsException("Server name already exists");
         }
         Server server = new Server();
         server.setServerName(dto.getServerName());
