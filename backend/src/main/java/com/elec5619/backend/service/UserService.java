@@ -6,6 +6,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.Optional;
+
 import com.elec5619.backend.dto.UserRegistrationDto;
 import com.elec5619.backend.dto.UserResponseDto;
 import com.elec5619.backend.entity.User;
@@ -56,6 +59,16 @@ public class UserService {
 
         // Convert to DTO and return
         return convertToUserResponseDto(savedUser);
+    }
+
+    /**
+     * Get all users
+     * @return List of all users
+     */
+    public List<UserResponseDto> getAllUsers() {
+        return userRepository.findAll().stream()
+                .map(this::convertToUserResponseDto)
+                .collect(java.util.stream.Collectors.toList());
     }
 
     /**

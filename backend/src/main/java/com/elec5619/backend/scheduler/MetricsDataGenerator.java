@@ -20,10 +20,10 @@ public class MetricsDataGenerator {
     private ServerMetricsService serverMetricsService;
 
     /**
-     * Generate fake metrics for all servers every 30 seconds.
+     * Generate fake metrics for all servers every 5 seconds.
      * This simulates real-time data collection from monitoring systems.
      */
-    @Scheduled(fixedRate = 5000) // Every 5 seconds
+    @Scheduled(initialDelay = 30000, fixedRate = 5000) // Start after 30 seconds, then every 5 seconds
     public void generateMetricsData() {
         try {
             logger.info("Starting scheduled metrics data generation...");
@@ -38,7 +38,7 @@ public class MetricsDataGenerator {
      * Clean up old metrics data every hour.
      * This prevents the database from growing too large with historical data.
      */
-    @Scheduled(fixedRate = 3600000) // Every hour
+    @Scheduled(initialDelay = 60000, fixedRate = 3600000) // Start after 1 minute, then every hour
     public void cleanupOldMetrics() {
         try {
             logger.info("Starting scheduled cleanup of old metrics data...");

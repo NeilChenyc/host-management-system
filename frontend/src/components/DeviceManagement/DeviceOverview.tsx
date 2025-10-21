@@ -31,21 +31,21 @@ import ServerApiService, { Device as Server } from '../../services/serverApi';
 
 const { Option } = Select;
 
-// // Device data interface
-// interface Device {
-//   id: string;
-//   hostname: string;
-//   ipAddress: string;
-//   status: 'online' | 'offline' | 'maintenance';
-//   category: 'web' | 'database' | 'application' | 'backup' | 'test';
-//   os: string;
-//   cpu: string;
-//   memory: string;
-//   cpuUsage: number;
-//   memoryUsage: number;
-//   lastUpdate: string;
-//   projects: string[]; // 多对多关系，一个主机可以属于多个项目
-// }
+// Device data interface
+interface Device {
+  id: string;
+  hostname: string;
+  ipAddress: string;
+  status: 'online' | 'offline' | 'maintenance';
+  category: 'web' | 'database' | 'application' | 'backup' | 'test';
+  os: string;
+  cpu: string;
+  memory: string;
+  cpuUsage: number;
+  memoryUsage: number;
+  lastUpdate: string;
+  projects: string[]; // 多对多关系，一个主机可以属于多个项目
+}
 
 const DeviceOverview: React.FC = () => {
   const [servers, setServers] = useState<Server[]>([]);

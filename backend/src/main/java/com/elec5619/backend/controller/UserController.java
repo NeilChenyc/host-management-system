@@ -59,8 +59,8 @@ public class UserController {
         )
     })
     public ResponseEntity<List<UserResponseDto>> getAllUsers() {
-        // For now, return empty list since we simplified the service
-        return ResponseEntity.ok(List.of());
+        List<UserResponseDto> users = userService.getAllUsers();
+        return ResponseEntity.ok(users);
     }
 
     /**
