@@ -1,11 +1,10 @@
 package com.elec5619.backend.controller;
 
 import java.util.List;
-import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -96,26 +95,26 @@ public class UserController {
         user.setId(id);
         user.setUsername("user_" + id);
         user.setEmail("user" + id + "@example.com");
-        user.setRoles(Set.of("ROLE_USER"));
+        user.setRole("operation");
         
         return ResponseEntity.ok(user);
     }
 
     /**
-     * Update user roles
+     * Update user role
      * @param id User ID
-     * @param roles New roles
+     * @param role New role
      * @return Updated user information
      */
-    @PutMapping("/{id}/roles")
+    @PutMapping("/{id}/role")
     @Operation(
-        summary = "Update User Roles",
-        description = "Update the roles assigned to a specific user"
+        summary = "Update User Role",
+        description = "Update the role assigned to a specific user"
     )
     @ApiResponses(value = {
         @ApiResponse(
             responseCode = "200",
-            description = "User roles updated successfully",
+            description = "User role updated successfully",
             content = @Content(
                 mediaType = "application/json",
                 schema = @Schema(implementation = UserResponseDto.class)
@@ -130,18 +129,18 @@ public class UserController {
             description = "User not found"
         )
     })
-    public ResponseEntity<?> updateUserRoles(
+    public ResponseEntity<?> updateUserRole(
             @Parameter(description = "User ID", required = true)
             @PathVariable Long id,
-            @Parameter(description = "New roles for the user", required = true)
-            @RequestBody Set<String> roles) {
+            @Parameter(description = "New role for the user", required = true)
+            @RequestBody String role) {
         try {
             // For now, return mock response
             UserResponseDto user = new UserResponseDto();
             user.setId(id);
             user.setUsername("user_" + id);
             user.setEmail("user" + id + "@example.com");
-            user.setRoles(roles);
+            user.setRole(role);
             
             return ResponseEntity.ok(user);
         } catch (Exception e) {
@@ -150,7 +149,7 @@ public class UserController {
                 java.time.LocalDateTime.now(),
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 "Internal Server Error",
-                "Failed to update user roles: " + e.getMessage(),
+                "Failed to update user role: " + e.getMessage(),
                 null
             );
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);

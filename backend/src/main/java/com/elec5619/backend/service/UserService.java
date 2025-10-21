@@ -1,18 +1,15 @@
 package com.elec5619.backend.service;
 
-import com.elec5619.backend.dto.UserRegistrationDto;
-import com.elec5619.backend.dto.UserResponseDto;
-import com.elec5619.backend.entity.Role;
-import com.elec5619.backend.entity.User;
-import com.elec5619.backend.repository.RoleRepository;
-import com.elec5619.backend.repository.UserRepository;
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
+import com.elec5619.backend.dto.UserRegistrationDto;
+import com.elec5619.backend.dto.UserResponseDto;
+import com.elec5619.backend.entity.User;
+import com.elec5619.backend.repository.UserRepository;
 
 /**
  * Service class for user-related business logic.
@@ -23,9 +20,6 @@ public class UserService {
 
     @Autowired
     private UserRepository userRepository;
-
-    @Autowired
-    private RoleRepository roleRepository;
     
     // Password encoder for hashing and verifying passwords
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
@@ -54,15 +48,8 @@ public class UserService {
         // Hash the password before storing it
         user.setPasswordHash(passwordEncoder.encode(registrationDto.getPassword()));
 
-        // Set default role (ROLE_USER)
-        Set<Role> roles = new HashSet<>();
-        Role userRole = roleRepository.findByName("ROLE_USER").orElseGet(() -> {
-            // Create ROLE_USER if it doesn't exist
-            Role newRole = new Role("ROLE_USER");
-            return roleRepository.save(newRole);
-        });
-        roles.add(userRole);
-        user.setRoles(roles);
+        // Set default role (operation)
+        user.setRole("operation");
 
         // Save user
         User savedUser = userRepository.save(user);
@@ -103,11 +90,8 @@ public class UserService {
         dto.setEmail(user.getEmail());
         dto.setCreatedAt(user.getCreatedAt());
         
-        // Convert roles to string array
-        Set<String> roleNames = user.getRoles().stream()
-                .map(Role::getName)
-                .collect(java.util.stream.Collectors.toSet());
-        dto.setRoles(roleNames);
+        // Set role
+        dto.setRole(user.getRole());
         
         return dto;
     }

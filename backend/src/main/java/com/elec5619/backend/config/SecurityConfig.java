@@ -1,5 +1,7 @@
 package com.elec5619.backend.config;
 
+import java.util.Arrays;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -10,8 +12,6 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
-import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
@@ -29,6 +29,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/users/**").permitAll()  // 允许所有用户管理请求（用于测试）
                 .requestMatchers("/api/servers/**").permitAll()  // 允许服务器管理API访问
                 .requestMatchers("/api/projects/**").permitAll() // 临时放行项目管理接口，待JWT集成后再收紧
+                .requestMatchers("/api/example/**").permitAll() // 允许示例API访问（用于Swagger测试）
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/api-docs/**").permitAll()  // 允许Swagger UI访问
                 .anyRequest().authenticated()  // 其他所有请求需要认证
             )

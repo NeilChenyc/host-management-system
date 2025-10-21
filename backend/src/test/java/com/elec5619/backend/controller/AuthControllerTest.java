@@ -53,14 +53,14 @@ class AuthControllerTest {
         validRegistrationDto.setUsername("testuser");
         validRegistrationDto.setPassword("password123");
         validRegistrationDto.setEmail("test@example.com");
-        validRegistrationDto.setRoles(Set.of("ROLE_USER"));
+        validRegistrationDto.setRole("operation");
 
         // Setup mock user response
         mockUserResponse = new UserResponseDto();
         mockUserResponse.setId(1L);
         mockUserResponse.setUsername("testuser");
         mockUserResponse.setEmail("test@example.com");
-        mockUserResponse.setRoles(Set.of("ROLE_USER"));
+        mockUserResponse.setRole("operation");
 
         // Setup valid login data
         validLoginDto = new LoginDto();
@@ -74,7 +74,7 @@ class AuthControllerTest {
         mockJwtResponse.setId(1L);
         mockJwtResponse.setUsername("testuser");
         mockJwtResponse.setEmail("test@example.com");
-        mockJwtResponse.setRoles(new String[]{"ROLE_USER"});
+        mockJwtResponse.setRole("operation");
     }
 
     @Test
@@ -89,8 +89,7 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.username").value("testuser"))
                 .andExpect(jsonPath("$.email").value("test@example.com"))
-                .andExpect(jsonPath("$.roles").isArray())
-                .andExpect(jsonPath("$.roles[0]").value("ROLE_USER"));
+                .andExpect(jsonPath("$.role").value("operation"));
     }
 
     @Test
@@ -134,8 +133,7 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.username").value("testuser"))
                 .andExpect(jsonPath("$.email").value("test@example.com"))
-                .andExpect(jsonPath("$.roles").isArray())
-                .andExpect(jsonPath("$.roles[0]").value("ROLE_USER"));
+                .andExpect(jsonPath("$.role").value("operation"));
     }
 
     @Test
@@ -184,7 +182,6 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.username").value("current_user"))
                 .andExpect(jsonPath("$.email").value("current@example.com"))
-                .andExpect(jsonPath("$.roles").isArray())
-                .andExpect(jsonPath("$.roles[0]").value("ROLE_USER"));
+                .andExpect(jsonPath("$.role").value("operation"));
     }
 }

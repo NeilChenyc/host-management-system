@@ -1,12 +1,12 @@
 package com.elec5619.backend.repository;
 
-import com.elec5619.backend.entity.User;
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.Optional;
+import com.elec5619.backend.entity.User;
 
 /**
  * Repository interface for User entity.
@@ -53,6 +53,5 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @param roleName the role name to search for
      * @return List of users with the specified role
      */
-    @Query("SELECT u FROM User u JOIN u.roles r WHERE r.name = :roleName")
-    java.util.List<User> findByRoleName(@Param("roleName") String roleName);
+    java.util.List<User> findByRole(@Param("roleName") String roleName);
 }

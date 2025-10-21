@@ -1,10 +1,23 @@
 package com.elec5619.backend.controller;
 
+import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.elec5619.backend.dto.JwtResponseDto;
 import com.elec5619.backend.dto.LoginDto;
 import com.elec5619.backend.dto.UserRegistrationDto;
 import com.elec5619.backend.dto.UserResponseDto;
 import com.elec5619.backend.service.UserService;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -14,16 +27,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
-import java.util.HashMap;
-import java.time.LocalDateTime;
-import java.util.Set;
-import java.util.Optional;
 
 /**
  * Authentication controller for user registration and login.
@@ -124,7 +127,7 @@ public class AuthController {
             response.setId(user.getId());
             response.setUsername(user.getUsername());
             response.setEmail(user.getEmail());
-            response.setRoles(user.getRoles().toArray(new String[0]));
+            response.setRole(user.getRole());
             
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -162,7 +165,7 @@ public class AuthController {
         user.setId(1L);
         user.setUsername("current_user");
         user.setEmail("current@example.com");
-        user.setRoles(Set.of("ROLE_USER"));
+        user.setRole("operation");
         
         return ResponseEntity.ok(user);
     }
