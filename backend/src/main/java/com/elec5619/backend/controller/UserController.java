@@ -90,14 +90,9 @@ public class UserController {
     public ResponseEntity<UserResponseDto> getUserById(
             @Parameter(description = "User ID", required = true)
             @PathVariable Long id) {
-        // For now, return mock response
-        UserResponseDto user = new UserResponseDto();
-        user.setId(id);
-        user.setUsername("user_" + id);
-        user.setEmail("user" + id + "@example.com");
-        user.setRole("operation");
-        
-        return ResponseEntity.ok(user);
+        return userService.getUserById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     /**
@@ -135,16 +130,20 @@ public class UserController {
             @Parameter(description = "New role for the user", required = true)
             @RequestBody String role) {
         try {
-            // For now, return mock response
-            UserResponseDto user = new UserResponseDto();
-            user.setId(id);
-            user.setUsername("user_" + id);
-            user.setEmail("user" + id + "@example.com");
-            user.setRole(role);
-            
-            return ResponseEntity.ok(user);
+            UserResponseDto updatedUser = userService.updateUserRole(id, role);
+            return ResponseEntity.ok(updatedUser);
+        } catch (RuntimeException e) {
+            // Handle user not found or other business logic errors
+            GlobalExceptionHandler.ErrorResponse errorResponse = new GlobalExceptionHandler.ErrorResponse(
+                java.time.LocalDateTime.now(),
+                HttpStatus.NOT_FOUND.value(),
+                "Not Found",
+                e.getMessage(),
+                null
+            );
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
         } catch (Exception e) {
-            // Handle any exceptions
+            // Handle any other exceptions
             GlobalExceptionHandler.ErrorResponse errorResponse = new GlobalExceptionHandler.ErrorResponse(
                 java.time.LocalDateTime.now(),
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
@@ -179,8 +178,12 @@ public class UserController {
     public ResponseEntity<Void> deleteUser(
             @Parameter(description = "User ID", required = true)
             @PathVariable Long id) {
-        // For now, just return success
-        return ResponseEntity.ok().build();
+        boolean deleted = userService.deleteUser(id);
+        if (deleted) {
+            return ResponseEntity.ok().build();
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @GetMapping("/by-username/{username}")

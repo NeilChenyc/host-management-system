@@ -108,6 +108,45 @@ public class UserService {
     }
     
     /**
+     * Get user by ID
+     * @param id User ID
+     * @return Optional containing user if found
+     */
+    public Optional<UserResponseDto> getUserById(Long id) {
+        return userRepository.findById(id)
+                .map(this::convertToUserResponseDto);
+    }
+
+    /**
+     * Update user role
+     * @param id User ID
+     * @param role New role
+     * @return Updated user response
+     */
+    public UserResponseDto updateUserRole(Long id, String role) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+        
+        user.setRole(role);
+        User updatedUser = userRepository.save(user);
+        
+        return convertToUserResponseDto(updatedUser);
+    }
+
+    /**
+     * Delete user by ID
+     * @param id User ID
+     * @return true if user was deleted, false if user not found
+     */
+    public boolean deleteUser(Long id) {
+        if (userRepository.existsById(id)) {
+            userRepository.deleteById(id);
+            return true;
+        }
+        return false;
+    }
+
+    /**
      * Authenticate user by username/email and password
      * @param usernameOrEmail Username or email of the user
      * @param password Raw password to verify
