@@ -79,7 +79,7 @@ const convertServerResponseToDevice = (server: ServerResponseDto): Device => {
     os: server.operatingSystem,
     cpu: server.cpu,
     memory: server.memory,
-    lastUpdate: server.lastUpdate
+    lastUpdate: server.updatedAt
   };
 };
 
