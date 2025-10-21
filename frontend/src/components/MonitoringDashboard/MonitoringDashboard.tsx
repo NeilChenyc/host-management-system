@@ -58,6 +58,7 @@ import {
   WifiOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import { ServerApiService, MetricData as ApiMetricData } from '../../services/serverApi';
 
 const { Option } = Select;
 const { RangePicker } = DatePicker;
@@ -68,7 +69,8 @@ interface MetricData {
   memory: number;
   disk: number;
   network: number;
-  temperature?: number;
+  temperature: number;
+  loadAvg: number;
 }
 
 interface HostMetrics {
@@ -113,6 +115,11 @@ const MonitoringDashboard: React.FC = () => {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const wsRef = useRef<WebSocket | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // 新增状态：服务器列表和当前选中的服务器
+  const [servers, setServers] = useState<any[]>([]);
+  const [selectedServerId, setSelectedServerId] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(false);
 
   // Mock data - Extended to 10 hosts
   const mockHosts: HostMetrics[] = [
@@ -345,18 +352,84 @@ const MonitoringDashboard: React.FC = () => {
         memory: 30 + Math.random() * 30, // 30-60 range
         disk: 30 + Math.random() * 30, // 30-60 range
         network: 30 + Math.random() * 30, // 30-60 range
-        temperature: 30 + Math.random() * 40
+        temperature: 30 + Math.random() * 40,
+        loadAvg: Math.random() * 10 // 0-10 range
       });
     }
     
     return data;
   };
 
+  // 获取服务器列表
+  const loadServers = async () => {
+    try {
+      setIsLoading(true);
+      const serverList = await ServerApiService.getAllServers();
+      setServers(serverList);
+      if (serverList.length > 0 && !selectedServerId) {
+        setSelectedServerId(serverList[0].id.toString());
+      }
+    } catch (error) {
+      console.error('Failed to load servers:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 获取服务器指标数据并转换为图表格式
+  const loadServerMetrics = async (serverId: string) => {
+    if (!serverId) return;
+    
+    try {
+      setIsLoading(true);
+      const metrics = await ServerApiService.getServerMetrics(serverId);
+      
+      // 将 API 数据转换为图表需要的格式
+      const chartData: MetricData[] = metrics.map(metric => ({
+        timestamp: metric.timestamp,
+        cpu: metric.metricType === 'CPU 使用率' ? metric.value : 0,
+        memory: metric.metricType === '内存使用率' ? metric.value : 0,
+        disk: metric.metricType === '磁盘使用率' ? metric.value : 0,
+        network: metric.metricType === '网络入流量' ? (metric.value / 10) : 0, // 缩放网络流量到0-100范围
+        temperature: metric.metricType === '温度' ? metric.value : 0,
+        loadAvg: metric.metricType === '负载平均值' ? metric.value : 0
+      }));
+
+      // 按时间戳分组并合并数据
+      const groupedData = chartData.reduce((acc, item) => {
+        const existing = acc.find(d => d.timestamp === item.timestamp);
+        if (existing) {
+          // 使用实际值而不是最大值
+          if (item.cpu > 0) existing.cpu = item.cpu;
+          if (item.memory > 0) existing.memory = item.memory;
+          if (item.disk > 0) existing.disk = item.disk;
+          if (item.network > 0) existing.network = item.network;
+          if (item.temperature > 0) existing.temperature = item.temperature;
+          if (item.loadAvg > 0) existing.loadAvg = item.loadAvg;
+        } else {
+          acc.push({ ...item });
+        }
+        return acc;
+      }, [] as MetricData[]);
+
+      // 按时间戳排序
+      groupedData.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+      
+      setRealTimeData(groupedData.slice(-20)); // 只显示最近20个数据点
+    } catch (error) {
+      console.error('Failed to load server metrics:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    // Initialize data
+    // 初始化时加载服务器列表
+    loadServers();
+    
+    // Initialize mock data for other components
     setHosts(mockHosts);
     setAlerts(mockAlerts);
-    setRealTimeData(generateTimeSeriesData(1));
 
     // Setup WebSocket connection (mock)
     const connectWebSocket = () => {
@@ -372,7 +445,8 @@ const MonitoringDashboard: React.FC = () => {
             memory: 30 + Math.random() * 30, // 30-60 range
             disk: 30 + Math.random() * 30, // 30-60 range
             network: 30 + Math.random() * 30, // 30-60 range
-            temperature: 30 + Math.random() * 40
+            temperature: 30 + Math.random() * 40,
+            loadAvg: Math.random() * 10 // 0-10 range
           };
           
           setRealTimeData(prev => {
@@ -406,6 +480,27 @@ const MonitoringDashboard: React.FC = () => {
       }
     };
   }, [autoRefresh]);
+
+  // 当选中服务器变化时，加载对应的指标数据
+  useEffect(() => {
+    if (selectedServerId) {
+      loadServerMetrics(selectedServerId);
+    }
+  }, [selectedServerId]);
+
+  // 自动刷新图表数据
+  useEffect(() => {
+    if (autoRefresh && selectedServerId) {
+      // 设置定时器，每5秒刷新一次
+      const refreshInterval = setInterval(() => {
+        loadServerMetrics(selectedServerId);
+      }, 5000);
+
+      return () => {
+        clearInterval(refreshInterval);
+      };
+    }
+  }, [autoRefresh, selectedServerId]);
 
   const getStatusColor = (status: string) => {
     const colors = {
@@ -667,7 +762,35 @@ const MonitoringDashboard: React.FC = () => {
       <Row gutter={16} style={{ marginBottom: 24 }}>
         {/* Real-time System Metrics - Match Host Resource Comparison width */}
         <Col span={16}>
-          <Card title="Real-time System Metrics" extra={<Badge status="processing" text="Live" />}>
+          <Card 
+            title="Real-time System Metrics" 
+            extra={
+              <Space>
+                <Button 
+                  type={autoRefresh ? 'primary' : 'default'}
+                  onClick={() => setAutoRefresh(!autoRefresh)}
+                  icon={autoRefresh ? <ReloadOutlined spin /> : <ReloadOutlined />}
+                  size="small"
+                >
+                  {autoRefresh ? '自动刷新中' : '开启自动刷新'}
+                </Button>
+                <Select
+                  value={selectedServerId}
+                  onChange={setSelectedServerId}
+                  style={{ width: 200 }}
+                  placeholder="选择服务器"
+                  loading={isLoading}
+                >
+                  {servers.map(server => (
+                    <Option key={server.id} value={server.id.toString()}>
+                      {server.serverName} ({server.ipAddress})
+                    </Option>
+                  ))}
+                </Select>
+                <Badge status="processing" text="Live" />
+              </Space>
+            }
+          >
             <ResponsiveContainer width="100%" height={300}>
               <LineChart 
                 data={realTimeData.slice(-20)}
@@ -684,11 +807,35 @@ const MonitoringDashboard: React.FC = () => {
                   domain={[0, 100]} 
                   stroke="#666"
                   fontSize={12}
-                  tickFormatter={(value) => `${value}%`}
+                  tickFormatter={(value) => `${value.toFixed(1)}%`}
                 />
                 <RechartsTooltip 
                   labelFormatter={(value: string) => dayjs(value).format('HH:mm:ss')}
-                  formatter={(value: number, name: string) => [`${value.toFixed(1)}%`, name.toUpperCase()]}
+                  formatter={(value: number, name: string) => {
+                    // 根据指标类型决定显示格式
+                    let formattedValue = '';
+                    
+                    switch (name.toLowerCase()) {
+                      case 'cpu':
+                      case 'memory':
+                      case 'disk':
+                        formattedValue = `${value.toFixed(1)}%`;
+                        break;
+                      case 'network':
+                        formattedValue = `${(value * 10).toFixed(1)} MB/s`; // 恢复原始网络流量值
+                        break;
+                      case 'temperature':
+                        formattedValue = `${value.toFixed(1)}°C`;
+                        break;
+                      case 'loadavg':
+                        formattedValue = `${value.toFixed(2)}`;
+                        break;
+                      default:
+                        formattedValue = `${value.toFixed(1)}`;
+                    }
+                    
+                    return [formattedValue, name.toUpperCase()];
+                  }}
                   contentStyle={{
                     backgroundColor: '#fff',
                     border: '1px solid #d9d9d9',
@@ -739,6 +886,26 @@ const MonitoringDashboard: React.FC = () => {
                   strokeDasharray="15 5 5 5"
                   connectNulls={false}
                   name="Network"
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="temperature" 
+                  stroke="#722ed1" 
+                  strokeWidth={3} 
+                  dot={false} 
+                  strokeDasharray="20 5"
+                  connectNulls={false}
+                  name="Temperature"
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="loadAvg" 
+                  stroke="#13c2c2" 
+                  strokeWidth={3} 
+                  dot={false} 
+                  strokeDasharray="25 5"
+                  connectNulls={false}
+                  name="Load Avg"
                 />
               </LineChart>
             </ResponsiveContainer>

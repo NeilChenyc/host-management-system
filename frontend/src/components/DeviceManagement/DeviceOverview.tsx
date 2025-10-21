@@ -52,6 +52,9 @@ const DeviceOverview: React.FC = () => {
   const [filteredServers, setFilteredServers] = useState<Server[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [loading, setLoading] = useState(false);
+  
+  // Message API for React 19 compatibility
+  const [messageApi, contextHolder] = message.useMessage();
 
   // 从后端加载服务器列表
   const loadServers = async () => {
@@ -60,10 +63,10 @@ const DeviceOverview: React.FC = () => {
       const list = await ServerApiService.getAllServers();
       setServers(list);
       setFilteredServers(list);
-      message.success(`成功加载 ${list.length} 台服务器`);
+      messageApi.success(`成功加载 ${list.length} 台服务器`);
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : '加载服务器失败';
-      message.error(errorMessage);
+      messageApi.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -331,6 +334,7 @@ const DeviceOverview: React.FC = () => {
 
   return (
     <div>
+      {contextHolder}
       <Tabs defaultActiveKey="monitoring" type="card" items={tabItems} />
     </div>
   );

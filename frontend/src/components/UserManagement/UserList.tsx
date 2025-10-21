@@ -102,6 +102,9 @@ const UserList: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
+  
+  // Message API for React 19 compatibility
+  const [messageApi, contextHolder] = message.useMessage();
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isPermissionDrawerVisible, setIsPermissionDrawerVisible] = useState(false);
@@ -139,7 +142,7 @@ const UserList: React.FC = () => {
       setUsers(mapped);
       setFilteredUsers(mapped);
     } catch (e: any) {
-      message.error(e?.message || 'Failed to load users');
+      messageApi.error(e?.message || 'Failed to load users');
     } finally {
       setLoading(false);
     }
@@ -297,7 +300,7 @@ const columns: ColumnsType<User> = [
     setLoading(true);
     await fetchUsers();
     setLoading(false);
-    message.success('Data refreshed successfully');
+    messageApi.success('Data refreshed successfully');
   };
 
   // Add user
@@ -337,9 +340,9 @@ const columns: ColumnsType<User> = [
         const matchRole = roleFilter === 'all' || user.role === roleFilter;
         return matchSearch && matchRole;
       }));
-      message.success('User deleted successfully');
+      messageApi.success('User deleted successfully');
     } catch (e: any) {
-      message.error(getApiErrorMessage(e) || 'Failed to delete user');
+      messageApi.error(getApiErrorMessage(e) || 'Failed to delete user');
     } finally {
       setLoading(false);
     }
@@ -371,7 +374,7 @@ const columns: ColumnsType<User> = [
         );
         setUsers(newUsers);
         filterUsers(searchText, roleFilter);
-        message.success('User information updated successfully');
+        messageApi.success('User information updated successfully');
       } else {
         // Create user via auth/signup
         await registerUser({
@@ -382,13 +385,13 @@ const columns: ColumnsType<User> = [
         });
         // 注册成功后刷新列表以获取真实后端数据（包含真实ID与角色）
         await fetchUsers();
-        message.success('User added successfully');
+        messageApi.success('User added successfully');
       }
 
       setIsModalVisible(false);
       form.resetFields();
     } catch (error: any) {
-      message.error(getApiErrorMessage(error) || 'Failed to save user');
+      messageApi.error(getApiErrorMessage(error) || 'Failed to save user');
     }
   };
 
@@ -400,7 +403,7 @@ const columns: ColumnsType<User> = [
       );
       setUsers(newUsers);
       filterUsers(searchText, roleFilter);
-      message.success('Permissions updated successfully');
+      messageApi.success('Permissions updated successfully');
     }
   };
 
