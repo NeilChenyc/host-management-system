@@ -387,12 +387,12 @@ const MonitoringDashboard: React.FC = () => {
       // 将 API 数据转换为图表需要的格式
       const chartData: MetricData[] = metrics.map(metric => ({
         timestamp: metric.timestamp,
-        cpu: metric.metricType === 'CPU 使用率' ? metric.value : 0,
-        memory: metric.metricType === '内存使用率' ? metric.value : 0,
-        disk: metric.metricType === '磁盘使用率' ? metric.value : 0,
-        network: metric.metricType === '网络入流量' ? (metric.value / 10) : 0, // 缩放网络流量到0-100范围
-        temperature: metric.metricType === '温度' ? metric.value : 0,
-        loadAvg: metric.metricType === '负载平均值' ? metric.value : 0
+        cpu: metric.metricType === 'CPU Usage' ? metric.value : 0,
+        memory: metric.metricType === 'Memory Usage' ? metric.value : 0,
+        disk: metric.metricType === 'Disk Usage' ? metric.value : 0,
+        network: metric.metricType === 'Network In' ? (metric.value / 10) : 0, // Scale network traffic to 0-100 range
+        temperature: metric.metricType === 'Temperature' ? metric.value : 0,
+        loadAvg: metric.metricType === 'Load Average' ? metric.value : 0
       }));
 
       // 按时间戳分组并合并数据

@@ -63,9 +63,9 @@ const DeviceOverview: React.FC = () => {
       const list = await ServerApiService.getAllServers();
       setServers(list);
       setFilteredServers(list);
-      messageApi.success(`成功加载 ${list.length} 台服务器`);
+      messageApi.success(`Successfully loaded ${list.length} servers`);
     } catch (e) {
-      const errorMessage = e instanceof Error ? e.message : '加载服务器失败';
+      const errorMessage = e instanceof Error ? e.message : 'Failed to load servers';
       messageApi.error(errorMessage);
     } finally {
       setLoading(false);
