@@ -527,15 +527,17 @@ const columns: ColumnsType<User> = [
                 <Input placeholder="Please enter username" />
               </Form.Item>
             </Col>
-            <Col span={12}>
-              <Form.Item
-                name="realName"
-                label="Real Name"
-                rules={[{ required: true, message: 'Please enter real name' }]}
-              >
-                <Input placeholder="Please enter real name" />
-              </Form.Item>
-            </Col>
+            {editingUser && (
+              <Col span={12}>
+                <Form.Item
+                  name="realName"
+                  label="Real Name"
+                  rules={[{ required: true, message: 'Please enter real name' }]}
+                >
+                  <Input placeholder="Please enter real name" />
+                </Form.Item>
+              </Col>
+            )}
           </Row>
           <Row gutter={16}>
             <Col span={12}>
@@ -550,15 +552,17 @@ const columns: ColumnsType<User> = [
                 <Input placeholder="Please enter email" />
               </Form.Item>
             </Col>
-            <Col span={12}>
-              <Form.Item
-                name="phone"
-                label="Phone"
-                rules={[{ required: true, message: 'Please enter phone number' }]}
-              >
-                <Input placeholder="Please enter phone number" />
-              </Form.Item>
-            </Col>
+            {editingUser && (
+              <Col span={12}>
+                <Form.Item
+                  name="phone"
+                  label="Phone"
+                  rules={[{ required: true, message: 'Please enter phone number' }]}
+                >
+                  <Input placeholder="Please enter phone number" />
+                </Form.Item>
+              </Col>
+            )}
           </Row>
           {!editingUser && (
             <Row gutter={16}>
@@ -584,59 +588,67 @@ const columns: ColumnsType<User> = [
                 rules={[{ required: true, message: 'Please select role' }]}
               >
                 <Select placeholder="Please select role">
-                  <Option value="admin">管理员</Option>
-                  <Option value="operator">操作员</Option>
-                  <Option value="manager">经理</Option>
+                  <Option value="admin">admin</Option>
+                  <Option value="operator">operator</Option>
+                  <Option value="manager">manager</Option>
                 </Select>
               </Form.Item>
             </Col>
-            <Col span={8}>
-              <Form.Item
-                name="group"
-                label="User Group"
-                rules={[{ required: true, message: 'Please select user group' }]}
-              >
-                <TreeSelect
-                  treeData={USER_GROUPS}
-                  placeholder="Please select user group"
-                  treeDefaultExpandAll
-                />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item
-                name="status"
-                label="Status"
-                rules={[{ required: true, message: 'Please select status' }]}
-              >
-                <Select placeholder="Please select status">
-                  <Option value="active">正常</Option>
-                  <Option value="inactive">停用</Option>
-                  <Option value="locked">锁定</Option>
-                </Select>
-              </Form.Item>
-            </Col>
+            {editingUser && (
+              <>
+                <Col span={8}>
+                  <Form.Item
+                    name="group"
+                    label="User Group"
+                    rules={[{ required: true, message: 'Please select user group' }]}
+                  >
+                    <TreeSelect
+                      treeData={USER_GROUPS}
+                      placeholder="Please select user group"
+                      treeDefaultExpandAll
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={8}>
+                  <Form.Item
+                    name="status"
+                    label="Status"
+                    rules={[{ required: true, message: 'Please select status' }]}
+                  >
+                    <Select placeholder="Please select status">
+                      <Option value="active">active</Option>
+                      <Option value="inactive">inactive</Option>
+                      <Option value="locked">locked</Option>
+                    </Select>
+                  </Form.Item>
+                </Col>
+              </>
+            )}
           </Row>
-          <Form.Item
-            name="permissions"
-            label="Permissions"
-            rules={[{ required: true, message: 'Please select permissions' }]}
-          >
-            <Checkbox.Group>
-              <Row>
-                {PERMISSIONS.map((permission) => (
-                  <Col span={8} key={permission.id} style={{ marginBottom: 8 }}>
-                    <Checkbox value={permission.id}>
-                      {permission.name}
-                    </Checkbox>
-                  </Col>
-                ))}
-              </Row>
-            </Checkbox.Group>
-          </Form.Item>
-          <Form.Item name="description" label="Description">
-            <TextArea rows={3} placeholder="Please enter user description" />
-          </Form.Item>
+          {editingUser && (
+            <Form.Item
+              name="permissions"
+              label="Permissions"
+              rules={[{ required: true, message: 'Please select permissions' }]}
+            >
+              <Checkbox.Group>
+                <Row>
+                  {PERMISSIONS.map((permission) => (
+                    <Col span={8} key={permission.id} style={{ marginBottom: 8 }}>
+                      <Checkbox value={permission.id}>
+                        {permission.name}
+                      </Checkbox>
+                    </Col>
+                  ))}
+                </Row>
+              </Checkbox.Group>
+            </Form.Item>
+          )}
+          {editingUser && (
+             <Form.Item name="description" label="Description">
+               <TextArea rows={3} placeholder="Please enter user description" />
+             </Form.Item>
+           )}
         </Form>
       </Modal>
 
