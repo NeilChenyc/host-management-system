@@ -75,7 +75,7 @@ export default function UsersPage() {
 
   // 组件挂载时加载用户列表
   useEffect(() => {
-    loadUsers(true);
+    loadUsers(false); // 初始加载时不显示消息
   }, []);
 
   // 加载用户列表
@@ -284,7 +284,7 @@ export default function UsersPage() {
 
   // 刷新处理
   const handleRefresh = async () => {
-    await loadUsers(true);
+    await loadUsers(false); // 不显示加载消息，统一显示刷新消息
     messageApi.success('用户列表已刷新');
   };
 

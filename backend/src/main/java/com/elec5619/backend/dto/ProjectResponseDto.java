@@ -1,6 +1,7 @@
 package com.elec5619.backend.dto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Set;
 
 import com.elec5619.backend.entity.ProjectStatus;
@@ -19,8 +20,8 @@ public class ProjectResponseDto {
     @Schema(description = "Current status of the project", example = "PLANNED")
     private ProjectStatus status;
     
-    @Schema(description = "Set of server IDs assigned to this project", example = "[1, 2, 3]")
-    private Set<Long> servers;
+    @Schema(description = "List of servers assigned to this project with detailed information")
+    private List<ServerSummaryDto> servers;
     
     @Schema(description = "Set of user IDs who are project members", example = "[1, 2, 3, 4]")
     private Set<Long> userIds; // 项目成员用户ID列表
@@ -58,11 +59,11 @@ public class ProjectResponseDto {
         this.status = status;
     }
 
-    public Set<Long> getServers() {
+    public List<ServerSummaryDto> getServers() {
         return servers;
     }
 
-    public void setServers(Set<Long> servers) {
+    public void setServers(List<ServerSummaryDto> servers) {
         this.servers = servers;
     }
 

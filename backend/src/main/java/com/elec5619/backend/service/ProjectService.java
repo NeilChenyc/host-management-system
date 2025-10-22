@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import com.elec5619.backend.dto.ProjectCreateDto;
 import com.elec5619.backend.dto.ProjectResponseDto;
 import com.elec5619.backend.dto.ProjectUpdateDto;
+import com.elec5619.backend.dto.ServerSummaryDto;
 import com.elec5619.backend.entity.Project;
 import com.elec5619.backend.entity.ProjectMember;
 import com.elec5619.backend.entity.ProjectStatus;
@@ -201,8 +202,14 @@ public class ProjectService {
         dto.setProjectName(p.getProjectName());
         dto.setStatus(p.getStatus());
         if (p.getServers() != null) {
-            Set<Long> ids = p.getServers().stream().map(Server::getId).collect(Collectors.toSet());
-            dto.setServers(ids);
+            List<ServerSummaryDto> serverList = p.getServers().stream()
+                    .map(server -> new ServerSummaryDto(
+                            server.getId(),
+                            server.getServerName(),
+                            server.getIpAddress()
+                    ))
+                    .collect(Collectors.toList());
+            dto.setServers(serverList);
         }
         
         // 获取项目成员用户ID列表
