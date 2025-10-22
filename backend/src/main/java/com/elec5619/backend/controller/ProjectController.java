@@ -1,6 +1,7 @@
 package com.elec5619.backend.controller;
 
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -39,12 +40,19 @@ public class ProjectController {
     private ProjectService projectService;
 
     @PostMapping
-    @Operation(summary = "Create Project", description = "Create a new project")
+    @Operation(
+        summary = "Create Project", 
+        description = "Create a new project with optional server assignments and member assignments. Project members can be specified during creation."
+    )
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Project created",
-            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ProjectResponseDto.class)))
+        @ApiResponse(responseCode = "200", description = "Project created successfully",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ProjectResponseDto.class))),
+        @ApiResponse(responseCode = "400", description = "Invalid input data or validation errors"),
+        @ApiResponse(responseCode = "409", description = "Project name already exists")
     })
-    public ResponseEntity<ProjectResponseDto> create(@Valid @RequestBody ProjectCreateDto dto) {
+    public ResponseEntity<ProjectResponseDto> create(
+            @Parameter(description = "Project creation data including name, servers, duration, and member user IDs")
+            @Valid @RequestBody ProjectCreateDto dto) {
         return ResponseEntity.ok(projectService.create(dto));
     }
 
@@ -104,6 +112,66 @@ public class ProjectController {
         boolean deleted = projectService.delete(id);
         if (deleted) return ResponseEntity.ok().build();
         return ResponseEntity.notFound().build();
+    }
+
+    @PostMapping("/{id}/members")
+    @Operation(
+        summary = "Add Project Members", 
+        description = "Add users to a project. Users will be added as project members if they don't already exist in the project."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Members added successfully",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ProjectResponseDto.class))),
+        @ApiResponse(responseCode = "404", description = "Project not found"),
+        @ApiResponse(responseCode = "400", description = "Invalid user IDs provided")
+    })
+    public ResponseEntity<ProjectResponseDto> addMembers(
+            @Parameter(description = "Project ID", required = true, example = "1")
+            @PathVariable Long id,
+            @Parameter(description = "Set of user IDs to add as project members", required = true, example = "[2, 3, 4]")
+            @RequestBody Set<Long> userIds) {
+        return projectService.addMembers(id, userIds)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/{id}/members")
+    @Operation(
+        summary = "Remove Project Members", 
+        description = "Remove users from a project. Users will be removed from the project if they are currently members."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Members removed successfully",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ProjectResponseDto.class))),
+        @ApiResponse(responseCode = "404", description = "Project not found"),
+        @ApiResponse(responseCode = "400", description = "Invalid user IDs provided")
+    })
+    public ResponseEntity<ProjectResponseDto> removeMembers(
+            @Parameter(description = "Project ID", required = true, example = "1")
+            @PathVariable Long id,
+            @Parameter(description = "Set of user IDs to remove from project members", required = true, example = "[2, 3]")
+            @RequestBody Set<Long> userIds) {
+        return projectService.removeMembers(id, userIds)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/{id}/members")
+    @Operation(
+        summary = "Get Project Members", 
+        description = "Retrieve all user IDs who are members of the specified project."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Project members retrieved successfully",
+            content = @Content(mediaType = "application/json", schema = @Schema(type = "array", example = "[1, 2, 3, 4]"))),
+        @ApiResponse(responseCode = "404", description = "Project not found")
+    })
+    public ResponseEntity<Set<Long>> getMembers(
+            @Parameter(description = "Project ID", required = true, example = "1")
+            @PathVariable Long id) {
+        return projectService.getProjectMembers(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 }
 

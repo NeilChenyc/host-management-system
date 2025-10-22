@@ -1,6 +1,7 @@
 package com.elec5619.backend.entity;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.hibernate.annotations.CreationTimestamp;
 
@@ -9,6 +10,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -48,6 +50,10 @@ public class User {
     @Size(max = 50, message = "Role name must not exceed 50 characters")
     @Column(name = "role", nullable = false, length = 50)
     private String role = "operation"; // 默认角色
+
+    // 用户参与的项目关联
+    @OneToMany(mappedBy = "user")
+    private List<ProjectMember> projectMembers;
     
     // Default constructor
     public User() {}
@@ -106,6 +112,14 @@ public class User {
     
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public List<ProjectMember> getProjectMembers() {
+        return projectMembers;
+    }
+
+    public void setProjectMembers(List<ProjectMember> projectMembers) {
+        this.projectMembers = projectMembers;
     }
     
     // Helper methods

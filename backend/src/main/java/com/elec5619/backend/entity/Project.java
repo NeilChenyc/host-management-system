@@ -1,6 +1,7 @@
 package com.elec5619.backend.entity;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Set;
 
 import org.hibernate.annotations.CreationTimestamp;
@@ -16,6 +17,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -44,6 +46,10 @@ public class Project {
         inverseJoinColumns = @JoinColumn(name = "server_id")
     )
     private Set<Server> servers;
+
+    // 项目成员关联
+    @OneToMany(mappedBy = "project")
+    private List<ProjectMember> projectMembers;
 
     @Column(name = "duration", length = 100)
     private String duration;
@@ -88,6 +94,13 @@ public class Project {
         this.servers = servers;
     }
 
+    public List<ProjectMember> getProjectMembers() {
+        return projectMembers;
+    }
+
+    public void setProjectMembers(List<ProjectMember> projectMembers) {
+        this.projectMembers = projectMembers;
+    }
 
     public String getDuration() {
         return duration;

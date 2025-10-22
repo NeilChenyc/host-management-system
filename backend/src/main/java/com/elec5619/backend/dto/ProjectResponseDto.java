@@ -5,14 +5,33 @@ import java.util.Set;
 
 import com.elec5619.backend.entity.ProjectStatus;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
+@Schema(description = "Response DTO for project data")
 public class ProjectResponseDto {
 
+    @Schema(description = "Project ID", example = "1")
     private Long id;
+    
+    @Schema(description = "Name of the project", example = "Web Development Project")
     private String projectName;
+    
+    @Schema(description = "Current status of the project", example = "PLANNED")
     private ProjectStatus status;
+    
+    @Schema(description = "Set of server IDs assigned to this project", example = "[1, 2, 3]")
     private Set<Long> servers;
+    
+    @Schema(description = "Set of user IDs who are project members", example = "[1, 2, 3, 4]")
+    private Set<Long> userIds; // 项目成员用户ID列表
+    
+    @Schema(description = "Project duration", example = "3 months")
     private String duration;
+    
+    @Schema(description = "Project creation timestamp", example = "2024-01-15T10:30:00")
     private LocalDateTime createdAt;
+    
+    @Schema(description = "Project last update timestamp", example = "2024-01-15T14:45:00")
     private LocalDateTime updatedAt;
 
     public Long getId() {
@@ -47,7 +66,13 @@ public class ProjectResponseDto {
         this.servers = servers;
     }
 
-    // manager/team removed
+    public Set<Long> getUserIds() {
+        return userIds;
+    }
+
+    public void setUserIds(Set<Long> userIds) {
+        this.userIds = userIds;
+    }
 
     public String getDuration() {
         return duration;

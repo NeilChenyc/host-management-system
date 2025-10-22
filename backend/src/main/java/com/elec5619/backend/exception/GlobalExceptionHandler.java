@@ -126,6 +126,60 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle project name already exists exceptions
+     * @param ex Project name already exists exception
+     * @return Error response with 409 status (Conflict)
+     */
+    @ExceptionHandler(ProjectNameAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleProjectNameAlreadyExistsException(ProjectNameAlreadyExistsException ex) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.CONFLICT.value(),
+                "Conflict",
+                ex.getMessage(),
+                null
+        );
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+    }
+
+    /**
+     * Handle user not found exceptions
+     * @param ex User not found exception
+     * @return Error response with 404 status
+     */
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleUserNotFoundException(UserNotFoundException ex) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.NOT_FOUND.value(),
+                "Not Found",
+                ex.getMessage(),
+                null
+        );
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+    }
+
+    /**
+     * Handle server not found exceptions
+     * @param ex Server not found exception
+     * @return Error response with 404 status
+     */
+    @ExceptionHandler(ServerNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleServerNotFoundException(ServerNotFoundException ex) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.NOT_FOUND.value(),
+                "Not Found",
+                ex.getMessage(),
+                null
+        );
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+    }
+
+    /**
      * Handle illegal argument exceptions (business logic errors)
      * @param ex Illegal argument exception
      * @return Error response with 400 status
