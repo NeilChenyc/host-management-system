@@ -13,7 +13,6 @@ import java.util.Optional;
 
 /**
  * Implementation of AlertEventService interface.
- * Provides business logic operations for alert events.
  */
 @Service
 public class AlertEventServiceImpl implements AlertEventService {
@@ -27,24 +26,18 @@ public class AlertEventServiceImpl implements AlertEventService {
 
     @Override
     public AlertEvent createAlertEvent(AlertEvent alertEvent) {
-        // Clear ID to let database generate it automatically (IDENTITY strategy)
+        // ID自动生成
         alertEvent.setEventId(null);
-        
-        // Ensure startedAt is set
         if (alertEvent.getStartedAt() == null) {
             alertEvent.setStartedAt(LocalDateTime.now());
         }
-        
-        // Make sure the alertRule reference is properly handled
+        // 验证 AlertRule 是否存在
         if (alertEvent.getAlertRule() != null) {
-            // In a real application, we might want to verify the rule exists in the database
-            // For now, just ensure we're not trying to create a new rule
             AlertRule rule = alertEvent.getAlertRule();
             if (rule.getRuleId() == null) {
-                throw new IllegalArgumentException("AlertRule must have an ID when creating an AlertEvent");
+                throw new IllegalArgumentException("AlertRule must have a valid ID");
             }
         }
-        
         return alertEventRepository.save(alertEvent);
     }
 
@@ -63,7 +56,6 @@ public class AlertEventServiceImpl implements AlertEventService {
         AlertEvent existingEvent = alertEventRepository.findById(eventId)
                 .orElseThrow(() -> new IllegalArgumentException("Alert event with ID " + eventId + " not found"));
 
-        // Update fields
         existingEvent.setServerId(alertEvent.getServerId());
         existingEvent.setStatus(alertEvent.getStatus());
         existingEvent.setStartedAt(alertEvent.getStartedAt());
@@ -105,16 +97,14 @@ public class AlertEventServiceImpl implements AlertEventService {
     public AlertEvent resolveAlertEvent(Long eventId) {
         AlertEvent existingEvent = alertEventRepository.findById(eventId)
                 .orElseThrow(() -> new IllegalArgumentException("Alert event with ID " + eventId + " not found"));
-        
-        // Mark as resolved and set resolved time
         existingEvent.setStatus("resolved");
         existingEvent.setResolvedAt(LocalDateTime.now());
-        
         return alertEventRepository.save(existingEvent);
     }
 
     @Override
-    public List<AlertEvent> getAlertEventsWithFilters(Long ruleId, Long serverId, String status, LocalDateTime startTime, LocalDateTime endTime) {
+    public List<AlertEvent> getAlertEventsWithFilters(Long ruleId, Long serverId, String status,
+                                                      LocalDateTime startTime, LocalDateTime endTime) {
         return alertEventRepository.findByFilters(ruleId, serverId, status, startTime, endTime);
     }
 }

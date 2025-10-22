@@ -33,7 +33,7 @@ import type { ColumnsType } from 'antd/es/table';
 import {
   getAllUsers,
   registerUser,
-  updateUserRoles,
+  updateUserRole,
   deleteUser as apiDeleteUser,
   mapToAppRole,
 } from '../../services/userApi';
@@ -49,7 +49,7 @@ interface User {
   realName: string;
   email: string;
   phone: string;
-  role: 'admin' | 'operator' | 'viewer';
+  role: 'admin' | 'operator' | 'manager';
   group: string;
   status: 'active' | 'inactive' | 'locked';
   lastLogin: string;
@@ -127,14 +127,14 @@ const UserList: React.FC = () => {
         realName: u.username,
         email: u.email,
         phone: '',
-        role: mapToAppRole(u.roles),
+        role: mapToAppRole(u.role),
         group: 'test-team',
         status: 'active',
         lastLogin: 'N/A',
         createTime: u.createdAt || new Date().toISOString().slice(0, 19).replace('T', ' '),
-        permissions: mapToAppRole(u.roles) === 'admin'
+        permissions: mapToAppRole(u.role) === 'admin'
           ? ['user:read', 'user:write', 'device:read', 'device:write', 'system:read', 'system:write']
-          : mapToAppRole(u.roles) === 'operator'
+          : mapToAppRole(u.role) === 'operator'
           ? ['device:read', 'device:write', 'system:read']
           : ['device:read', 'system:read'],
         description: '',
@@ -152,14 +152,14 @@ const UserList: React.FC = () => {
   const roleColors = {
     admin: 'red',
     operator: 'blue',
-    viewer: 'green',
+    manager: 'green',
   };
 
   // Role text mapping
   const roleTexts = {
     admin: 'Administrator',
     operator: 'Operator',
-    viewer: 'Viewer',
+    manager: 'Manager',
   };
 
   // Status tag color mapping
@@ -215,7 +215,7 @@ const columns: ColumnsType<User> = [
     filters: [
       { text: 'Administrator', value: 'admin' },
       { text: 'Operator', value: 'operator' },
-      { text: 'Viewer', value: 'viewer' },
+      { text: 'Manager', value: 'manager' },
     ],
     onFilter: (value, record) => record.role === value,
   },
@@ -224,7 +224,7 @@ const columns: ColumnsType<User> = [
     key: 'status',
     width: 120,
     render: () => (
-      <Tag color="default">current unknown</Tag>
+      <Tag color="default">unknown</Tag>
     ),
   },
   {
@@ -232,7 +232,7 @@ const columns: ColumnsType<User> = [
     key: 'lastLogin',
     width: 160,
     render: () => (
-      <span>current unknown</span>
+      <span>unknown</span>
     ),
   },
   {
@@ -243,9 +243,30 @@ const columns: ColumnsType<User> = [
       <div>
         <div style={{ fontSize: '13px' }}>{record.email}</div>
         <div style={{ fontSize: '12px', color: '#666' }}>
-          {record.phone ? record.phone : 'current unknown'}
+          {record.phone ? record.phone : 'unknown'}
         </div>
       </div>
+    ),
+  },
+  {
+    title: 'Actions',
+    key: 'actions',
+    fixed: 'right',
+    width: 160,
+    render: (_, record) => (
+      <Space>
+        <Button type="text" icon={<EyeOutlined />} onClick={() => handleViewPermissions(record)} />
+        <Button type="text" icon={<EditOutlined />} onClick={() => handleEdit(record)} />
+        <Popconfirm
+          title={`Delete ${record.username}?`}
+          okText="Delete"
+          okButtonProps={{ danger: true }}
+          cancelText="Cancel"
+          onConfirm={() => handleDelete(record.id)}
+        >
+          <Button type="text" danger icon={<DeleteOutlined />} />
+        </Popconfirm>
+      </Space>
     ),
   },
 ];
@@ -355,7 +376,7 @@ const columns: ColumnsType<User> = [
 
       if (editingUser) {
         // Update roles only (backend supports updating roles)
-        const updated = await updateUserRoles(editingUser.id, values.role);
+        const updated = await updateUserRole(editingUser.id, values.role);
         const newUsers = users.map((user) =>
           user.id === editingUser.id
             ? {
@@ -364,7 +385,7 @@ const columns: ColumnsType<User> = [
                 realName: values.realName,
                 email: values.email,
                 phone: values.phone,
-                role: mapToAppRole(updated.roles),
+                role: mapToAppRole(updated.role),
                 group: values.group,
                 status: values.status,
                 permissions: values.permissions,
@@ -430,7 +451,7 @@ const columns: ColumnsType<User> = [
               <Option value="all">All Roles</Option>
               <Option value="admin">管理员</Option>
               <Option value="operator">操作员</Option>
-              <Option value="viewer">查看者</Option>
+              <Option value="manager">经理</Option>
             </Select>
           </Col>
           {/* 移除状态筛选，仅保留角色筛选 */}
@@ -491,7 +512,7 @@ const columns: ColumnsType<User> = [
           layout="vertical"
           initialValues={{
             status: 'active',
-            role: 'viewer',
+            role: 'manager',
             group: 'test-team',
             permissions: ['device:read'],
           }}
@@ -506,15 +527,17 @@ const columns: ColumnsType<User> = [
                 <Input placeholder="Please enter username" />
               </Form.Item>
             </Col>
-            <Col span={12}>
-              <Form.Item
-                name="realName"
-                label="Real Name"
-                rules={[{ required: true, message: 'Please enter real name' }]}
-              >
-                <Input placeholder="Please enter real name" />
-              </Form.Item>
-            </Col>
+            {editingUser && (
+              <Col span={12}>
+                <Form.Item
+                  name="realName"
+                  label="Real Name"
+                  rules={[{ required: true, message: 'Please enter real name' }]}
+                >
+                  <Input placeholder="Please enter real name" />
+                </Form.Item>
+              </Col>
+            )}
           </Row>
           <Row gutter={16}>
             <Col span={12}>
@@ -529,15 +552,17 @@ const columns: ColumnsType<User> = [
                 <Input placeholder="Please enter email" />
               </Form.Item>
             </Col>
-            <Col span={12}>
-              <Form.Item
-                name="phone"
-                label="Phone"
-                rules={[{ required: true, message: 'Please enter phone number' }]}
-              >
-                <Input placeholder="Please enter phone number" />
-              </Form.Item>
-            </Col>
+            {editingUser && (
+              <Col span={12}>
+                <Form.Item
+                  name="phone"
+                  label="Phone"
+                  rules={[{ required: true, message: 'Please enter phone number' }]}
+                >
+                  <Input placeholder="Please enter phone number" />
+                </Form.Item>
+              </Col>
+            )}
           </Row>
           {!editingUser && (
             <Row gutter={16}>
@@ -563,59 +588,67 @@ const columns: ColumnsType<User> = [
                 rules={[{ required: true, message: 'Please select role' }]}
               >
                 <Select placeholder="Please select role">
-                  <Option value="admin">管理员</Option>
-                  <Option value="operator">操作员</Option>
-                  <Option value="viewer">查看者</Option>
+                  <Option value="admin">admin</Option>
+                  <Option value="operator">operator</Option>
+                  <Option value="manager">manager</Option>
                 </Select>
               </Form.Item>
             </Col>
-            <Col span={8}>
-              <Form.Item
-                name="group"
-                label="User Group"
-                rules={[{ required: true, message: 'Please select user group' }]}
-              >
-                <TreeSelect
-                  treeData={USER_GROUPS}
-                  placeholder="Please select user group"
-                  treeDefaultExpandAll
-                />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item
-                name="status"
-                label="Status"
-                rules={[{ required: true, message: 'Please select status' }]}
-              >
-                <Select placeholder="Please select status">
-                  <Option value="active">正常</Option>
-                  <Option value="inactive">停用</Option>
-                  <Option value="locked">锁定</Option>
-                </Select>
-              </Form.Item>
-            </Col>
+            {editingUser && (
+              <>
+                <Col span={8}>
+                  <Form.Item
+                    name="group"
+                    label="User Group"
+                    rules={[{ required: true, message: 'Please select user group' }]}
+                  >
+                    <TreeSelect
+                      treeData={USER_GROUPS}
+                      placeholder="Please select user group"
+                      treeDefaultExpandAll
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={8}>
+                  <Form.Item
+                    name="status"
+                    label="Status"
+                    rules={[{ required: true, message: 'Please select status' }]}
+                  >
+                    <Select placeholder="Please select status">
+                      <Option value="active">active</Option>
+                      <Option value="inactive">inactive</Option>
+                      <Option value="locked">locked</Option>
+                    </Select>
+                  </Form.Item>
+                </Col>
+              </>
+            )}
           </Row>
-          <Form.Item
-            name="permissions"
-            label="Permissions"
-            rules={[{ required: true, message: 'Please select permissions' }]}
-          >
-            <Checkbox.Group>
-              <Row>
-                {PERMISSIONS.map((permission) => (
-                  <Col span={8} key={permission.id} style={{ marginBottom: 8 }}>
-                    <Checkbox value={permission.id}>
-                      {permission.name}
-                    </Checkbox>
-                  </Col>
-                ))}
-              </Row>
-            </Checkbox.Group>
-          </Form.Item>
-          <Form.Item name="description" label="Description">
-            <TextArea rows={3} placeholder="Please enter user description" />
-          </Form.Item>
+          {editingUser && (
+            <Form.Item
+              name="permissions"
+              label="Permissions"
+              rules={[{ required: true, message: 'Please select permissions' }]}
+            >
+              <Checkbox.Group>
+                <Row>
+                  {PERMISSIONS.map((permission) => (
+                    <Col span={8} key={permission.id} style={{ marginBottom: 8 }}>
+                      <Checkbox value={permission.id}>
+                        {permission.name}
+                      </Checkbox>
+                    </Col>
+                  ))}
+                </Row>
+              </Checkbox.Group>
+            </Form.Item>
+          )}
+          {editingUser && (
+             <Form.Item name="description" label="Description">
+               <TextArea rows={3} placeholder="Please enter user description" />
+             </Form.Item>
+           )}
         </Form>
       </Modal>
 

@@ -11,7 +11,6 @@ import java.util.Optional;
 
 /**
  * Implementation of AlertRuleService interface.
- * Provides business logic operations for alert rules.
  */
 @Service
 public class AlertRuleServiceImpl implements AlertRuleService {
@@ -25,10 +24,7 @@ public class AlertRuleServiceImpl implements AlertRuleService {
 
     @Override
     public AlertRule createAlertRule(AlertRule alertRule) {
-        // Clear ID to let database generate it automatically (IDENTITY strategy)
         alertRule.setRuleId(null);
-        
-        // Check if a rule with the same name already exists
         if (alertRuleRepository.existsByRuleName(alertRule.getRuleName())) {
             throw new IllegalArgumentException("Alert rule with name '" + alertRule.getRuleName() + "' already exists");
         }
@@ -50,7 +46,6 @@ public class AlertRuleServiceImpl implements AlertRuleService {
         AlertRule existingRule = alertRuleRepository.findById(ruleId)
                 .orElseThrow(() -> new IllegalArgumentException("Alert rule with ID " + ruleId + " not found"));
 
-        // Update fields
         existingRule.setRuleName(alertRule.getRuleName());
         existingRule.setDescription(alertRule.getDescription());
         existingRule.setTargetMetric(alertRule.getTargetMetric());
@@ -90,7 +85,7 @@ public class AlertRuleServiceImpl implements AlertRuleService {
         existingRule.setEnabled(enabled);
         return alertRuleRepository.save(existingRule);
     }
-    
+
     @Override
     public List<AlertRule> getAlertRulesByProjectId(Long projectId) {
         return alertRuleRepository.findByProjectId(projectId);
