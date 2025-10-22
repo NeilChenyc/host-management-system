@@ -31,7 +31,8 @@ public class AlertSystemServiceImpl implements AlertSystemService {
     @Autowired
     public AlertSystemServiceImpl(AlertRuleService alertRuleService, 
                                     AlertEventService alertEventService,
-                                    ServerMetricsRepository serverMetricsRepository) {
+                                    ServerMetricsRepository serverMetricsRepository,
+                                    NotificationService notificationService) {
         this.alertRuleService = alertRuleService;
         this.alertEventService = alertEventService;
         this.serverMetricsRepository = serverMetricsRepository;
