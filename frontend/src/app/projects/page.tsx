@@ -67,7 +67,7 @@ export default function ProjectsPage() {
 
   // 组件挂载时加载数据
   useEffect(() => {
-    loadProjects(true);
+    loadProjects(false); // 初始加载时不显示消息
     loadServers();
   }, []);
 
@@ -249,7 +249,7 @@ export default function ProjectsPage() {
 
   // 刷新处理
   const handleRefresh = async () => {
-    await loadProjects(true);
+    await loadProjects(false); // 不显示加载消息，统一显示刷新消息
     messageApi.success('项目列表已刷新');
   };
 
