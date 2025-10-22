@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import MainLayout from '@/components/MainLayout';
 import {
   Card,
@@ -59,7 +59,6 @@ dayjs.extend(relativeTime);
 
 const { Option } = Select;
 const { TextArea } = Input;
-const { TabPane } = Tabs;
 const { RangePicker } = DatePicker;
 
 interface AlertRule {
@@ -72,7 +71,7 @@ interface AlertRule {
   severity: 'low' | 'medium' | 'high' | 'critical';
   duration: number; // minutes
   enabled: boolean;
-  hostIds: string[];
+  serverIds: string[];
   notificationChannels: string[];
   createdAt: string;
   updatedAt: string;
@@ -85,8 +84,8 @@ interface AlertInstance {
   id: string;
   ruleId: string;
   ruleName: string;
-  hostId: string;
-  hostName: string;
+  serverId: string;
+  serverName: string;
   metric: string;
   currentValue: number;
   threshold: number;
@@ -117,14 +116,15 @@ export default function AlertsPage() {
   const [alertRules, setAlertRules] = useState<AlertRule[]>([]);
   const [alertInstances, setAlertInstances] = useState<AlertInstance[]>([]);
   const [notificationChannels, setNotificationChannels] = useState<NotificationChannel[]>([]);
+  const [servers, setServers] = useState<any[]>([]);
   const [selectedAlert, setSelectedAlert] = useState<AlertInstance | null>(null);
   const [selectedRule, setSelectedRule] = useState<AlertRule | null>(null);
   const [isRuleModalVisible, setIsRuleModalVisible] = useState(false);
   const [isChannelModalVisible, setIsChannelModalVisible] = useState(false);
   const [isAlertDetailVisible, setIsAlertDetailVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
   const [channelForm] = Form.useForm();
-  const [loading, setLoading] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterSeverity, setFilterSeverity] = useState<string>('all');
 
@@ -140,7 +140,7 @@ export default function AlertsPage() {
       severity: 'high',
       duration: 5,
       enabled: true,
-      hostIds: ['host-001', 'host-002'],
+      serverIds: ['1', '2'],
       notificationChannels: ['channel-001', 'channel-002'],
       createdAt: '2024-01-15T10:00:00Z',
       updatedAt: '2024-01-15T10:00:00Z',
@@ -158,7 +158,7 @@ export default function AlertsPage() {
       severity: 'critical',
       duration: 2,
       enabled: true,
-      hostIds: ['host-001', 'host-002', 'host-003'],
+      serverIds: ['1', '2', '3'],
       notificationChannels: ['channel-001', 'channel-003'],
       createdAt: '2024-01-10T09:00:00Z',
       updatedAt: '2024-01-18T16:20:00Z',
@@ -176,7 +176,7 @@ export default function AlertsPage() {
       severity: 'medium',
       duration: 10,
       enabled: false,
-      hostIds: ['host-003', 'host-004'],
+      serverIds: ['3', '4'],
       notificationChannels: ['channel-002'],
       createdAt: '2024-01-12T14:30:00Z',
       updatedAt: '2024-01-12T14:30:00Z',
@@ -190,8 +190,8 @@ export default function AlertsPage() {
       id: 'alert-001',
       ruleId: 'rule-001',
       ruleName: 'High CPU Usage',
-      hostId: 'host-002',
-      hostName: 'Production Server 2',
+      serverId: '2',
+      serverName: 'Production Server 2',
       metric: 'cpu',
       currentValue: 89,
       threshold: 85,
@@ -205,8 +205,8 @@ export default function AlertsPage() {
       id: 'alert-002',
       ruleId: 'rule-002',
       ruleName: 'Memory Critical',
-      hostId: 'host-004',
-      hostName: 'Load Balancer',
+      serverId: '4',
+      serverName: 'Load Balancer',
       metric: 'memory',
       currentValue: 97,
       threshold: 95,
@@ -223,8 +223,8 @@ export default function AlertsPage() {
       id: 'alert-003',
       ruleId: 'rule-001',
       ruleName: 'High CPU Usage',
-      hostId: 'host-001',
-      hostName: 'Production Server 1',
+      serverId: '1',
+      serverName: 'Test Server',
       metric: 'cpu',
       currentValue: 78,
       threshold: 85,
@@ -239,8 +239,8 @@ export default function AlertsPage() {
       id: 'alert-004',
       ruleId: 'rule-003',
       ruleName: 'Disk Space Warning',
-      hostId: 'host-003',
-      hostName: 'Database Server 1',
+      serverId: '3',
+      serverName: 'Database Server 1',
       metric: 'disk',
       currentValue: 85,
       threshold: 80,
@@ -254,8 +254,8 @@ export default function AlertsPage() {
       id: 'alert-005',
       ruleId: 'rule-002',
       ruleName: 'Memory Critical',
-      hostId: 'host-005',
-      hostName: 'Web Server 1',
+      serverId: '5',
+      serverName: 'Web Server 1',
       metric: 'memory',
       currentValue: 96,
       threshold: 95,
@@ -269,8 +269,8 @@ export default function AlertsPage() {
       id: 'alert-006',
       ruleId: 'rule-001',
       ruleName: 'High CPU Usage',
-      hostId: 'host-006',
-      hostName: 'API Server',
+      serverId: '6',
+      serverName: 'API Server',
       metric: 'cpu',
       currentValue: 92,
       threshold: 85,
@@ -287,8 +287,8 @@ export default function AlertsPage() {
       id: 'alert-007',
       ruleId: 'rule-003',
       ruleName: 'Disk Space Warning',
-      hostId: 'host-007',
-      hostName: 'Backup Server',
+      serverId: '7',
+      serverName: 'Backup Server',
       metric: 'disk',
       currentValue: 88,
       threshold: 80,
@@ -303,8 +303,8 @@ export default function AlertsPage() {
       id: 'alert-008',
       ruleId: 'rule-002',
       ruleName: 'Memory Critical',
-      hostId: 'host-008',
-      hostName: 'Cache Server',
+      serverId: '8',
+      serverName: 'Cache Server',
       metric: 'memory',
       currentValue: 98,
       threshold: 95,
@@ -347,7 +347,10 @@ export default function AlertsPage() {
   const loadAlertRules = async () => {
     try {
       const response = await fetch('http://localhost:8080/api/alert-rules');
-      if (!response.ok) throw new Error('Failed to fetch alert rules');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to fetch alert rules');
+      }
       const data = await response.json();
       
       // Map backend data to frontend interface
@@ -361,7 +364,7 @@ export default function AlertsPage() {
         severity: rule.severity?.toLowerCase() || 'low',
         duration: rule.duration || 0,
         enabled: rule.enabled ?? true,
-        hostIds: [], // Backend doesn't store this directly
+        serverIds: [], // Backend doesn't store this directly
         notificationChannels: [],
         createdAt: rule.createdAt || new Date().toISOString(),
         updatedAt: rule.updatedAt || new Date().toISOString(),
@@ -373,7 +376,8 @@ export default function AlertsPage() {
       setAlertRules(mappedRules);
     } catch (error) {
       console.error('Failed to load alert rules:', error);
-      messageApi.error('Failed to load alert rules');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load alert rules';
+      message.error(errorMessage);
     }
   };
 
@@ -381,7 +385,10 @@ export default function AlertsPage() {
   const loadAlertEvents = async () => {
     try {
       const response = await fetch('http://localhost:8080/api/alert-events');
-      if (!response.ok) throw new Error('Failed to fetch alert events');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to fetch alert events');
+      }
       const data = await response.json();
       
       // Map backend data to frontend interface
@@ -389,8 +396,8 @@ export default function AlertsPage() {
         id: event.eventId?.toString() || '',
         ruleId: event.ruleId?.toString() || '',
         ruleName: event.ruleName || 'Unknown Rule',
-        hostId: event.serverId?.toString() || '',
-        hostName: `Server ${event.serverId}`,
+        serverId: event.serverId?.toString() || '',
+        serverName: `Server ${event.serverId}`,
         metric: event.metricName || '',
         currentValue: event.currentValue || 0,
         threshold: event.threshold || 0,
@@ -407,7 +414,8 @@ export default function AlertsPage() {
       setAlertInstances(mappedEvents);
     } catch (error) {
       console.error('Failed to load alert events:', error);
-      messageApi.error('Failed to load alert events');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load alert events';
+      message.error(errorMessage);
     }
   };
 
@@ -444,9 +452,22 @@ export default function AlertsPage() {
     return mapping[status] || 'active';
   };
 
+  // Load servers from API
+  const loadServers = async () => {
+    try {
+      const response = await fetch('http://localhost:8080/api/servers');
+      if (!response.ok) throw new Error('Failed to fetch servers');
+      const data = await response.json();
+      setServers(data);
+    } catch (error) {
+      console.error('Failed to load servers:', error);
+    }
+  };
+
   useEffect(() => {
     loadAlertRules();
     loadAlertEvents();
+    loadServers();
     setNotificationChannels(mockNotificationChannels);
   }, []);
 
@@ -492,7 +513,7 @@ export default function AlertsPage() {
     setSelectedRule(rule);
     form.setFieldsValue({
       ...rule,
-      hostIds: rule.hostIds,
+      serverIds: rule.serverIds,
       notificationChannels: rule.notificationChannels
     });
     setIsRuleModalVisible(true);
@@ -523,8 +544,11 @@ export default function AlertsPage() {
           body: JSON.stringify(backendData)
         });
         
-        if (!response.ok) throw new Error('Failed to update alert rule');
-        messageApi.success('Alert rule updated successfully');
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to update alert rule');
+        }
+        message.success('Alert rule updated successfully');
       } else {
         // Create new rule
         const response = await fetch('http://localhost:8080/api/alert-rules', {
@@ -533,15 +557,19 @@ export default function AlertsPage() {
           body: JSON.stringify(backendData)
         });
         
-        if (!response.ok) throw new Error('Failed to create alert rule');
-        messageApi.success('Alert rule created successfully');
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to create alert rule');
+        }
+        message.success('Alert rule created successfully');
       }
       
       setIsRuleModalVisible(false);
       await loadAlertRules(); // Reload data
     } catch (error) {
       console.error('Failed to save alert rule:', error);
-      messageApi.error('Failed to save alert rule');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save alert rule';
+      message.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -575,13 +603,17 @@ export default function AlertsPage() {
         method: 'DELETE'
       });
       
-      if (!response.ok) throw new Error('Failed to delete alert rule');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to delete alert rule');
+      }
       
-      messageApi.success('Alert rule deleted successfully');
+      message.success('Alert rule deleted successfully');
       await loadAlertRules(); // Reload data
     } catch (error) {
       console.error('Failed to delete alert rule:', error);
-      messageApi.error('Failed to delete alert rule');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete alert rule';
+      message.error(errorMessage);
     }
   };
 
@@ -591,13 +623,17 @@ export default function AlertsPage() {
         method: 'PATCH'
       });
       
-      if (!response.ok) throw new Error('Failed to toggle alert rule');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to toggle alert rule');
+      }
       
-      messageApi.success(`Alert rule ${enabled ? 'enabled' : 'disabled'}`);
+      message.success(`Alert rule ${enabled ? 'enabled' : 'disabled'}`);
       await loadAlertRules(); // Reload data
     } catch (error) {
       console.error('Failed to update alert rule:', error);
-      messageApi.error('Failed to update alert rule');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update alert rule';
+      message.error(errorMessage);
     }
   };
 
@@ -627,13 +663,17 @@ export default function AlertsPage() {
         method: 'PATCH'
       });
       
-      if (!response.ok) throw new Error('Failed to resolve alert');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to resolve alert');
+      }
       
-      messageApi.success('Alert resolved successfully');
+      message.success('Alert resolved successfully');
       await loadAlertEvents(); // Reload data
     } catch (error) {
       console.error('Failed to resolve alert:', error);
-      messageApi.error('Failed to resolve alert');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to resolve alert';
+      message.error(errorMessage);
     }
   };
 
@@ -682,7 +722,7 @@ export default function AlertsPage() {
           {getMetricIcon(record.metric)}
           <div style={{ marginLeft: 8 }}>
             <div style={{ fontWeight: 'bold' }}>{record.ruleName}</div>
-            <div style={{ fontSize: '12px', color: '#666' }}>{record.hostName}</div>
+            <div style={{ fontSize: '12px', color: '#666' }}>{record.serverName}</div>
           </div>
         </div>
       )
@@ -868,6 +908,123 @@ export default function AlertsPage() {
     }
   ];
 
+  // Tabs items configuration
+  const tabItems = [
+    {
+      key: 'alerts',
+      label: 'Alert Events',
+      children: (
+        <>
+          <div style={{ marginBottom: 16 }}>
+            <Row justify="space-between">
+              <Col>
+                <Space>
+                  <Select
+                    value={filterStatus}
+                    onChange={setFilterStatus}
+                    style={{ width: 120 }}
+                  >
+                    <Option value="all">All Status</Option>
+                    <Option value="active">Active</Option>
+                    <Option value="acknowledged">Acknowledged</Option>
+                    <Option value="resolved">Resolved</Option>
+                  </Select>
+                  <Select
+                    value={filterSeverity}
+                    onChange={setFilterSeverity}
+                    style={{ width: 120 }}
+                  >
+                    <Option value="all">All Severity</Option>
+                    <Option value="critical">Critical</Option>
+                    <Option value="high">High</Option>
+                    <Option value="medium">Medium</Option>
+                    <Option value="low">Low</Option>
+                  </Select>
+                </Space>
+              </Col>
+            </Row>
+          </div>
+          <Table
+            columns={alertColumns}
+            dataSource={filteredAlerts}
+            rowKey="id"
+            pagination={{ pageSize: 10 }}
+          />
+        </>
+      )
+    },
+    {
+      key: 'rules',
+      label: 'Alert Rules',
+      children: (
+        <>
+          <div style={{ marginBottom: 16 }}>
+            <Button 
+              type="primary" 
+              icon={<PlusOutlined />}
+              onClick={handleCreateRule}
+            >
+              Create Alert Rule
+            </Button>
+          </div>
+          <Table
+            columns={ruleColumns}
+            dataSource={alertRules}
+            rowKey="id"
+            pagination={{ pageSize: 10 }}
+          />
+        </>
+      )
+    },
+    {
+      key: 'channels',
+      label: 'Notification Channels',
+      children: (
+        <>
+          <div style={{ marginBottom: 16 }}>
+            <Button 
+              type="primary" 
+              icon={<PlusOutlined />}
+              onClick={handleCreateChannel}
+            >
+              Add Channel
+            </Button>
+          </div>
+          <List
+            dataSource={notificationChannels}
+            renderItem={(channel) => (
+              <List.Item
+                actions={[
+                  <Switch 
+                    key="toggle"
+                    checked={channel.enabled}
+                    checkedChildren="ON"
+                    unCheckedChildren="OFF"
+                  />,
+                  <Button key="edit" size="small" icon={<EditOutlined />} />,
+                  <Button key="delete" size="small" danger icon={<DeleteOutlined />} />
+                ]}
+              >
+                <List.Item.Meta
+                  avatar={
+                    <Avatar icon={
+                      channel.type === 'email' ? <MailOutlined /> :
+                      channel.type === 'sms' ? <PhoneOutlined /> :
+                      channel.type === 'slack' ? <MessageOutlined /> :
+                      <NotificationOutlined />
+                    } />
+                  }
+                  title={channel.name}
+                  description={`Type: ${channel.type.toUpperCase()} | Created: ${dayjs(channel.createdAt).format('YYYY-MM-DD')}`}
+                />
+              </List.Item>
+            )}
+          />
+        </>
+      )
+    }
+  ];
+
   return (
     <MainLayout>
       {/* Header */}
@@ -929,105 +1086,7 @@ export default function AlertsPage() {
 
       {/* Main Content */}
       <Card>
-        <Tabs activeKey={activeTab} onChange={setActiveTab}>
-          <TabPane tab="Alert Events" key="alerts">
-            <div style={{ marginBottom: 16 }}>
-              <Row justify="space-between">
-                <Col>
-                  <Space>
-                    <Select
-                      value={filterStatus}
-                      onChange={setFilterStatus}
-                      style={{ width: 120 }}
-                    >
-                      <Option value="all">All Status</Option>
-                      <Option value="active">Active</Option>
-                      <Option value="acknowledged">Acknowledged</Option>
-                      <Option value="resolved">Resolved</Option>
-                    </Select>
-                    <Select
-                      value={filterSeverity}
-                      onChange={setFilterSeverity}
-                      style={{ width: 120 }}
-                    >
-                      <Option value="all">All Severity</Option>
-                      <Option value="critical">Critical</Option>
-                      <Option value="high">High</Option>
-                      <Option value="medium">Medium</Option>
-                      <Option value="low">Low</Option>
-                    </Select>
-                  </Space>
-                </Col>
-              </Row>
-            </div>
-            <Table
-              columns={alertColumns}
-              dataSource={filteredAlerts}
-              rowKey="id"
-              pagination={{ pageSize: 10 }}
-            />
-          </TabPane>
-
-          <TabPane tab="Alert Rules" key="rules">
-            <div style={{ marginBottom: 16 }}>
-              <Button 
-                type="primary" 
-                icon={<PlusOutlined />}
-                onClick={handleCreateRule}
-              >
-                Create Alert Rule
-              </Button>
-            </div>
-            <Table
-              columns={ruleColumns}
-              dataSource={alertRules}
-              rowKey="id"
-              pagination={{ pageSize: 10 }}
-            />
-          </TabPane>
-
-          <TabPane tab="Notification Channels" key="channels">
-            <div style={{ marginBottom: 16 }}>
-              <Button 
-                type="primary" 
-                icon={<PlusOutlined />}
-                onClick={handleCreateChannel}
-              >
-                Add Channel
-              </Button>
-            </div>
-            <List
-              dataSource={notificationChannels}
-              renderItem={(channel) => (
-                <List.Item
-                  actions={[
-                    <Switch 
-                      key="toggle"
-                      checked={channel.enabled}
-                      checkedChildren="ON"
-                      unCheckedChildren="OFF"
-                    />,
-                    <Button key="edit" size="small" icon={<EditOutlined />} />,
-                    <Button key="delete" size="small" danger icon={<DeleteOutlined />} />
-                  ]}
-                >
-                  <List.Item.Meta
-                    avatar={
-                      <Avatar icon={
-                        channel.type === 'email' ? <MailOutlined /> :
-                        channel.type === 'sms' ? <PhoneOutlined /> :
-                        channel.type === 'slack' ? <MessageOutlined /> :
-                        <NotificationOutlined />
-                      } />
-                    }
-                    title={channel.name}
-                    description={`Type: ${channel.type.toUpperCase()} | Created: ${dayjs(channel.createdAt).format('YYYY-MM-DD')}`}
-                  />
-                </List.Item>
-              )}
-            />
-          </TabPane>
-        </Tabs>
+        <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} />
       </Card>
 
       {/* Alert Rule Modal */}
@@ -1042,10 +1101,15 @@ export default function AlertsPage() {
           form={form}
           layout="vertical"
           onFinish={handleSaveRule}
+          onFinishFailed={(errorInfo) => {
+            console.log('Form validation failed:', errorInfo);
+            message.error('Please fill in all required fields');
+          }}
         >
           <Form.Item
             name="name"
             label="Rule Name"
+            initialValue={`New Alert Rule ${Date.now()}`}
             rules={[{ required: true, message: 'Please enter rule name' }]}
           >
             <Input placeholder="Enter rule name" />
@@ -1054,6 +1118,8 @@ export default function AlertsPage() {
           <Form.Item
             name="description"
             label="Description"
+            initialValue="Alert when metric exceeds threshold"
+            rules={[{ required: true, message: 'Please enter description' }]}
           >
             <TextArea rows={2} placeholder="Enter rule description" />
           </Form.Item>
@@ -1063,6 +1129,7 @@ export default function AlertsPage() {
               <Form.Item
                 name="metric"
                 label="Metric"
+                initialValue="cpu"
                 rules={[{ required: true, message: 'Please select metric' }]}
               >
                 <Select placeholder="Select metric">
@@ -1078,6 +1145,7 @@ export default function AlertsPage() {
               <Form.Item
                 name="condition"
                 label="Condition"
+                initialValue="greater_than"
                 rules={[{ required: true, message: 'Please select condition' }]}
               >
                 <Select placeholder="Select condition">
@@ -1092,6 +1160,7 @@ export default function AlertsPage() {
               <Form.Item
                 name="threshold"
                 label="Threshold"
+                initialValue={80}
                 rules={[{ required: true, message: 'Please enter threshold' }]}
               >
                 <InputNumber
@@ -1114,6 +1183,7 @@ export default function AlertsPage() {
               <Form.Item
                 name="severity"
                 label="Severity"
+                initialValue="medium"
                 rules={[{ required: true, message: 'Please select severity' }]}
               >
                 <Select placeholder="Select severity">
@@ -1128,6 +1198,7 @@ export default function AlertsPage() {
               <Form.Item
                 name="duration"
                 label="Duration (minutes)"
+                initialValue={5}
                 rules={[{ required: true, message: 'Please enter duration' }]}
               >
                 <InputNumber
@@ -1141,24 +1212,27 @@ export default function AlertsPage() {
           </Row>
 
           <Form.Item
-            name="hostIds"
-            label="Target Hosts"
+            name="serverIds"
+            label="Target Servers"
+            initialValue={servers.length > 0 ? [servers[0].id.toString()] : []}
           >
             <Select
               mode="multiple"
-              placeholder="Select target hosts"
+              placeholder="Select target servers"
               style={{ width: '100%' }}
             >
-              <Option value="host-001">Production Server 1</Option>
-              <Option value="host-002">Production Server 2</Option>
-              <Option value="host-003">Database Server 1</Option>
-              <Option value="host-004">Load Balancer</Option>
+              {servers.map(server => (
+                <Option key={server.id} value={server.id.toString()}>
+                  {server.serverName} ({server.ipAddress})
+                </Option>
+              ))}
             </Select>
           </Form.Item>
 
           <Form.Item
             name="notificationChannels"
             label="Notification Channels"
+            initialValue={['channel-001']}
           >
             <Select
               mode="multiple"
@@ -1282,7 +1356,7 @@ export default function AlertsPage() {
                 </div>
                 <div style={{ marginBottom: 16 }}>
                   <strong>Host:</strong>
-                  <div>{selectedAlert.hostName} ({selectedAlert.hostId})</div>
+                  <div>{selectedAlert.serverName} ({selectedAlert.serverId})</div>
                 </div>
                 <div style={{ marginBottom: 16 }}>
                   <strong>Metric:</strong>
