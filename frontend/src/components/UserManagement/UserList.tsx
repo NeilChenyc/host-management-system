@@ -33,7 +33,7 @@ import type { ColumnsType } from 'antd/es/table';
 import {
   getAllUsers,
   registerUser,
-  updateUserRoles,
+  updateUserRole,
   deleteUser as apiDeleteUser,
   mapToAppRole,
 } from '../../services/userApi';
@@ -49,7 +49,7 @@ interface User {
   realName: string;
   email: string;
   phone: string;
-  role: 'admin' | 'operator' | 'viewer';
+  role: 'admin' | 'operator' | 'manager';
   group: string;
   status: 'active' | 'inactive' | 'locked';
   lastLogin: string;
@@ -127,14 +127,14 @@ const UserList: React.FC = () => {
         realName: u.username,
         email: u.email,
         phone: '',
-        role: mapToAppRole(u.roles),
+        role: mapToAppRole(u.role),
         group: 'test-team',
         status: 'active',
         lastLogin: 'N/A',
         createTime: u.createdAt || new Date().toISOString().slice(0, 19).replace('T', ' '),
-        permissions: mapToAppRole(u.roles) === 'admin'
+        permissions: mapToAppRole(u.role) === 'admin'
           ? ['user:read', 'user:write', 'device:read', 'device:write', 'system:read', 'system:write']
-          : mapToAppRole(u.roles) === 'operator'
+          : mapToAppRole(u.role) === 'operator'
           ? ['device:read', 'device:write', 'system:read']
           : ['device:read', 'system:read'],
         description: '',
@@ -152,14 +152,14 @@ const UserList: React.FC = () => {
   const roleColors = {
     admin: 'red',
     operator: 'blue',
-    viewer: 'green',
+    manager: 'green',
   };
 
   // Role text mapping
   const roleTexts = {
     admin: 'Administrator',
     operator: 'Operator',
-    viewer: 'Viewer',
+    manager: 'Manager',
   };
 
   // Status tag color mapping
@@ -215,7 +215,7 @@ const columns: ColumnsType<User> = [
     filters: [
       { text: 'Administrator', value: 'admin' },
       { text: 'Operator', value: 'operator' },
-      { text: 'Viewer', value: 'viewer' },
+      { text: 'Manager', value: 'manager' },
     ],
     onFilter: (value, record) => record.role === value,
   },
@@ -224,7 +224,7 @@ const columns: ColumnsType<User> = [
     key: 'status',
     width: 120,
     render: () => (
-      <Tag color="default">current unknown</Tag>
+      <Tag color="default">unknown</Tag>
     ),
   },
   {
@@ -232,7 +232,7 @@ const columns: ColumnsType<User> = [
     key: 'lastLogin',
     width: 160,
     render: () => (
-      <span>current unknown</span>
+      <span>unknown</span>
     ),
   },
   {
@@ -243,9 +243,30 @@ const columns: ColumnsType<User> = [
       <div>
         <div style={{ fontSize: '13px' }}>{record.email}</div>
         <div style={{ fontSize: '12px', color: '#666' }}>
-          {record.phone ? record.phone : 'current unknown'}
+          {record.phone ? record.phone : 'unknown'}
         </div>
       </div>
+    ),
+  },
+  {
+    title: 'Actions',
+    key: 'actions',
+    fixed: 'right',
+    width: 160,
+    render: (_, record) => (
+      <Space>
+        <Button type="text" icon={<EyeOutlined />} onClick={() => handleViewPermissions(record)} />
+        <Button type="text" icon={<EditOutlined />} onClick={() => handleEdit(record)} />
+        <Popconfirm
+          title={`Delete ${record.username}?`}
+          okText="Delete"
+          okButtonProps={{ danger: true }}
+          cancelText="Cancel"
+          onConfirm={() => handleDelete(record.id)}
+        >
+          <Button type="text" danger icon={<DeleteOutlined />} />
+        </Popconfirm>
+      </Space>
     ),
   },
 ];
@@ -355,7 +376,7 @@ const columns: ColumnsType<User> = [
 
       if (editingUser) {
         // Update roles only (backend supports updating roles)
-        const updated = await updateUserRoles(editingUser.id, values.role);
+        const updated = await updateUserRole(editingUser.id, values.role);
         const newUsers = users.map((user) =>
           user.id === editingUser.id
             ? {
@@ -364,7 +385,7 @@ const columns: ColumnsType<User> = [
                 realName: values.realName,
                 email: values.email,
                 phone: values.phone,
-                role: mapToAppRole(updated.roles),
+                role: mapToAppRole(updated.role),
                 group: values.group,
                 status: values.status,
                 permissions: values.permissions,
@@ -430,7 +451,7 @@ const columns: ColumnsType<User> = [
               <Option value="all">All Roles</Option>
               <Option value="admin">管理员</Option>
               <Option value="operator">操作员</Option>
-              <Option value="viewer">查看者</Option>
+              <Option value="manager">经理</Option>
             </Select>
           </Col>
           {/* 移除状态筛选，仅保留角色筛选 */}
@@ -491,7 +512,7 @@ const columns: ColumnsType<User> = [
           layout="vertical"
           initialValues={{
             status: 'active',
-            role: 'viewer',
+            role: 'manager',
             group: 'test-team',
             permissions: ['device:read'],
           }}
@@ -565,7 +586,7 @@ const columns: ColumnsType<User> = [
                 <Select placeholder="Please select role">
                   <Option value="admin">管理员</Option>
                   <Option value="operator">操作员</Option>
-                  <Option value="viewer">查看者</Option>
+                  <Option value="manager">经理</Option>
                 </Select>
               </Form.Item>
             </Col>

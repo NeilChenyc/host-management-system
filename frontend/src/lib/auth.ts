@@ -8,7 +8,7 @@ export const API_BASE_URL =
     : 'http://localhost:8080/api';
 
 // ----- Types -----
-export type AppRole = 'admin' | 'operator' | 'viewer';
+export type AppRole = 'admin' | 'operator' | 'manager';
 
 export interface User {
   id: string;
@@ -184,7 +184,8 @@ export async function refreshCurrentUser() {
     const mappedRole: AppRole =
       roles.includes('ROLE_ADMIN') ? 'admin' :
       roles.includes('ROLE_OPERATOR') ? 'operator' :
-      'viewer';
+      roles.includes('ROLE_MANAGER') ? 'manager' :
+      'manager';
 
     const user: User = {
       id: String(data?.id ?? ''),
