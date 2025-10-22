@@ -102,62 +102,6 @@ public class UserService {
     }
 
     /**
-     * Convert User entity to UserResponseDto
-     * @param user User entity
-     * @return UserResponseDto
-     */
-    private UserResponseDto convertToUserResponseDto(User user) {
-        UserResponseDto dto = new UserResponseDto();
-        dto.setId(user.getId());
-        dto.setUsername(user.getUsername());
-        dto.setEmail(user.getEmail());
-        dto.setCreatedAt(user.getCreatedAt());
-        
-        // Set role
-        dto.setRole(user.getRole());
-        
-        return dto;
-    }
-    
-    /**
-<<<<<<< Updated upstream
-     * Get user by ID
-     * @param id User ID
-     * @return Optional containing user if found
-     */
-    public Optional<UserResponseDto> getUserById(Long id) {
-        return userRepository.findById(id)
-                .map(this::convertToUserResponseDto);
-    }
-
-    /**
-     * Update user role
-     * @param id User ID
-     * @param role New role
-     * @return Updated user response
-     */
-    public UserResponseDto updateUserRole(Long id, String role) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
-        
-        user.setRole(role);
-        User updatedUser = userRepository.save(user);
-        
-        return convertToUserResponseDto(updatedUser);
-    }
-
-    /**
-     * Delete user by ID
-     * @param id User ID
-     * @return true if user was deleted, false if user not found
-     */
-    public boolean deleteUser(Long id) {
-        if (userRepository.existsById(id)) {
-            userRepository.deleteById(id);
-            return true;
-        }
-        return false;
-=======
      * Update user role
      * @param id User ID
      * @param role New role
@@ -174,7 +118,37 @@ public class UserService {
                     System.out.println("DEBUG: Saved user role: " + savedUser.getRole());
                     return convertToUserResponseDto(savedUser);
                 });
->>>>>>> Stashed changes
+    }
+
+    /**
+     * Delete user by ID
+     * @param id User ID
+     * @return true if user was deleted, false if user not found
+     */
+    public boolean deleteUser(Long id) {
+        if (userRepository.existsById(id)) {
+            userRepository.deleteById(id);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Convert User entity to UserResponseDto
+     * @param user User entity
+     * @return UserResponseDto
+     */
+    private UserResponseDto convertToUserResponseDto(User user) {
+        UserResponseDto dto = new UserResponseDto();
+        dto.setId(user.getId());
+        dto.setUsername(user.getUsername());
+        dto.setEmail(user.getEmail());
+        dto.setCreatedAt(user.getCreatedAt());
+        
+        // Set role
+        dto.setRole(user.getRole());
+        
+        return dto;
     }
 
     /**
