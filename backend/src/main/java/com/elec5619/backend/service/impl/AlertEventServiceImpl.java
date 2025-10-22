@@ -5,15 +5,14 @@ import com.elec5619.backend.entity.AlertRule;
 import com.elec5619.backend.repository.AlertEventRepository;
 import com.elec5619.backend.service.AlertEventService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Implementation of AlertEventService interface.
- */
 @Service
 public class AlertEventServiceImpl implements AlertEventService {
 
@@ -26,16 +25,14 @@ public class AlertEventServiceImpl implements AlertEventService {
 
     @Override
     public AlertEvent createAlertEvent(AlertEvent alertEvent) {
-        // ID自动生成
         alertEvent.setEventId(null);
         if (alertEvent.getStartedAt() == null) {
             alertEvent.setStartedAt(LocalDateTime.now());
         }
-        // 验证 AlertRule 是否存在
         if (alertEvent.getAlertRule() != null) {
             AlertRule rule = alertEvent.getAlertRule();
             if (rule.getRuleId() == null) {
-                throw new IllegalArgumentException("AlertRule must have a valid ID");
+                throw new IllegalArgumentException("AlertRule must have an ID when creating an AlertEvent");
             }
         }
         return alertEventRepository.save(alertEvent);
@@ -106,5 +103,13 @@ public class AlertEventServiceImpl implements AlertEventService {
     public List<AlertEvent> getAlertEventsWithFilters(Long ruleId, Long serverId, String status,
                                                       LocalDateTime startTime, LocalDateTime endTime) {
         return alertEventRepository.findByFilters(ruleId, serverId, status, startTime, endTime);
+    }
+
+    // ✅ 新增：分页版本实现
+    @Override
+    public Page<AlertEvent> getAlertEventsWithFilters(Long ruleId, Long serverId, String status,
+                                                      LocalDateTime startTime, LocalDateTime endTime,
+                                                      Pageable pageable) {
+        return alertEventRepository.findByFilters(ruleId, serverId, status, startTime, endTime, pageable);
     }
 }
