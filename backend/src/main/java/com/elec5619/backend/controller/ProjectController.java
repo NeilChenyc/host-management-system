@@ -12,14 +12,17 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.elec5619.backend.constants.PermissionConstants;
 import com.elec5619.backend.dto.ProjectCreateDto;
 import com.elec5619.backend.dto.ProjectResponseDto;
 import com.elec5619.backend.dto.ProjectUpdateDto;
 import com.elec5619.backend.entity.ProjectStatus;
 import com.elec5619.backend.service.ProjectService;
+import com.elec5619.backend.util.PermissionChecker;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -38,6 +41,9 @@ public class ProjectController {
 
     @Autowired
     private ProjectService projectService;
+    
+    @Autowired
+    private PermissionChecker permissionChecker;
 
     @PostMapping
     @Operation(
@@ -52,7 +58,11 @@ public class ProjectController {
     })
     public ResponseEntity<ProjectResponseDto> create(
             @Parameter(description = "Project creation data including name, servers, duration, and member user IDs")
-            @Valid @RequestBody ProjectCreateDto dto) {
+            @Valid @RequestBody ProjectCreateDto dto,
+            @Parameter(description = "User ID", required = true)
+            @RequestHeader("User-ID") Long userId) {
+        // 检查用户是否有创建项目的权限
+        permissionChecker.requirePermission(userId, PermissionConstants.PROJECT_WRITE_OWN);
         return ResponseEntity.ok(projectService.create(dto));
     }
 
@@ -64,7 +74,13 @@ public class ProjectController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Get Project by ID", description = "Retrieve a project by ID")
-    public ResponseEntity<ProjectResponseDto> getById(@PathVariable Long id) {
+    public ResponseEntity<ProjectResponseDto> getById(
+            @Parameter(description = "Project ID", required = true, example = "1")
+            @PathVariable Long id,
+            @Parameter(description = "User ID", required = true)
+            @RequestHeader("User-ID") Long userId) {
+        // 检查用户是否有访问该项目的权限
+        permissionChecker.requireProjectAccess(userId, id, "read");
         return projectService.getById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -89,8 +105,14 @@ public class ProjectController {
     @PutMapping("/{id}")
     @Operation(summary = "Update Project", description = "Update project fields")
     public ResponseEntity<ProjectResponseDto> update(
+            @Parameter(description = "Project ID", required = true, example = "1")
             @PathVariable Long id,
-            @Valid @RequestBody ProjectUpdateDto dto) {
+            @Parameter(description = "Project update data")
+            @Valid @RequestBody ProjectUpdateDto dto,
+            @Parameter(description = "User ID", required = true)
+            @RequestHeader("User-ID") Long userId) {
+        // 检查用户是否有更新该项目的权限
+        permissionChecker.requireProjectAccess(userId, id, "write");
         return projectService.update(id, dto)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -129,7 +151,13 @@ public class ProjectController {
             @Parameter(description = "Project ID", required = true, example = "1")
             @PathVariable Long id,
             @Parameter(description = "Set of user IDs to add as project members", required = true, example = "[2, 3, 4]")
-            @RequestBody Set<Long> userIds) {
+            @RequestBody Set<Long> userIds,
+            @Parameter(description = "User ID", required = true)
+            @RequestHeader("User-ID") Long userId) {
+        // 只有admin和manager可以添加项目成员
+        if (!permissionChecker.isAdmin(userId) && !permissionChecker.isManager(userId)) {
+            throw new org.springframework.security.access.AccessDeniedException("Only admin and manager can add project members");
+        }
         return projectService.addMembers(id, userIds)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -144,13 +172,20 @@ public class ProjectController {
         @ApiResponse(responseCode = "200", description = "Members removed successfully",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ProjectResponseDto.class))),
         @ApiResponse(responseCode = "404", description = "Project not found"),
-        @ApiResponse(responseCode = "400", description = "Invalid user IDs provided")
+        @ApiResponse(responseCode = "400", description = "Invalid user IDs provided"),
+        @ApiResponse(responseCode = "403", description = "Insufficient permissions")
     })
     public ResponseEntity<ProjectResponseDto> removeMembers(
             @Parameter(description = "Project ID", required = true, example = "1")
             @PathVariable Long id,
             @Parameter(description = "Set of user IDs to remove from project members", required = true, example = "[2, 3]")
-            @RequestBody Set<Long> userIds) {
+            @RequestBody Set<Long> userIds,
+            @Parameter(description = "User ID", required = true)
+            @RequestHeader("User-ID") Long userId) {
+        // 只有admin和manager可以移除项目成员
+        if (!permissionChecker.isAdmin(userId) && !permissionChecker.isManager(userId)) {
+            throw new org.springframework.security.access.AccessDeniedException("Only admin and manager can remove project members");
+        }
         return projectService.removeMembers(id, userIds)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -172,6 +207,27 @@ public class ProjectController {
         return projectService.getProjectMembers(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/by-user/{userId}")
+    @Operation(
+        summary = "Get Projects by User ID", 
+        description = "Retrieve all projects that the specified user is a member of."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "User projects retrieved successfully",
+            content = @Content(mediaType = "application/json", schema = @Schema(type = "array", implementation = ProjectResponseDto.class))),
+        @ApiResponse(responseCode = "404", description = "User not found")
+    })
+    public ResponseEntity<List<ProjectResponseDto>> getProjectsByUserId(
+            @Parameter(description = "User ID", required = true, example = "1")
+            @PathVariable Long userId) {
+        try {
+            List<ProjectResponseDto> projects = projectService.getProjectsByUserId(userId);
+            return ResponseEntity.ok(projects);
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 }
 

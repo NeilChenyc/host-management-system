@@ -114,6 +114,38 @@
 }
 ```
 
+### 6. 根据用户ID获取项目列表
+
+**端点**: `GET /api/projects/by-user/{userId}`
+
+**路径参数**: `userId = 1`
+
+**预期响应**:
+```json
+[
+  {
+    "id": 1,
+    "projectName": "Web Development Project",
+    "status": "PLANNED",
+    "servers": [1, 2, 3],
+    "userIds": [1, 2, 3, 4],
+    "duration": "3 months",
+    "createdAt": "2024-01-15T10:30:00",
+    "updatedAt": "2024-01-15T10:30:00"
+  },
+  {
+    "id": 2,
+    "projectName": "Mobile App Project",
+    "status": "IN_PROGRESS",
+    "servers": [2, 3],
+    "userIds": [1, 5, 6],
+    "duration": "6 months",
+    "createdAt": "2024-01-16T09:15:00",
+    "updatedAt": "2024-01-16T14:30:00"
+  }
+]
+```
+
 ## 测试场景
 
 ### 场景1: 完整项目生命周期测试

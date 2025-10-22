@@ -178,6 +178,23 @@ public class ProjectService {
         });
     }
 
+    public List<ProjectResponseDto> getProjectsByUserId(Long userId) {
+        // 验证用户是否存在
+        if (!userRepository.existsById(userId)) {
+            throw new UserNotFoundException("User not found: " + userId);
+        }
+        
+        // 获取用户参与的所有项目
+        List<ProjectMember> projectMembers = projectMemberRepository.findByUserId(userId);
+        
+        // 转换为ProjectResponseDto列表
+        return projectMembers.stream()
+                .map(pm -> toResponse(pm.getProject()))
+                .collect(Collectors.toList());
+    }
+    
+    
+   
     private ProjectResponseDto toResponse(Project p) {
         ProjectResponseDto dto = new ProjectResponseDto();
         dto.setId(p.getId());
