@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import MainLayout from '@/components/MainLayout';
 import {
   Card,
   Row,
@@ -23,10 +24,8 @@ import {
   CloseCircleOutlined,
   ReloadOutlined,
   BarChartOutlined,
-  MonitorOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import MonitoringDashboard from '../MonitoringDashboard/MonitoringDashboard';
 import ServerApiService, { Device as Server } from '../../services/serverApi';
 import { serverCache } from '@/lib/serverCache';
 
@@ -48,7 +47,7 @@ interface Device {
   projects: string[]; // 多对多关系，一个主机可以属于多个项目
 }
 
-const DeviceOverview: React.FC = () => {
+export default function DashboardPage() {
   const [servers, setServers] = useState<Server[]>([]);
   const [filteredServers, setFilteredServers] = useState<Server[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -193,11 +192,6 @@ const DeviceOverview: React.FC = () => {
 
   const tabItems = [
     {
-      key: 'monitoring',
-      label: <span><MonitorOutlined />Monitoring Dashboard</span>,
-      children: <MonitoringDashboard />,
-    },
-    {
       key: 'overview',
       label: <span><DesktopOutlined />Server Overview</span>,
       children: (
@@ -338,11 +332,9 @@ const DeviceOverview: React.FC = () => {
   ];
 
   return (
-    <div>
+    <MainLayout>
       {contextHolder}
-      <Tabs defaultActiveKey="monitoring" type="card" items={tabItems} />
-    </div>
+      <Tabs defaultActiveKey="overview" type="card" items={tabItems} />
+    </MainLayout>
   );
-};
-
-export default DeviceOverview;
+}

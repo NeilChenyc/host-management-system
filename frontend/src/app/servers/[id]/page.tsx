@@ -45,6 +45,7 @@ import ServerApiService, {
   MetricRange, 
   LatestMetric 
 } from '../../../services/serverApi';
+import MainLayout from '../../../components/MainLayout';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -359,46 +360,52 @@ const ServerDetailPage: React.FC = () => {
 
   if (loading && !server) {
     return (
-      <div style={{ textAlign: 'center', padding: '50px' }}>
-        <Spin size="large" />
-        <div style={{ marginTop: 16 }}>Loading server details...</div>
-      </div>
+      <MainLayout>
+        <div style={{ textAlign: 'center', padding: '50px' }}>
+          <Spin size="large" />
+          <div style={{ marginTop: 16 }}>Loading server details...</div>
+        </div>
+      </MainLayout>
     );
   }
 
   if (error) {
     return (
-      <Card>
-        <Alert
-          message="Error"
-          description={error}
-          type="error"
-          showIcon
-          action={
-            <Button size="small" onClick={loadServerDetails}>
-              Retry
-            </Button>
-          }
-        />
-      </Card>
+      <MainLayout>
+        <Card>
+          <Alert
+            message="Error"
+            description={error}
+            type="error"
+            showIcon
+            action={
+              <Button size="small" onClick={loadServerDetails}>
+                Retry
+              </Button>
+            }
+          />
+        </Card>
+      </MainLayout>
     );
   }
 
   if (!server) {
     return (
-      <Card>
-        <Alert
-          message="Server Not Found"
-          description="The specified server does not exist or has been deleted"
-          type="warning"
-          showIcon
-        />
-      </Card>
+      <MainLayout>
+        <Card>
+          <Alert
+            message="Server Not Found"
+            description="The specified server does not exist or has been deleted"
+            type="warning"
+            showIcon
+          />
+        </Card>
+      </MainLayout>
     );
   }
 
   return (
-    <div style={{ padding: '24px' }}>
+    <MainLayout>
       {contextHolder}
       {/* Header */}
       <Card style={{ marginBottom: 16 }}>
@@ -827,7 +834,7 @@ const ServerDetailPage: React.FC = () => {
           </TabPane>
         </Tabs>
       </Card>
-    </div>
+    </MainLayout>
   );
 };
 

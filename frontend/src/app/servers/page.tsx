@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import MainLayout from '@/components/MainLayout';
 import {
   Table,
   Button,
@@ -32,7 +33,7 @@ import { serverCache } from '@/lib/serverCache';
 const { Search } = Input;
 const { Option } = Select;
 
-const DeviceList: React.FC = () => {
+export default function ServersPage() {
   const router = useRouter();
   const [devices, setDevices] = useState<Device[]>([]);
   const [filteredDevices, setFilteredDevices] = useState<Device[]>([]);
@@ -329,7 +330,7 @@ const DeviceList: React.FC = () => {
   };
 
   return (
-    <div>
+    <MainLayout>
       {contextHolder}
       {/* Error Alert */}
       {error && (
@@ -338,7 +339,7 @@ const DeviceList: React.FC = () => {
             <strong>错误:</strong> {error}
             <Button 
               type="link" 
-              onClick={loadServers}
+              onClick={() => loadServers()}
               style={{ marginLeft: 8 }}
             >
               重试
@@ -563,8 +564,6 @@ const DeviceList: React.FC = () => {
           </div>
         )}
       </Modal>
-    </div>
+    </MainLayout>
   );
-};
-
-export default DeviceList;
+}

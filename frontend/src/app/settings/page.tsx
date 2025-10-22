@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import MainLayout from '@/components/MainLayout';
 import {
   Card,
   Form,
@@ -198,7 +199,7 @@ const mockBackupRecords: BackupRecord[] = [
   },
 ];
 
-const SystemSettings: React.FC = () => {
+export default function SettingsPage() {
   const [systemConfig, setSystemConfig] = useState<SystemConfig>(mockSystemConfig);
   const [logs, setLogs] = useState<SystemLog[]>(mockSystemLogs);
   const [filteredLogs, setFilteredLogs] = useState<SystemLog[]>(mockSystemLogs);
@@ -586,7 +587,7 @@ const SystemSettings: React.FC = () => {
   };
 
   return (
-    <div>
+    <MainLayout>
       <Tabs defaultActiveKey="config" type="card">
         {/* 系统配置 */}
         <TabPane tab={<span><SettingOutlined />System Configuration</span>} key="config">
@@ -886,8 +887,6 @@ const SystemSettings: React.FC = () => {
           </Card>
         </TabPane>
       </Tabs>
-    </div>
+    </MainLayout>
   );
-};
-
-export default SystemSettings;
+}
