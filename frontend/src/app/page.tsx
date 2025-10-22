@@ -2,8 +2,6 @@
 
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import MainLayout from '@/components/MainLayout';
-import Dashboard from '@/components/Servers/Dashboard';
 import { AuthManager } from '@/lib/auth';
 
 export default function Home() {
@@ -12,12 +10,15 @@ export default function Home() {
   useEffect(() => {
     if (!AuthManager.isAuthenticated()) {
       router.push('/auth/login');
+    } else {
+      // Redirect authenticated users to dashboard
+      router.push('/dashboard');
     }
   }, [router]);
 
   return (
-    <MainLayout>
-      <Dashboard />
-    </MainLayout>
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <p>Redirecting to dashboard...</p>
+    </div>
   );
 }

@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -109,36 +111,43 @@ public class ServerMetricsService {
 
     private Double generateCpuUsage() {
         // CPU usage: 10-90% with some variation
-        return 10 + Math.random() * 80;
+        double value = 10 + Math.random() * 80;
+        return BigDecimal.valueOf(value).setScale(2, RoundingMode.HALF_UP).doubleValue();
     }
 
     private Double generateMemoryUsage() {
         // Memory usage: 20-85% with some variation
-        return 20 + Math.random() * 65;
+        double value = 20 + Math.random() * 65;
+        return BigDecimal.valueOf(value).setScale(2, RoundingMode.HALF_UP).doubleValue();
     }
 
     private Double generateDiskUsage() {
         // Disk usage: 30-95% (usually higher than CPU/Memory)
-        return 30 + Math.random() * 65;
+        double value = 30 + Math.random() * 65;
+        return BigDecimal.valueOf(value).setScale(2, RoundingMode.HALF_UP).doubleValue();
     }
 
     private Double generateNetworkIn() {
         // Network in: 0-1000 MB/s
-        return Math.random() * 1000;
+        double value = Math.random() * 1000;
+        return BigDecimal.valueOf(value).setScale(2, RoundingMode.HALF_UP).doubleValue();
     }
 
     private Double generateNetworkOut() {
         // Network out: 0-800 MB/s (usually less than in)
-        return Math.random() * 800;
+        double value = Math.random() * 800;
+        return BigDecimal.valueOf(value).setScale(2, RoundingMode.HALF_UP).doubleValue();
     }
 
     private Double generateLoadAvg() {
         // Load average: 0.1-8.0 (typical range)
-        return 0.1 + Math.random() * 7.9;
+        double value = 0.1 + Math.random() * 7.9;
+        return BigDecimal.valueOf(value).setScale(2, RoundingMode.HALF_UP).doubleValue();
     }
 
     private Double generateTemperature() {
         // Temperature: 30-80°C
-        return 30 + Math.random() * 50;
+        double value = 30 + Math.random() * 50;
+        return BigDecimal.valueOf(value).setScale(2, RoundingMode.HALF_UP).doubleValue();
     }
 }
