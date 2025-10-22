@@ -27,6 +27,7 @@ import {
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import ServerApiService, { Device } from '../../services/serverApi';
+import { serverCache } from '@/lib/serverCache';
 
 const { Search } = Input;
 const { Option } = Select;
@@ -50,18 +51,21 @@ const DeviceList: React.FC = () => {
   
   // 组件挂载时加载服务器列表
   useEffect(() => {
-    loadServers();
+    loadServers(true); // 首次加载时显示消息
   }, []);
 
   // 加载服务器列表
-  const loadServers = async () => {
+  const loadServers = async (showMessage: boolean = false, forceRefresh: boolean = false) => {
     setLoading(true);
     setError(null);
     try {
-      const serverList = await ServerApiService.getAllServers();
+      const serverList = await serverCache.getServers(forceRefresh);
       setDevices(serverList);
       setFilteredDevices(serverList);
-      messageApi.success(`成功加载 ${serverList.length} 台服务器`);
+      // 使用缓存的消息控制机制
+      if (showMessage && serverCache.shouldShowMessage()) {
+        messageApi.success(`成功加载 ${serverList.length} 台服务器`);
+      }
     } catch (error) {
       console.error('Failed to load servers:', error);
       const errorMessage = error instanceof Error ? error.message : '加载服务器列表失败';
@@ -259,7 +263,8 @@ const DeviceList: React.FC = () => {
 
   // Refresh handler
   const handleRefresh = async () => {
-    await loadServers();
+    serverCache.resetMessageFlag(); // 重置消息标志
+    await loadServers(true, true); // 刷新时显示消息并强制刷新
     messageApi.success('服务器列表已刷新');
   };
 

@@ -33,6 +33,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { AuthManager } from '@/lib/auth';
 import ServerApiService, { Device as Server } from '@/services/serverApi';
 import ProjectApiService, { ProjectStatus } from '@/services/projectApi';
+import { serverCache } from '@/lib/serverCache';
 
 const { Search } = Input;
 const { Option } = Select;
@@ -82,7 +83,7 @@ const ProjectManagement: React.FC = () => {
 
   const loadServers = async () => {
     try {
-      const list = await ServerApiService.getAllServers();
+      const list = await serverCache.getServers();
       setServers(list);
     } catch (error) {
       console.error('加载服务器失败:', error);
@@ -91,6 +92,7 @@ const ProjectManagement: React.FC = () => {
 
   const handleRefresh = async () => {
     await loadProjects();
+    await serverCache.clearCache(); // 清除缓存
     await loadServers();
     message.success('Refreshed');
   };

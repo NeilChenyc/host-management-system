@@ -59,6 +59,7 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { ServerApiService, MetricData as ApiMetricData } from '../../services/serverApi';
+import { serverCache } from '@/lib/serverCache';
 
 const { Option } = Select;
 const { RangePicker } = DatePicker;
@@ -364,7 +365,7 @@ const MonitoringDashboard: React.FC = () => {
   const loadServers = async () => {
     try {
       setIsLoading(true);
-      const serverList = await ServerApiService.getAllServers();
+      const serverList = await serverCache.getServers(); // 使用缓存，不显示消息
       setServers(serverList);
       if (serverList.length > 0 && !selectedServerId) {
         setSelectedServerId(serverList[0].id.toString());

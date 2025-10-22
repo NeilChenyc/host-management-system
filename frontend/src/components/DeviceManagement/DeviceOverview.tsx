@@ -28,6 +28,7 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import MonitoringDashboard from '../MonitoringDashboard/MonitoringDashboard';
 import ServerApiService, { Device as Server } from '../../services/serverApi';
+import { serverCache } from '@/lib/serverCache';
 
 const { Option } = Select;
 
@@ -57,13 +58,16 @@ const DeviceOverview: React.FC = () => {
   const [messageApi, contextHolder] = message.useMessage();
 
   // 从后端加载服务器列表
-  const loadServers = async () => {
+  const loadServers = async (showMessage: boolean = false, forceRefresh: boolean = false) => {
     setLoading(true);
     try {
-      const list = await ServerApiService.getAllServers();
+      const list = await serverCache.getServers(forceRefresh);
       setServers(list);
       setFilteredServers(list);
-      messageApi.success(`Successfully loaded ${list.length} servers`);
+      // 使用缓存的消息控制机制
+      if (showMessage && serverCache.shouldShowMessage()) {
+        messageApi.success(`Successfully loaded ${list.length} servers`);
+      }
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : 'Failed to load servers';
       messageApi.error(errorMessage);
@@ -73,7 +77,7 @@ const DeviceOverview: React.FC = () => {
   };
 
   useEffect(() => {
-    loadServers();
+    loadServers(true); // 首次加载时显示消息
   }, []);
 
   // Status tag color mapping
@@ -134,7 +138,8 @@ const DeviceOverview: React.FC = () => {
 
   // Refresh data -> 拉取后端数据，不在前端修改 lastUpdate
   const handleRefresh = async () => {
-    await loadServers();
+    serverCache.resetMessageFlag(); // 重置消息标志
+    await loadServers(true, true); // 刷新时显示消息并强制刷新
   };
 
   // Table column definitions（后端字段）
