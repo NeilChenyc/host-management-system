@@ -13,7 +13,6 @@ public class ServerResponseDto {
     private String operatingSystem;
     private String cpu;
     private String memory;
-    private LocalDateTime lastUpdate;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -73,13 +72,7 @@ public class ServerResponseDto {
         this.memory = memory;
     }
 
-    public LocalDateTime getLastUpdate() {
-        return lastUpdate;
-    }
-
-    public void setLastUpdate(LocalDateTime lastUpdate) {
-        this.lastUpdate = lastUpdate;
-    }
+   
 
     public LocalDateTime getCreatedAt() {
         return createdAt;

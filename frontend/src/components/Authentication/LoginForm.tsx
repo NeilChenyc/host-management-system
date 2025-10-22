@@ -20,8 +20,11 @@ interface LoginFormProps {
 const LoginForm: React.FC<LoginFormProps> = ({ onLogin, loading = false }) => {
   const [form] = Form.useForm();
   const [isLoading, setIsLoading] = useState(false);
-  // 新增：用于展示“登录失败”的错误提示信息。如果为 null 则不展示
+  // 新增：用于展示"登录失败"的错误提示信息。如果为 null 则不展示
   const [loginError, setLoginError] = useState<string | null>(null);
+  
+  // Message API for React 19 compatibility
+  const [messageApi, contextHolder] = message.useMessage();
 
   /**
    * 处理登录表单提交
@@ -38,7 +41,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, loading = false }) => {
       const result = await AuthManager.login(values.username, values.password);
       
       if (result.success) {
-        message.success('Login successful!');
+        messageApi.success('Login successful!');
         
         if (onLogin) {
           onLogin(values);
@@ -49,12 +52,12 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, loading = false }) => {
       } else {
         // 新增：设置表单顶部错误提示消息，给用户更明显/持续的反馈
         setLoginError(result.message || 'Invalid username or password.');
-        message.error(result.message || 'Login failed. Please check your credentials.');
+        messageApi.error(result.message || 'Login failed. Please check your credentials.');
       }
     } catch (error) {
       // 捕获到异常（例如网络错误或服务器异常）
       setLoginError('Login failed due to a network or server error. Please try again.');
-      message.error('Login failed. Please try again.');
+      messageApi.error('Login failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -62,6 +65,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, loading = false }) => {
 
   return (
     <div>
+      {contextHolder}
         {/* 如果存在登录错误，则在表单上方展示一个醒目的错误警告框 */}
         {loginError && (
           <Alert 
@@ -131,7 +135,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, loading = false }) => {
           <Divider>Or</Divider>
 
           <div style={{ textAlign: 'center' }}>
-            <span style={{ color: '#666' }}>Don't have an account? </span>
+            <span style={{ color: '#666' }}>Don ot have an account? </span>
             <Link href="/auth/register" style={{ color: '#1890ff', fontWeight: 'medium' }}>
               Sign up now
             </Link>

@@ -4,7 +4,6 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-import java.util.Set;
 
 /**
  * Data Transfer Object for user registration requests.
@@ -24,17 +23,17 @@ public class UserRegistrationDto {
     @Email(message = "Email should be valid")
     private String email;
     
-    private Set<String> roles;
+    private String role;
     
     // Default constructor
     public UserRegistrationDto() {}
     
     // Constructor with all fields
-    public UserRegistrationDto(String username, String password, String email, Set<String> roles) {
+    public UserRegistrationDto(String username, String password, String email, String role) {
         this.username = username;
         this.password = password;
         this.email = email;
-        this.roles = roles;
+        this.role = role;
     }
     
     // Constructor without roles (defaults to USER role)
@@ -69,12 +68,12 @@ public class UserRegistrationDto {
         this.email = email;
     }
     
-    public Set<String> getRoles() {
-        return roles;
+    public String getRole() {
+        return role;
     }
     
-    public void setRoles(Set<String> roles) {
-        this.roles = roles;
+    public void setRole(String role) {
+        this.role = role;
     }
     
     @Override
@@ -82,7 +81,7 @@ public class UserRegistrationDto {
         return "UserRegistrationDto{" +
                 "username='" + username + '\'' +
                 ", email='" + email + '\'' +
-                ", roles=" + roles +
+                ", role='" + role + '\'' +
                 '}';
     }
 }

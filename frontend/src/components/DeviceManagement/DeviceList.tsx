@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Table,
   Button,
@@ -31,6 +32,7 @@ const { Search } = Input;
 const { Option } = Select;
 
 const DeviceList: React.FC = () => {
+  const router = useRouter();
   const [devices, setDevices] = useState<Device[]>([]);
   const [filteredDevices, setFilteredDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(false);
@@ -42,6 +44,9 @@ const DeviceList: React.FC = () => {
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const [error, setError] = useState<string | null>(null);
+  
+  // Message API for React 19 compatibility
+  const [messageApi, contextHolder] = message.useMessage();
   
   // 组件挂载时加载服务器列表
   useEffect(() => {
@@ -56,12 +61,12 @@ const DeviceList: React.FC = () => {
       const serverList = await ServerApiService.getAllServers();
       setDevices(serverList);
       setFilteredDevices(serverList);
-      message.success(`成功加载 ${serverList.length} 台服务器`);
+      messageApi.success(`成功加载 ${serverList.length} 台服务器`);
     } catch (error) {
       console.error('Failed to load servers:', error);
       const errorMessage = error instanceof Error ? error.message : '加载服务器列表失败';
       setError(errorMessage);
-      message.error(errorMessage);
+      messageApi.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -103,7 +108,12 @@ const DeviceList: React.FC = () => {
     }
   };
 
-  // View device detail handler
+  // Navigate to server detail page
+  const handleServerNameClick = (device: Device) => {
+    router.push(`/servers/${device.id}`);
+  };
+
+  // View device detail handler (for modal)
   const handleViewDetail = async (device: Device) => {
     try {
       // 获取最新的服务器详情
@@ -113,7 +123,7 @@ const DeviceList: React.FC = () => {
     } catch (error) {
       console.error('Failed to fetch server detail:', error);
       const errorMessage = error instanceof Error ? error.message : '获取服务器详情失败';
-      message.error(errorMessage);
+      messageApi.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -126,6 +136,15 @@ const DeviceList: React.FC = () => {
       dataIndex: 'hostname',
       key: 'hostname',
       sorter: (a, b) => a.hostname.localeCompare(b.hostname),
+      render: (text: string, record: Device) => (
+        <Button
+          type="link"
+          onClick={() => handleServerNameClick(record)}
+          style={{ padding: 0, height: 'auto' }}
+        >
+          {text}
+        </Button>
+      ),
     },
     {
       title: 'IP Address',
@@ -241,7 +260,7 @@ const DeviceList: React.FC = () => {
   // Refresh handler
   const handleRefresh = async () => {
     await loadServers();
-    message.success('服务器列表已刷新');
+    messageApi.success('服务器列表已刷新');
   };
 
   // Add device handler
@@ -263,13 +282,13 @@ const DeviceList: React.FC = () => {
     setLoading(true);
     try {
       await ServerApiService.deleteServer(id);
-      message.success('服务器删除成功');
+      messageApi.success('服务器删除成功');
       // 重新加载服务器列表
       await loadServers();
     } catch (error) {
       console.error('Failed to delete server:', error);
       const errorMessage = error instanceof Error ? error.message : '删除服务器失败';
-      message.error(errorMessage);
+      messageApi.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -284,11 +303,11 @@ const DeviceList: React.FC = () => {
       if (editingDevice) {
         // Edit mode - 更新服务器
         await ServerApiService.updateServer(editingDevice.id, values);
-        message.success('服务器更新成功');
+        messageApi.success('服务器更新成功');
       } else {
         // Add mode - 创建新服务器
         await ServerApiService.createServer(values);
-        message.success('服务器添加成功');
+        messageApi.success('服务器添加成功');
       }
       
       // 重新加载服务器列表
@@ -298,7 +317,7 @@ const DeviceList: React.FC = () => {
     } catch (error) {
       console.error('Failed to save server:', error);
       const errorMessage = error instanceof Error ? error.message : '保存服务器失败';
-      message.error(errorMessage);
+      messageApi.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -306,6 +325,7 @@ const DeviceList: React.FC = () => {
 
   return (
     <div>
+      {contextHolder}
       {/* Error Alert */}
       {error && (
         <Card style={{ marginBottom: 16 }}>

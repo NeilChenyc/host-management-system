@@ -11,18 +11,18 @@ public class JwtResponseDto {
     private Long id;
     private String username;
     private String email;
-    private String[] roles;
+    private String role;
     
     // Default constructor
     public JwtResponseDto() {}
     
     // Constructor with all fields
-    public JwtResponseDto(String token, Long id, String username, String email, String[] roles) {
+    public JwtResponseDto(String token, Long id, String username, String email, String role) {
         this.token = token;
         this.id = id;
         this.username = username;
         this.email = email;
-        this.roles = roles;
+        this.role = role;
     }
     
     // Getters and Setters
@@ -66,12 +66,12 @@ public class JwtResponseDto {
         this.email = email;
     }
     
-    public String[] getRoles() {
-        return roles;
+    public String getRole() {
+        return role;
     }
     
-    public void setRoles(String[] roles) {
-        this.roles = roles;
+    public void setRole(String role) {
+        this.role = role;
     }
     
     public String getAccessToken() {

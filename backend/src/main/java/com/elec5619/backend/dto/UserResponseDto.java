@@ -1,7 +1,6 @@
 package com.elec5619.backend.dto;
 
 import java.time.LocalDateTime;
-import java.util.Set;
 
 /**
  * Data Transfer Object for user response data.
@@ -13,18 +12,18 @@ public class UserResponseDto {
     private String username;
     private String email;
     private LocalDateTime createdAt;
-    private Set<String> roles;
+    private String role;
     
     // Default constructor
     public UserResponseDto() {}
     
     // Constructor with all fields
-    public UserResponseDto(Long id, String username, String email, LocalDateTime createdAt, Set<String> roles) {
+    public UserResponseDto(Long id, String username, String email, LocalDateTime createdAt, String role) {
         this.id = id;
         this.username = username;
         this.email = email;
         this.createdAt = createdAt;
-        this.roles = roles;
+        this.role = role;
     }
     
     // Getters and Setters
@@ -60,12 +59,12 @@ public class UserResponseDto {
         this.createdAt = createdAt;
     }
     
-    public Set<String> getRoles() {
-        return roles;
+    public String getRole() {
+        return role;
     }
     
-    public void setRoles(Set<String> roles) {
-        this.roles = roles;
+    public void setRole(String role) {
+        this.role = role;
     }
     
     @Override
@@ -75,7 +74,7 @@ public class UserResponseDto {
                 ", username='" + username + '\'' +
                 ", email='" + email + '\'' +
                 ", createdAt=" + createdAt +
-                ", roles=" + roles +
+                ", role='" + role + '\'' +
                 '}';
     }
 }

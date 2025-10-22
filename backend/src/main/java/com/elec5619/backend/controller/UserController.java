@@ -1,11 +1,10 @@
 package com.elec5619.backend.controller;
 
 import java.util.List;
-import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -60,8 +59,8 @@ public class UserController {
         )
     })
     public ResponseEntity<List<UserResponseDto>> getAllUsers() {
-        // For now, return empty list since we simplified the service
-        return ResponseEntity.ok(List.of());
+        List<UserResponseDto> users = userService.getAllUsers();
+        return ResponseEntity.ok(users);
     }
 
     /**
@@ -91,31 +90,26 @@ public class UserController {
     public ResponseEntity<UserResponseDto> getUserById(
             @Parameter(description = "User ID", required = true)
             @PathVariable Long id) {
-        // For now, return mock response
-        UserResponseDto user = new UserResponseDto();
-        user.setId(id);
-        user.setUsername("user_" + id);
-        user.setEmail("user" + id + "@example.com");
-        user.setRoles(Set.of("ROLE_USER"));
-        
-        return ResponseEntity.ok(user);
+        return userService.getUserById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     /**
-     * Update user roles
+     * Update user role
      * @param id User ID
-     * @param roles New roles
+     * @param role New role
      * @return Updated user information
      */
-    @PutMapping("/{id}/roles")
+    @PutMapping("/{id}/role")
     @Operation(
-        summary = "Update User Roles",
-        description = "Update the roles assigned to a specific user"
+        summary = "Update User Role",
+        description = "Update the role assigned to a specific user"
     )
     @ApiResponses(value = {
         @ApiResponse(
             responseCode = "200",
-            description = "User roles updated successfully",
+            description = "User role updated successfully",
             content = @Content(
                 mediaType = "application/json",
                 schema = @Schema(implementation = UserResponseDto.class)
@@ -130,27 +124,31 @@ public class UserController {
             description = "User not found"
         )
     })
-    public ResponseEntity<?> updateUserRoles(
+    public ResponseEntity<?> updateUserRole(
             @Parameter(description = "User ID", required = true)
             @PathVariable Long id,
-            @Parameter(description = "New roles for the user", required = true)
-            @RequestBody Set<String> roles) {
+            @Parameter(description = "New role for the user", required = true)
+            @RequestBody String role) {
         try {
-            // For now, return mock response
-            UserResponseDto user = new UserResponseDto();
-            user.setId(id);
-            user.setUsername("user_" + id);
-            user.setEmail("user" + id + "@example.com");
-            user.setRoles(roles);
-            
-            return ResponseEntity.ok(user);
+            UserResponseDto updatedUser = userService.updateUserRole(id, role);
+            return ResponseEntity.ok(updatedUser);
+        } catch (RuntimeException e) {
+            // Handle user not found or other business logic errors
+            GlobalExceptionHandler.ErrorResponse errorResponse = new GlobalExceptionHandler.ErrorResponse(
+                java.time.LocalDateTime.now(),
+                HttpStatus.NOT_FOUND.value(),
+                "Not Found",
+                e.getMessage(),
+                null
+            );
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
         } catch (Exception e) {
-            // Handle any exceptions
+            // Handle any other exceptions
             GlobalExceptionHandler.ErrorResponse errorResponse = new GlobalExceptionHandler.ErrorResponse(
                 java.time.LocalDateTime.now(),
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 "Internal Server Error",
-                "Failed to update user roles: " + e.getMessage(),
+                "Failed to update user role: " + e.getMessage(),
                 null
             );
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
@@ -180,8 +178,12 @@ public class UserController {
     public ResponseEntity<Void> deleteUser(
             @Parameter(description = "User ID", required = true)
             @PathVariable Long id) {
-        // For now, just return success
-        return ResponseEntity.ok().build();
+        boolean deleted = userService.deleteUser(id);
+        if (deleted) {
+            return ResponseEntity.ok().build();
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @GetMapping("/by-username/{username}")

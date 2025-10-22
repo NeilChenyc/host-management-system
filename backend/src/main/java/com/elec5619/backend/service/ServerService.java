@@ -1,6 +1,5 @@
 package com.elec5619.backend.service;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -13,6 +12,7 @@ import com.elec5619.backend.dto.ServerResponseDto;
 import com.elec5619.backend.dto.ServerUpdateDto;
 import com.elec5619.backend.entity.Server;
 import com.elec5619.backend.entity.ServerStatus;
+import com.elec5619.backend.exception.ServerNameAlreadyExistsException;
 import com.elec5619.backend.repository.ServerRepository;
 
 @Service
@@ -23,7 +23,7 @@ public class ServerService {
 
     public ServerResponseDto create(ServerCreateDto dto) {
         if (serverRepository.findByServerName(dto.getServerName()).isPresent()) {
-            throw new RuntimeException("Server name already exists");
+            throw new ServerNameAlreadyExistsException("Server name already exists");
         }
         Server server = new Server();
         server.setServerName(dto.getServerName());
@@ -31,7 +31,8 @@ public class ServerService {
         server.setOperatingSystem(dto.getOperatingSystem());
         server.setCpu(dto.getCpu());
         server.setMemory(dto.getMemory());
-        server.setStatus(ServerStatus.UP);
+        // Set status from DTO if provided, otherwise default to unknown
+        server.setStatus(dto.getStatus() != null ? dto.getStatus() : ServerStatus.unknown);
         Server saved = serverRepository.save(server);
         return toResponse(saved);
     }
@@ -63,6 +64,10 @@ public class ServerService {
             if (dto.getOperatingSystem() != null) server.setOperatingSystem(dto.getOperatingSystem());
             if (dto.getCpu() != null) server.setCpu(dto.getCpu());
             if (dto.getMemory() != null) server.setMemory(dto.getMemory());
+            if (dto.getStatus() != null) {
+                server.setStatus(dto.getStatus());
+            }
+            
             Server saved = serverRepository.save(server);
             return toResponse(saved);
         });
@@ -79,7 +84,6 @@ public class ServerService {
     public Optional<ServerResponseDto> updateStatus(Long id, ServerStatus status) {
         return serverRepository.findById(id).map(server -> {
             server.setStatus(status);
-            server.setLastUpdate(LocalDateTime.now());
             Server saved = serverRepository.save(server);
             return toResponse(saved);
         });
@@ -94,7 +98,6 @@ public class ServerService {
         dto.setOperatingSystem(server.getOperatingSystem());
         dto.setCpu(server.getCpu());
         dto.setMemory(server.getMemory());
-        dto.setLastUpdate(server.getLastUpdate());
         dto.setCreatedAt(server.getCreatedAt());
         dto.setUpdatedAt(server.getUpdatedAt());
         return dto;

@@ -1,14 +1,18 @@
 package com.elec5619.backend.entity;
 
-import jakarta.persistence.*;
+import java.time.LocalDateTime;
+
+import org.hibernate.annotations.CreationTimestamp;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import org.hibernate.annotations.CreationTimestamp;
-
-import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * User entity representing a user in the system.
@@ -40,13 +44,10 @@ public class User {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-        name = "user_roles",
-        joinColumns = @JoinColumn(name = "user_id"),
-        inverseJoinColumns = @JoinColumn(name = "role_id")
-    )
-    private Set<Role> roles = new HashSet<>();
+    @NotBlank(message = "Role is required")
+    @Size(max = 50, message = "Role name must not exceed 50 characters")
+    @Column(name = "role", nullable = false, length = 50)
+    private String role = "operation"; // 默认角色
     
     // Default constructor
     public User() {}
@@ -99,26 +100,17 @@ public class User {
         this.createdAt = createdAt;
     }
     
-    public Set<Role> getRoles() {
-        return roles;
+    public String getRole() {
+        return role;
     }
     
-    public void setRoles(Set<Role> roles) {
-        this.roles = roles;
+    public void setRole(String role) {
+        this.role = role;
     }
     
     // Helper methods
-    public void addRole(Role role) {
-        this.roles.add(role);
-    }
-    
-    public void removeRole(Role role) {
-        this.roles.remove(role);
-    }
-    
     public boolean hasRole(String roleName) {
-        return this.roles.stream()
-                .anyMatch(role -> role.getName().equals(roleName));
+        return this.role != null && this.role.equals(roleName);
     }
     
     @Override
@@ -128,7 +120,7 @@ public class User {
                 ", username='" + username + '\'' +
                 ", email='" + email + '\'' +
                 ", createdAt=" + createdAt +
-                ", roles=" + roles +
+                ", role='" + role + '\'' +
                 '}';
     }
 }

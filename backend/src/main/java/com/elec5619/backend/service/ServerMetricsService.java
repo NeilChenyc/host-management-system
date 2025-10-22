@@ -6,6 +6,7 @@ import com.elec5619.backend.repository.ServerMetricsRepository;
 import com.elec5619.backend.repository.ServerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -40,10 +41,10 @@ public class ServerMetricsService {
     }
 
     /**
-     * Get all metrics for a server
+     * Get all metrics for a server with pagination
      */
-    public List<ServerMetrics> getMetricsForServer(Long serverId) {
-        return serverMetricsRepository.findByServerIdOrderByCollectedAtDesc(serverId);
+    public List<ServerMetrics> getMetricsForServer(Long serverId, int limit, int offset) {
+        return serverMetricsRepository.findMetricsByServerIdWithPagination(serverId, limit, offset);
     }
 
     /**
@@ -98,6 +99,7 @@ public class ServerMetricsService {
     /**
      * Clean up old metrics (older than specified days)
      */
+    @Transactional
     public void cleanupOldMetrics(int daysToKeep) {
         LocalDateTime cutoffTime = LocalDateTime.now().minusDays(daysToKeep);
         serverMetricsRepository.deleteByCollectedAtBefore(cutoffTime);

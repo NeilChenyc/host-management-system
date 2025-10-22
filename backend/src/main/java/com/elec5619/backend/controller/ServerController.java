@@ -1,6 +1,7 @@
 package com.elec5619.backend.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,7 @@ import com.elec5619.backend.dto.ServerCreateDto;
 import com.elec5619.backend.dto.ServerResponseDto;
 import com.elec5619.backend.dto.ServerUpdateDto;
 import com.elec5619.backend.entity.ServerStatus;
+import com.elec5619.backend.exception.ServerNameAlreadyExistsException;
 import com.elec5619.backend.service.ServerService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -43,10 +45,22 @@ public class ServerController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Server created",
                     content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = ServerResponseDto.class)))
+                            schema = @Schema(implementation = ServerResponseDto.class))),
+            @ApiResponse(responseCode = "400", description = "Bad Request - Server name already exists")
     })
-    public ResponseEntity<ServerResponseDto> create(@Valid @RequestBody ServerCreateDto dto) {
-        return ResponseEntity.ok(serverService.create(dto));
+    public ResponseEntity<?> create(@Valid @RequestBody ServerCreateDto dto) {
+        try {
+            ServerResponseDto server = serverService.create(dto);
+            return ResponseEntity.ok(server);
+        } catch (ServerNameAlreadyExistsException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "timestamp", java.time.LocalDateTime.now(),
+                "status", 400,
+                "error", "Bad Request",
+                "message", e.getMessage(),
+                "details", null
+            ));
+        }
     }
 
     @GetMapping

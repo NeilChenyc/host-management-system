@@ -14,7 +14,6 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -47,7 +46,7 @@ class UserControllerTest {
         mockUserResponse.setId(1L);
         mockUserResponse.setUsername("testuser");
         mockUserResponse.setEmail("test@example.com");
-        mockUserResponse.setRoles(Set.of("ROLE_USER"));
+        mockUserResponse.setRole("operation");
     }
 
     @Test
@@ -65,8 +64,7 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.username").value("user_1"))
                 .andExpect(jsonPath("$.email").value("user1@example.com"))
-                .andExpect(jsonPath("$.roles").isArray())
-                .andExpect(jsonPath("$.roles[0]").value("ROLE_USER"));
+                .andExpect(jsonPath("$.role").value("operation"));
     }
 
     @Test
@@ -76,8 +74,7 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.id").value(999))
                 .andExpect(jsonPath("$.username").value("user_999"))
                 .andExpect(jsonPath("$.email").value("user999@example.com"))
-                .andExpect(jsonPath("$.roles").isArray())
-                .andExpect(jsonPath("$.roles[0]").value("ROLE_USER"));
+                .andExpect(jsonPath("$.role").value("operation"));
     }
 
     @Test
@@ -90,8 +87,7 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.username").value("testuser"))
                 .andExpect(jsonPath("$.email").value("test@example.com"))
-                .andExpect(jsonPath("$.roles").isArray())
-                .andExpect(jsonPath("$.roles[0]").value("ROLE_USER"));
+                .andExpect(jsonPath("$.role").value("operation"));
     }
 
     @Test
@@ -104,38 +100,36 @@ class UserControllerTest {
     }
 
     @Test
-    void testUpdateUserRoles_Success() throws Exception {
-        Set<String> newRoles = Set.of("ROLE_USER", "ROLE_ADMIN");
+    void testUpdateUserRole_Success() throws Exception {
+        String newRole = "admin";
         
-        mockMvc.perform(put("/api/users/1/roles")
+        mockMvc.perform(put("/api/users/1/role")
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(newRoles)))
+                .content(objectMapper.writeValueAsString(newRole)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.username").value("user_1"))
                 .andExpect(jsonPath("$.email").value("user1@example.com"))
-                .andExpect(jsonPath("$.roles").isArray())
-                .andExpect(jsonPath("$.roles").value(org.hamcrest.Matchers.containsInAnyOrder("ROLE_USER", "ROLE_ADMIN")));
+                .andExpect(jsonPath("$.role").value("admin"));
     }
 
     @Test
-    void testUpdateUserRoles_EmptyRoles() throws Exception {
-        Set<String> emptyRoles = Set.of();
+    void testUpdateUserRole_EmptyRole() throws Exception {
+        String emptyRole = "";
         
-        mockMvc.perform(put("/api/users/1/roles")
+        mockMvc.perform(put("/api/users/1/role")
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(emptyRoles)))
+                .content(objectMapper.writeValueAsString(emptyRole)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.roles").isArray())
-                .andExpect(jsonPath("$.roles").isEmpty());
+                .andExpect(jsonPath("$.role").value(""));
     }
 
     @Test
-    void testUpdateUserRoles_InvalidJson() throws Exception {
-        mockMvc.perform(put("/api/users/1/roles")
+    void testUpdateUserRole_InvalidJson() throws Exception {
+        mockMvc.perform(put("/api/users/1/role")
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("invalid json"))
@@ -143,15 +137,15 @@ class UserControllerTest {
     }
 
     @Test
-    void testUpdateUserRoles_ServiceException() throws Exception {
+    void testUpdateUserRole_ServiceException() throws Exception {
         // This test would require mocking the service to throw an exception
         // Since the current implementation doesn't use the service, we'll test the mock response
-        Set<String> newRoles = Set.of("ROLE_USER");
+        String newRole = "admin";
         
-        mockMvc.perform(put("/api/users/1/roles")
+        mockMvc.perform(put("/api/users/1/role")
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(newRoles)))
+                .content(objectMapper.writeValueAsString(newRole)))
                 .andExpect(status().isOk());
     }
 
@@ -175,13 +169,13 @@ class UserControllerTest {
     }
 
     @Test
-    void testUpdateUserRoles_InvalidId() throws Exception {
-        Set<String> newRoles = Set.of("ROLE_USER");
+    void testUpdateUserRole_InvalidId() throws Exception {
+        String newRole = "admin";
         
-        mockMvc.perform(put("/api/users/invalid/roles")
+        mockMvc.perform(put("/api/users/invalid/role")
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(newRoles)))
+                .content(objectMapper.writeValueAsString(newRole)))
                 .andExpect(status().isBadRequest());
     }
 

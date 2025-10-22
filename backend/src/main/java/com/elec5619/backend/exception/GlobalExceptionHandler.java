@@ -1,5 +1,10 @@
 package com.elec5619.backend.exception;
 
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -8,10 +13,6 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
-
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Global exception handler for the application.
@@ -75,6 +76,67 @@ public class GlobalExceptionHandler {
                 HttpStatus.BAD_REQUEST.value(),
                 "Bad Request",
                 "Invalid JSON format: " + ex.getMessage(),
+                null
+        );
+
+        return ResponseEntity.badRequest().body(errorResponse);
+    }
+
+    /**
+     * Handle data integrity violation exceptions (e.g., unique constraint violations)
+     * @param ex Data integrity violation exception
+     * @return Error response with 400 status
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrityViolationException(DataIntegrityViolationException ex) {
+        String message = "Data integrity violation";
+        if (ex.getMessage().contains("server_name")) {
+            message = "Server name already exists";
+        } else if (ex.getMessage().contains("unique")) {
+            message = "Duplicate entry detected";
+        }
+        
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "Bad Request",
+                message,
+                null
+        );
+
+        return ResponseEntity.badRequest().body(errorResponse);
+    }
+
+    /**
+     * Handle server name already exists exceptions
+     * @param ex Server name already exists exception
+     * @return Error response with 400 status
+     */
+    @ExceptionHandler(ServerNameAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleServerNameAlreadyExistsException(ServerNameAlreadyExistsException ex) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "Bad Request",
+                ex.getMessage(),
+                null
+        );
+
+        return ResponseEntity.badRequest().body(errorResponse);
+    }
+
+    /**
+     * Handle illegal argument exceptions (business logic errors)
+     * @param ex Illegal argument exception
+     * @return Error response with 400 status
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalArgumentException(IllegalArgumentException ex) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "Bad Request",
+                ex.getMessage(),
                 null
         );
 

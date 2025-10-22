@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -28,9 +29,10 @@ public interface ServerMetricsRepository extends JpaRepository<ServerMetrics, Lo
             Long serverId, LocalDateTime startTime, LocalDateTime endTime);
 
     /**
-     * Find all metrics for a specific server
+     * Find all metrics for a specific server with pagination
      */
-    List<ServerMetrics> findByServerIdOrderByCollectedAtDesc(Long serverId);
+    @Query(value = "SELECT * FROM server_metrics WHERE server_id = :serverId ORDER BY collected_at DESC LIMIT :limit OFFSET :offset", nativeQuery = true)
+    List<ServerMetrics> findMetricsByServerIdWithPagination(@Param("serverId") Long serverId, @Param("limit") int limit, @Param("offset") int offset);
 
     /**
      * Find metrics for all servers within a time range
