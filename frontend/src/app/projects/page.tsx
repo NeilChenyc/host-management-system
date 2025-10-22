@@ -19,7 +19,8 @@ import {
   Col,
   Statistic,
   Avatar,
-  Badge
+  Badge,
+  List
 } from 'antd';
 import {
   PlusOutlined,
@@ -28,12 +29,15 @@ import {
   DeleteOutlined,
   FolderOutlined,
   SettingOutlined,
-  ReloadOutlined
+  ReloadOutlined,
+  UserOutlined
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { AuthManager } from '@/lib/auth';
 import ServerApiService, { Device as Server } from '@/services/serverApi';
 import ProjectApiService, { ProjectStatus } from '@/services/projectApi';
+import type { UserResponseDto } from '@/services/userApi';
+import { getUserById, getAllUsers } from '@/services/userApi';
 import { serverCache } from '@/lib/serverCache';
 
 const { Search } = Input;
@@ -64,6 +68,17 @@ export default function ProjectsPage() {
   
   // Message API for React 19 compatibility
   const [messageApi, contextHolder] = message.useMessage();
+
+  // 项目成员查看弹窗状态
+  const [membersModalVisible, setMembersModalVisible] = useState(false);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [projectMembers, setProjectMembers] = useState<UserResponseDto[]>([]);
+  const [currentProjectName, setCurrentProjectName] = useState<string>('');
+  const [currentProjectId, setCurrentProjectId] = useState<string>('');
+  const [allUsers, setAllUsers] = useState<UserResponseDto[]>([]);
+  const [addSelectedUserIds, setAddSelectedUserIds] = useState<number[]>([]);
+  const [addMembersLoading, setAddMembersLoading] = useState(false);
+  const [removeMemberLoadingId, setRemoveMemberLoadingId] = useState<number | null>(null);
 
   // 组件挂载时加载数据
   useEffect(() => {
@@ -134,6 +149,37 @@ export default function ProjectsPage() {
     }
   };
 
+  // 查看项目成员
+  const handleViewMembers = async (project: Project) => {
+    setMembersModalVisible(true);
+    setCurrentProjectName(project.projectName);
+    setCurrentProjectId(project.id);
+    setMembersLoading(true);
+    try {
+      const memberIds = await ProjectApiService.getProjectMembers(project.id);
+      const details: UserResponseDto[] = await Promise.all(
+        memberIds.map(async (uid) => {
+          try {
+            const user = await getUserById(uid);
+            return user as UserResponseDto;
+          } catch {
+            return { id: Number(uid), username: `User-${uid}`, email: '', role: 'member' } as UserResponseDto;
+          }
+        })
+      );
+      setProjectMembers(details);
+      // 加载所有用户用于添加成员选择
+      const users = await getAllUsers();
+      setAllUsers(users);
+    } catch (error) {
+      console.error('Failed to load project members:', error);
+      const errorMessage = error instanceof Error ? error.message : '加载项目成员失败';
+      messageApi.error(errorMessage);
+    } finally {
+      setMembersLoading(false);
+    }
+  };
+
   // 表格列定义
   const columns: ColumnsType<Project> = [
     {
@@ -191,9 +237,17 @@ export default function ProjectsPage() {
     {
       title: 'Actions',
       key: 'actions',
-      width: 200,
+      width: 260,
       render: (_, record) => (
         <Space size="small">
+          <Button
+            type="link"
+            size="small"
+            icon={<UserOutlined />}
+            onClick={() => handleViewMembers(record)}
+          >
+            Members
+          </Button>
           <Button
             type="link"
             size="small"
@@ -209,7 +263,7 @@ export default function ProjectsPage() {
             okText="Yes"
             cancelText="No"
           >
-            <Button type="link" danger icon={<DeleteOutlined />}>
+            <Button type="link" danger icon={<DeleteOutlined />}> 
               Delete
             </Button>
           </Popconfirm>
@@ -326,6 +380,53 @@ export default function ProjectsPage() {
     const planning = filteredProjects.filter(p => p.status === 'planning').length;
     
     return { total, active, inactive, maintenance, planning };
+  };
+
+  // 添加项目成员
+  const handleAddMembers = async () => {
+    if (!currentProjectId || addSelectedUserIds.length === 0) {
+      messageApi.warning('请选择要添加的成员');
+      return;
+    }
+    setAddMembersLoading(true);
+    try {
+      await ProjectApiService.addProjectMembers(currentProjectId, addSelectedUserIds);
+      messageApi.success('成员添加成功');
+      const memberIds = await ProjectApiService.getProjectMembers(currentProjectId);
+      const details: UserResponseDto[] = await Promise.all(
+        memberIds.map(async (uid) => {
+          try {
+            const user = await getUserById(uid);
+            return user as UserResponseDto;
+          } catch {
+            return { id: Number(uid), username: `User-${uid}`, email: '', role: 'member' } as UserResponseDto;
+          }
+        })
+      );
+      setProjectMembers(details);
+      setAddSelectedUserIds([]);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '添加成员失败';
+      messageApi.error(errorMessage);
+    } finally {
+      setAddMembersLoading(false);
+    }
+  };
+
+  // 移除项目成员
+  const handleRemoveMember = async (userId: number) => {
+    if (!currentProjectId) return;
+    setRemoveMemberLoadingId(userId);
+    try {
+      await ProjectApiService.removeProjectMembers(currentProjectId, [userId]);
+      messageApi.success('成员已移除');
+      setProjectMembers((prev) => prev.filter((m) => m.id !== userId));
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '移除成员失败';
+      messageApi.error(errorMessage);
+    } finally {
+      setRemoveMemberLoadingId(null);
+    }
   };
 
   const stats = getStatistics();
@@ -514,6 +615,107 @@ export default function ProjectsPage() {
           </Form.Item>
         </Form>
       </Modal>
+
+      {/* Project Members Modal */}
+      <Modal
+        title={`Project Members${currentProjectName ? ` — ${currentProjectName}` : ''}`}
+        open={membersModalVisible}
+        onCancel={() => setMembersModalVisible(false)}
+        footer={null}
+        width={640}
+      >
+        <div style={{ marginBottom: 16 }}>
+          <Select
+            mode="multiple"
+            style={{ width: '100%' }}
+            placeholder="选择要添加的成员"
+            value={addSelectedUserIds.map(String)}
+            onChange={(vals) => setAddSelectedUserIds(vals.map((v) => Number(v)))}
+            options={allUsers
+              .filter(u => !projectMembers.some(m => m.id === u.id))
+              .map(u => ({ label: u.username, value: String(u.id) }))}
+          />
+          <Button type="primary" style={{ marginTop: 12 }} onClick={handleAddMembers} loading={addMembersLoading}>
+            添加成员
+          </Button>
+        </div>
+        <List
+          loading={membersLoading}
+          dataSource={projectMembers}
+          renderItem={(m) => (
+            <List.Item
+              actions={[
+                <Popconfirm
+                  key={`remove-${m.id}`}
+                  title="移除成员"
+                  description={`确认移除 ${m.username} ?`}
+                  onConfirm={() => handleRemoveMember(m.id)}
+                >
+                  <Button danger loading={removeMemberLoadingId === m.id}>移除</Button>
+                </Popconfirm>
+              ]}
+            >
+              <List.Item.Meta
+                avatar={<Avatar style={{ backgroundColor: '#87d068' }}>{(m.username || 'U').charAt(0).toUpperCase()}</Avatar>}
+                title={m.username}
+                description={m.email || `ID: ${m.id}`}
+              />
+              <Tag color="blue" style={{ marginLeft: 8 }}>{m.role || 'member'}</Tag>
+            </List.Item>
+          )}
+          locale={{
+            emptyText: '暂无成员或无法获取成员列表',
+          }}
+        />
+      </Modal>
     </MainLayout>
   );
 }
+
+// 添加项目成员
+const handleAddMembers = async () => {
+  if (!currentProjectId || addSelectedUserIds.length === 0) {
+    messageApi.warning('请选择要添加的成员');
+    return;
+  }
+  setAddMembersLoading(true);
+  try {
+    await ProjectApiService.addProjectMembers(currentProjectId, addSelectedUserIds);
+    messageApi.success('成员添加成功');
+    // 重新加载成员列表
+    const memberIds = await ProjectApiService.getProjectMembers(currentProjectId);
+    const details: UserResponseDto[] = await Promise.all(
+      memberIds.map(async (uid) => {
+        try {
+          const user = await getUserById(uid);
+          return user as UserResponseDto;
+        } catch {
+          return { id: Number(uid), username: `User-${uid}`, email: '', role: 'member' } as UserResponseDto;
+        }
+      })
+    );
+    setProjectMembers(details);
+    setAddSelectedUserIds([]);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : '添加成员失败';
+    messageApi.error(errorMessage);
+  } finally {
+    setAddMembersLoading(false);
+  }
+};
+
+// 移除项目成员
+const handleRemoveMember = async (userId: number) => {
+  if (!currentProjectId) return;
+  setRemoveMemberLoadingId(userId);
+  try {
+    await ProjectApiService.removeProjectMembers(currentProjectId, [userId]);
+    messageApi.success('成员已移除');
+    setProjectMembers((prev) => prev.filter((m) => m.id !== userId));
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : '移除成员失败';
+    messageApi.error(errorMessage);
+  } finally {
+    setRemoveMemberLoadingId(null);
+  }
+};

@@ -157,6 +157,16 @@ export class ProjectApiService {
     }
   }
 
+  // 获取项目成员（后端返回的是用户ID集合）
+  static async getProjectMembers(id: string): Promise<number[]> {
+    try {
+      const members = await makeRequest<number[]>(`/projects/${id}/members`);
+      return Array.isArray(members) ? members : [];
+    } catch (error) {
+      return handleApiError(error, '获取项目成员');
+    }
+  }
+
   // 删除项目
   static async deleteProject(id: string): Promise<void> {
     try {
