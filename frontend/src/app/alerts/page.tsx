@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import MainLayout from '@/components/MainLayout';
 import {
   Card,
   Table,
@@ -109,7 +110,7 @@ interface NotificationChannel {
   createdAt: string;
 }
 
-const AlertManagement: React.FC = () => {
+export default function AlertsPage() {
   // Mock user for now - replace with actual auth when available
   const user = { username: 'admin' };
   const [activeTab, setActiveTab] = useState('alerts');
@@ -721,14 +722,14 @@ const AlertManagement: React.FC = () => {
   ];
 
   return (
-    <div style={{ padding: '24px' }}>
+    <MainLayout>
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <Row justify="space-between" align="middle">
           <Col>
             <h1 style={{ margin: 0, display: 'flex', alignItems: 'center' }}>
               <BellOutlined style={{ marginRight: 8, color: '#1890ff' }} />
-              Alert Management
+              Alerts
             </h1>
           </Col>
         </Row>
@@ -1204,8 +1205,6 @@ const AlertManagement: React.FC = () => {
           </div>
         )}
       </Modal>
-    </div>
+    </MainLayout>
   );
-};
-
-export default AlertManagement;
+}

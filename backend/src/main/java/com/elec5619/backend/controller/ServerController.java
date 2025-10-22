@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.elec5619.backend.dto.ServerCreateDto;
+import com.elec5619.backend.dto.ServerOverviewDto;
 import com.elec5619.backend.dto.ServerResponseDto;
 import com.elec5619.backend.dto.ServerUpdateDto;
 import com.elec5619.backend.entity.ServerStatus;
@@ -67,6 +68,18 @@ public class ServerController {
     @Operation(summary = "List Servers", description = "List all servers")
     public ResponseEntity<List<ServerResponseDto>> listAll() {
         return ResponseEntity.ok(serverService.listAll());
+    }
+    
+    @GetMapping("/overview")
+    @Operation(summary = "Get Servers Overview", 
+               description = "Get all servers with their latest metrics, uptime, and alert counts")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved servers overview",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ServerOverviewDto.class)))
+    })
+    public ResponseEntity<List<ServerOverviewDto>> getServersOverview() {
+        return ResponseEntity.ok(serverService.getServersOverview());
     }
 
     @GetMapping("/{id}")

@@ -29,6 +29,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/users/**").permitAll()  // 允许所有用户管理请求（用于测试）
                 .requestMatchers("/api/servers/**").permitAll()  // 允许服务器管理API访问
                 .requestMatchers("/api/projects/**").permitAll() // 临时放行项目管理接口，待JWT集成后再收紧
+                .requestMatchers("/api/alert-events/**").permitAll() // 允许告警事件API访问
+                .requestMatchers("/api/alert-rules/**").permitAll() // 允许告警规则API访问
                 .requestMatchers("/api/example/**").permitAll() // 允许示例API访问（用于Swagger测试）
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/api-docs/**").permitAll()  // 允许Swagger UI访问
                 .anyRequest().authenticated()  // 其他所有请求需要认证
