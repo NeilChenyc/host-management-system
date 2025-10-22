@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.elec5619.backend.dto.UserRegistrationDto;
 import com.elec5619.backend.dto.UserResponseDto;
@@ -49,8 +50,9 @@ public class UserService {
         // Hash the password before storing it
         user.setPasswordHash(passwordEncoder.encode(registrationDto.getPassword()));
 
-        // Set default role (operation)
-        user.setRole("operation");
+        // Set role from registration data, default to "operation" if not provided
+        user.setRole(registrationDto.getRole() != null && !registrationDto.getRole().trim().isEmpty() 
+                ? registrationDto.getRole() : "operation");
 
         // Save user
         User savedUser = userRepository.save(user);
@@ -90,6 +92,16 @@ public class UserService {
     }
 
     /**
+     * Get user by ID
+     * @param id User ID to search for
+     * @return Optional containing user if found
+     */
+    public Optional<UserResponseDto> getUserById(Long id) {
+        return userRepository.findById(id)
+                .map(this::convertToUserResponseDto);
+    }
+
+    /**
      * Convert User entity to UserResponseDto
      * @param user User entity
      * @return UserResponseDto
@@ -108,6 +120,7 @@ public class UserService {
     }
     
     /**
+<<<<<<< Updated upstream
      * Get user by ID
      * @param id User ID
      * @return Optional containing user if found
@@ -144,6 +157,24 @@ public class UserService {
             return true;
         }
         return false;
+=======
+     * Update user role
+     * @param id User ID
+     * @param role New role
+     * @return Optional containing updated user if found
+     */
+    @Transactional
+    public Optional<UserResponseDto> updateUserRole(Long id, String role) {
+        System.out.println("DEBUG: updateUserRole called with id=" + id + ", role=" + role);
+        return userRepository.findById(id)
+                .map(user -> {
+                    System.out.println("DEBUG: Found user: " + user.getUsername() + ", current role: " + user.getRole());
+                    user.setRole(role);
+                    User savedUser = userRepository.save(user);
+                    System.out.println("DEBUG: Saved user role: " + savedUser.getRole());
+                    return convertToUserResponseDto(savedUser);
+                });
+>>>>>>> Stashed changes
     }
 
     /**

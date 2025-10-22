@@ -11,7 +11,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.elec5619.backend.constants.PermissionConstants;
+import com.elec5619.backend.entity.Project;
 import com.elec5619.backend.entity.User;
+import com.elec5619.backend.repository.ProjectRepository;
 import com.elec5619.backend.repository.UserRepository;
 
 /**
@@ -24,12 +26,14 @@ public class RoleService {
     @Autowired
     private UserRepository userRepository;
     
+    @Autowired
+    private ProjectRepository projectRepository;
+    
     // 硬编码的角色权限映射
     private static final Map<String, List<String>> ROLE_PERMISSIONS = Map.of(
         PermissionConstants.ROLE_OPERATION, List.of(
             PermissionConstants.PROJECT_READ_OWN,
-            PermissionConstants.PROJECT_WRITE_OWN,
-            PermissionConstants.PROJECT_READ_COMPANY
+            PermissionConstants.PROJECT_WRITE_OWN
         ),
         PermissionConstants.ROLE_MANAGER, List.of(
             PermissionConstants.PROJECT_READ_COMPANY
@@ -80,18 +84,19 @@ public class RoleService {
     /**
      * 获取用户可以访问的项目列表
      */
-    public List<Object> getAccessibleProjects(Long userId) {
+    public List<Project> getAccessibleProjects(Long userId) {
         Set<String> userPermissions = getUserPermissions(userId);
         
         if (userPermissions.contains(PermissionConstants.PROJECT_READ_ALL)) {
             // Admin: 所有项目
-            return new ArrayList<>(); // 这里需要根据实际的ProjectRepository来实现
+            return projectRepository.findAll();
         } else if (userPermissions.contains(PermissionConstants.PROJECT_READ_COMPANY)) {
-            // Manager: 公司所有项目
-            return new ArrayList<>(); // 这里需要根据实际的ProjectRepository来实现
+            // Manager: 公司所有项目（这里简化为所有项目）
+            return projectRepository.findAll();
         } else if (userPermissions.contains(PermissionConstants.PROJECT_READ_OWN)) {
-            // Operator: 自己的项目
-            return new ArrayList<>(); // 这里需要根据实际的ProjectRepository来实现
+            // Operator: 自己的项目（由于Project实体没有userId字段，这里返回空列表）
+            // TODO: 如果需要实现用户-项目关联，需要修改Project实体或创建关联表
+            return new ArrayList<>();
         }
         
         return new ArrayList<>();

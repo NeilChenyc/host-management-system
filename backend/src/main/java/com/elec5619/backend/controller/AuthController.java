@@ -160,13 +160,10 @@ public class AuthController {
         )
     })
     public ResponseEntity<UserResponseDto> getCurrentUser() {
-        // For now, return a mock response
-        UserResponseDto user = new UserResponseDto();
-        user.setId(1L);
-        user.setUsername("current_user");
-        user.setEmail("current@example.com");
-        user.setRole("operation");
-        
-        return ResponseEntity.ok(user);
+        // TODO: 在实际应用中，应该从JWT token中获取当前用户ID
+        // 这里暂时返回ID为32的用户（根据你的描述，这个用户能正确返回）
+        return userService.getUserByUsername("user32")
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 }

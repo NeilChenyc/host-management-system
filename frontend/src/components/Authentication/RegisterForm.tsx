@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Form, Input, Button, Card, Modal, Divider, message } from 'antd';
-import { UserOutlined, LockOutlined, MailOutlined, EyeInvisibleOutlined, EyeTwoTone } from '@ant-design/icons';
+import { Form, Input, Button, Card, Modal, Divider, message, Select } from 'antd';
+import { UserOutlined, LockOutlined, MailOutlined, EyeInvisibleOutlined, EyeTwoTone, TeamOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import { AuthManager } from '@/lib/auth';
 
@@ -10,6 +10,7 @@ interface RegisterFormData {
   username: string;
   email: string;
   password: string;
+  role: string;
 }
 
 interface RegisterFormProps {
@@ -31,11 +32,12 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onRegister, loading = false
   const handleSubmit = async (values: RegisterFormData) => {
     setIsLoading(true);
     try {
-      // 准备后端需要的精简字段：username、email、password（后端会设置默认角色）
+      // 准备后端需要的字段：username、email、password、role
       const payload = {
         username: values.username,
         email: values.email,
         password: values.password,
+        role: values.role,
       };
   
       // 调用统一的认证管理器，发起后端注册请求
@@ -169,6 +171,23 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onRegister, loading = false
               prefix={<LockOutlined />}
               placeholder="Create a strong password"
               iconRender={(visible) => (visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />)}
+            />
+          </Form.Item>
+
+          <Form.Item
+            label="Role"
+            name="role"
+            rules={[{ required: true, message: 'Please select a role!' }]}
+            initialValue="operation"
+          >
+            <Select
+              placeholder="Select your role"
+              prefix={<TeamOutlined />}
+              options={[
+                { value: 'operation', label: 'Operation Staff' },
+                { value: 'manager', label: 'Manager' },
+                { value: 'admin', label: 'Administrator' },
+              ]}
             />
           </Form.Item>
 

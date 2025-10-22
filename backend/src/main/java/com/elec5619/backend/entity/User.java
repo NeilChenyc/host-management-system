@@ -49,7 +49,7 @@ public class User {
     @NotBlank(message = "Role is required")
     @Size(max = 50, message = "Role name must not exceed 50 characters")
     @Column(name = "role", nullable = false, length = 50)
-    private String role = "operation"; // 默认角色
+    private String role; // 角色字段，无默认值
 
     // 用户参与的项目关联
     @OneToMany(mappedBy = "user")

@@ -1,6 +1,7 @@
 package com.elec5619.backend.controller;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.elec5619.backend.dto.RoleUpdateDto;
 import com.elec5619.backend.dto.UserResponseDto;
 import com.elec5619.backend.exception.GlobalExceptionHandler;
 import com.elec5619.backend.service.UserService;
@@ -90,6 +92,7 @@ public class UserController {
     public ResponseEntity<UserResponseDto> getUserById(
             @Parameter(description = "User ID", required = true)
             @PathVariable Long id) {
+        // 从数据库获取真实用户数据
         return userService.getUserById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -128,20 +131,16 @@ public class UserController {
             @Parameter(description = "User ID", required = true)
             @PathVariable Long id,
             @Parameter(description = "New role for the user", required = true)
-            @RequestBody String role) {
+            @RequestBody RoleUpdateDto roleUpdateDto) {
         try {
-            UserResponseDto updatedUser = userService.updateUserRole(id, role);
-            return ResponseEntity.ok(updatedUser);
-        } catch (RuntimeException e) {
-            // Handle user not found or other business logic errors
-            GlobalExceptionHandler.ErrorResponse errorResponse = new GlobalExceptionHandler.ErrorResponse(
-                java.time.LocalDateTime.now(),
-                HttpStatus.NOT_FOUND.value(),
-                "Not Found",
-                e.getMessage(),
-                null
-            );
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+            // 实际更新数据库中的用户角色
+            Optional<UserResponseDto> updatedUser = userService.updateUserRole(id, roleUpdateDto.getRole());
+            
+            if (updatedUser.isPresent()) {
+                return ResponseEntity.ok(updatedUser.get());
+            } else {
+                return ResponseEntity.notFound().build();
+            }
         } catch (Exception e) {
             // Handle any other exceptions
             GlobalExceptionHandler.ErrorResponse errorResponse = new GlobalExceptionHandler.ErrorResponse(
