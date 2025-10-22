@@ -343,9 +343,110 @@ export default function AlertsPage() {
     }
   ];
 
+  // Load alert rules from API
+  const loadAlertRules = async () => {
+    try {
+      const response = await fetch('http://localhost:8080/api/alert-rules');
+      if (!response.ok) throw new Error('Failed to fetch alert rules');
+      const data = await response.json();
+      
+      // Map backend data to frontend interface
+      const mappedRules: AlertRule[] = data.map((rule: any) => ({
+        id: rule.ruleId?.toString() || '',
+        name: rule.ruleName || '',
+        description: rule.description || '',
+        metric: mapBackendMetricToFrontend(rule.targetMetric),
+        condition: mapBackendComparatorToFrontend(rule.comparator),
+        threshold: rule.threshold || 0,
+        severity: rule.severity?.toLowerCase() || 'low',
+        duration: rule.duration || 0,
+        enabled: rule.enabled ?? true,
+        hostIds: [], // Backend doesn't store this directly
+        notificationChannels: [],
+        createdAt: rule.createdAt || new Date().toISOString(),
+        updatedAt: rule.updatedAt || new Date().toISOString(),
+        createdBy: 'system',
+        triggerCount: 0,
+        lastTriggered: undefined
+      }));
+      
+      setAlertRules(mappedRules);
+    } catch (error) {
+      console.error('Failed to load alert rules:', error);
+      messageApi.error('Failed to load alert rules');
+    }
+  };
+
+  // Load alert events from API
+  const loadAlertEvents = async () => {
+    try {
+      const response = await fetch('http://localhost:8080/api/alert-events');
+      if (!response.ok) throw new Error('Failed to fetch alert events');
+      const data = await response.json();
+      
+      // Map backend data to frontend interface
+      const mappedEvents: AlertInstance[] = data.map((event: any) => ({
+        id: event.eventId?.toString() || '',
+        ruleId: event.ruleId?.toString() || '',
+        ruleName: event.ruleName || 'Unknown Rule',
+        hostId: event.serverId?.toString() || '',
+        hostName: `Server ${event.serverId}`,
+        metric: event.metricName || '',
+        currentValue: event.currentValue || 0,
+        threshold: event.threshold || 0,
+        severity: event.severity?.toLowerCase() || 'low',
+        status: mapBackendStatusToFrontend(event.status),
+        message: event.message || '',
+        triggeredAt: event.startedAt || new Date().toISOString(),
+        resolvedAt: event.endedAt,
+        acknowledgedAt: undefined,
+        acknowledgedBy: undefined,
+        notes: event.additionalInfo
+      }));
+      
+      setAlertInstances(mappedEvents);
+    } catch (error) {
+      console.error('Failed to load alert events:', error);
+      messageApi.error('Failed to load alert events');
+    }
+  };
+
+  // Helper functions to map backend enums to frontend
+  const mapBackendMetricToFrontend = (metric: string): 'cpu' | 'memory' | 'disk' | 'network' | 'temperature' | 'service' => {
+    const mapping: Record<string, 'cpu' | 'memory' | 'disk' | 'network' | 'temperature' | 'service'> = {
+      'cpu_usage': 'cpu',
+      'memory_usage': 'memory',
+      'disk_usage': 'disk',
+      'network_in': 'network',
+      'network_out': 'network',
+      'temperature': 'temperature'
+    };
+    return mapping[metric] || 'cpu';
+  };
+
+  const mapBackendComparatorToFrontend = (comparator: string): 'greater_than' | 'less_than' | 'equals' | 'not_equals' => {
+    const mapping: Record<string, 'greater_than' | 'less_than' | 'equals' | 'not_equals'> = {
+      'GREATER_THAN': 'greater_than',
+      'LESS_THAN': 'less_than',
+      'EQUALS': 'equals',
+      'NOT_EQUALS': 'not_equals'
+    };
+    return mapping[comparator] || 'greater_than';
+  };
+
+  const mapBackendStatusToFrontend = (status: string): 'active' | 'resolved' | 'acknowledged' | 'suppressed' => {
+    const mapping: Record<string, 'active' | 'resolved' | 'acknowledged' | 'suppressed'> = {
+      'firing': 'active',
+      'resolved': 'resolved',
+      'acknowledged': 'acknowledged',
+      'suppressed': 'suppressed'
+    };
+    return mapping[status] || 'active';
+  };
+
   useEffect(() => {
-    setAlertRules(mockAlertRules);
-    setAlertInstances(mockAlertInstances);
+    loadAlertRules();
+    loadAlertEvents();
     setNotificationChannels(mockNotificationChannels);
   }, []);
 
@@ -400,55 +501,103 @@ export default function AlertsPage() {
   const handleSaveRule = async (values: any) => {
     setLoading(true);
     try {
+      // Map frontend data to backend format
+      const backendData = {
+        ruleName: values.name,
+        description: values.description,
+        targetMetric: mapFrontendMetricToBackend(values.metric),
+        comparator: mapFrontendConditionToBackend(values.condition),
+        threshold: values.threshold,
+        duration: values.duration,
+        severity: values.severity?.toUpperCase() || 'WARNING',
+        enabled: values.enabled ?? true,
+        scopeLevel: 'SERVER',
+        projectId: 1 // Default project
+      };
+
       if (selectedRule) {
         // Update existing rule
-        const updatedRules = alertRules.map(rule => 
-          rule.id === selectedRule.id 
-            ? { ...rule, ...values, updatedAt: new Date().toISOString() }
-            : rule
-        );
-        setAlertRules(updatedRules);
-        message.success('Alert rule updated successfully');
+        const response = await fetch(`http://localhost:8080/api/alert-rules/${selectedRule.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(backendData)
+        });
+        
+        if (!response.ok) throw new Error('Failed to update alert rule');
+        messageApi.success('Alert rule updated successfully');
       } else {
         // Create new rule
-        const newRule: AlertRule = {
-          id: `rule-${Date.now()}`,
-          ...values,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          createdBy: user?.username || 'unknown',
-          triggerCount: 0
-        };
-        setAlertRules([...alertRules, newRule]);
-        message.success('Alert rule created successfully');
+        const response = await fetch('http://localhost:8080/api/alert-rules', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(backendData)
+        });
+        
+        if (!response.ok) throw new Error('Failed to create alert rule');
+        messageApi.success('Alert rule created successfully');
       }
+      
       setIsRuleModalVisible(false);
+      await loadAlertRules(); // Reload data
     } catch (error) {
-      message.error('Failed to save alert rule');
+      console.error('Failed to save alert rule:', error);
+      messageApi.error('Failed to save alert rule');
     } finally {
       setLoading(false);
     }
   };
 
+  // Helper functions to map frontend enums to backend
+  const mapFrontendMetricToBackend = (metric: string): string => {
+    const mapping: Record<string, string> = {
+      'cpu': 'cpu_usage',
+      'memory': 'memory_usage',
+      'disk': 'disk_usage',
+      'network': 'network_in',
+      'temperature': 'temperature'
+    };
+    return mapping[metric] || 'cpu_usage';
+  };
+
+  const mapFrontendConditionToBackend = (condition: string): string => {
+    const mapping: Record<string, string> = {
+      'greater_than': 'GREATER_THAN',
+      'less_than': 'LESS_THAN',
+      'equals': 'EQUALS',
+      'not_equals': 'NOT_EQUALS'
+    };
+    return mapping[condition] || 'GREATER_THAN';
+  };
+
   const handleDeleteRule = async (ruleId: string) => {
     try {
-      const updatedRules = alertRules.filter(rule => rule.id !== ruleId);
-      setAlertRules(updatedRules);
-      message.success('Alert rule deleted successfully');
+      const response = await fetch(`http://localhost:8080/api/alert-rules/${ruleId}`, {
+        method: 'DELETE'
+      });
+      
+      if (!response.ok) throw new Error('Failed to delete alert rule');
+      
+      messageApi.success('Alert rule deleted successfully');
+      await loadAlertRules(); // Reload data
     } catch (error) {
-      message.error('Failed to delete alert rule');
+      console.error('Failed to delete alert rule:', error);
+      messageApi.error('Failed to delete alert rule');
     }
   };
 
   const handleToggleRule = async (ruleId: string, enabled: boolean) => {
     try {
-      const updatedRules = alertRules.map(rule => 
-        rule.id === ruleId ? { ...rule, enabled } : rule
-      );
-      setAlertRules(updatedRules);
-      message.success(`Alert rule ${enabled ? 'enabled' : 'disabled'}`);
+      const response = await fetch(`http://localhost:8080/api/alert-rules/${ruleId}/status?enabled=${enabled}`, {
+        method: 'PATCH'
+      });
+      
+      if (!response.ok) throw new Error('Failed to toggle alert rule');
+      
+      messageApi.success(`Alert rule ${enabled ? 'enabled' : 'disabled'}`);
+      await loadAlertRules(); // Reload data
     } catch (error) {
-      message.error('Failed to update alert rule');
+      console.error('Failed to update alert rule:', error);
+      messageApi.error('Failed to update alert rule');
     }
   };
 
@@ -474,19 +623,17 @@ export default function AlertsPage() {
 
   const handleResolveAlert = async (alertId: string) => {
     try {
-      const updatedAlerts = alertInstances.map(alert => 
-        alert.id === alertId 
-          ? { 
-              ...alert, 
-              status: 'resolved' as const,
-              resolvedAt: new Date().toISOString()
-            }
-          : alert
-      );
-      setAlertInstances(updatedAlerts);
-      message.success('Alert resolved');
+      const response = await fetch(`http://localhost:8080/api/alert-events/${alertId}/resolve`, {
+        method: 'PATCH'
+      });
+      
+      if (!response.ok) throw new Error('Failed to resolve alert');
+      
+      messageApi.success('Alert resolved successfully');
+      await loadAlertEvents(); // Reload data
     } catch (error) {
-      message.error('Failed to resolve alert');
+      console.error('Failed to resolve alert:', error);
+      messageApi.error('Failed to resolve alert');
     }
   };
 
@@ -783,7 +930,7 @@ export default function AlertsPage() {
       {/* Main Content */}
       <Card>
         <Tabs activeKey={activeTab} onChange={setActiveTab}>
-          <TabPane tab="Alert Instances" key="alerts">
+          <TabPane tab="Alert Events" key="alerts">
             <div style={{ marginBottom: 16 }}>
               <Row justify="space-between">
                 <Col>
