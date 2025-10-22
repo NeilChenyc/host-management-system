@@ -27,9 +27,10 @@ public class AlertSystemServiceImpl implements AlertSystemService {
     private static final Logger logger = Logger.getLogger(AlertSystemServiceImpl.class.getName());
 
     @Autowired
-    public AlertSystemServiceImpl(AlertRuleService alertRuleService,
-                                  AlertEventService alertEventService,
-                                  ServerMetricsRepository serverMetricsRepository) {
+    public AlertSystemServiceImpl(AlertRuleService alertRuleService, 
+                                    AlertEventService alertEventService,
+                                    ServerMetricsRepository serverMetricsRepository,
+                                    NotificationService notificationService) {
         this.alertRuleService = alertRuleService;
         this.alertEventService = alertEventService;
         this.serverMetricsRepository = serverMetricsRepository;
