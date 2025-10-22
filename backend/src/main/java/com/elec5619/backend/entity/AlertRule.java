@@ -33,7 +33,7 @@ public class AlertRule {
     private String targetMetric;
 
     @NotBlank(message = "Comparator is required")
-    @Column(name = "comparator", nullable = false, length = 10)
+    @Column(name = "comparator", nullable = false, length = 20)
     private String comparator;
 
     @NotNull(message = "Threshold is required")
