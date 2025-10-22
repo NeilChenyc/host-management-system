@@ -4,7 +4,7 @@
 
 ## 📋 Project Overview
 
-This is a modern host management system developed with Next.js 15 + React 19 + Ant Design 5 + TypeScript technology stack. The system provides comprehensive device monitoring, user management, system settings and other functional modules, suitable for unified host device management in enterprise environments.
+This is a modern host management system developed with Next.js 15 + React 19 + Ant Design 5 + TypeScript technology stack. The system provides comprehensive device monitoring, user management, system settings and other functional modules, suitable for unified host device management in enterprise environments
 
 **Note: This project is a course assignment project for learning and demonstrating modern frontend development technologies.**
 
