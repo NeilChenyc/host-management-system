@@ -61,14 +61,12 @@ public class AlertRuleController {
     })
     public ResponseEntity<?> createAlertRule(@Valid @RequestBody AlertRule alertRule) {
         try {
-            // Ensure enabled status is set
             if (alertRule.getEnabled() == null) {
                 alertRule.setEnabled(true);
             }
             AlertRule createdRule = alertRuleService.createAlertRule(alertRule);
             return new ResponseEntity<>(createdRule, HttpStatus.CREATED);
         } catch (IllegalArgumentException e) {
-            // Handle duplicate rule name error with proper 400 status code
             GlobalExceptionHandler.ErrorResponse errorResponse = new GlobalExceptionHandler.ErrorResponse(
                 java.time.LocalDateTime.now(),
                 HttpStatus.BAD_REQUEST.value(),
@@ -78,7 +76,6 @@ public class AlertRuleController {
             );
             return ResponseEntity.badRequest().body(errorResponse);
         } catch (Exception e) {
-            // Handle all other exceptions
             GlobalExceptionHandler.ErrorResponse errorResponse = new GlobalExceptionHandler.ErrorResponse(
                 java.time.LocalDateTime.now(),
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
@@ -298,5 +295,18 @@ public class AlertRuleController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();
         }
+    }
+
+    /**
+     * Get alert rules by project ID
+     */
+    @GetMapping("/project/{projectId}")
+    @Operation(summary = "Get Alert Rules by Project", description = "Retrieve alert rules under a specific project")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Alert rules retrieved",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = AlertRule.class)))
+    })
+    public ResponseEntity<List<AlertRule>> getRulesByProject(@PathVariable Long projectId) {
+        return ResponseEntity.ok(alertRuleService.getAlertRulesByProjectId(projectId));
     }
 }
