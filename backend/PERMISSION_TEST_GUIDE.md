@@ -114,23 +114,23 @@ curl -X GET "http://localhost:8080/api/projects/1" \
 
 ### 1. 角色检查测试
 
-**端点**: `GET /api/example/profile`
+**端点**: `GET /api/users/{id}`
 
 ```bash
-# 检查用户角色
-curl -X GET "http://localhost:8080/api/example/profile" \
+# 检查用户角色和权限
+curl -X GET "http://localhost:8080/api/users/1" \
   -H "User-ID: 1"
 
-# 预期结果: "User role: operation" (根据用户实际角色)
+# 预期结果: 返回用户信息，包括角色信息
 ```
 
 ### 2. 管理员权限测试
 
-**端点**: `GET /api/example/admin/users`
+**端点**: `GET /api/users`
 
 ```bash
-# 测试管理员权限
-curl -X GET "http://localhost:8080/api/example/admin/users" \
+# 测试管理员权限 - 获取所有用户
+curl -X GET "http://localhost:8080/api/users" \
   -H "User-ID: 1"
 
 # 预期结果: 403 Forbidden (除非用户是admin角色)
