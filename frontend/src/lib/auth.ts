@@ -165,6 +165,7 @@ export async function login(username: string, password: string): Promise<{ ok: b
     const user: User = {
       id: String(data?.user?.id ?? data?.id ?? ''),
       username: data?.user?.username ?? data?.username ?? username,
+      name: data?.user?.name ?? data?.name ?? data?.user?.username ?? data?.username ?? username,
       email: data?.user?.email ?? data?.email ?? `${username}@example.com`,
       role: mappedRole,
     };

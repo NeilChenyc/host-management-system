@@ -167,6 +167,32 @@ export class ProjectApiService {
     }
   }
 
+  // 添加项目成员
+  static async addProjectMembers(id: string, userIds: number[]): Promise<ProjectItem> {
+    try {
+      const dto = await makeRequest<ProjectResponseDto>(`/projects/${id}/members`, {
+        method: 'POST',
+        body: JSON.stringify(userIds),
+      });
+      return toProjectItem(dto);
+    } catch (error) {
+      return handleApiError(error, '添加项目成员');
+    }
+  }
+
+  // 删除项目成员
+  static async removeProjectMembers(id: string, userIds: number[]): Promise<ProjectItem> {
+    try {
+      const dto = await makeRequest<ProjectResponseDto>(`/projects/${id}/members`, {
+        method: 'DELETE',
+        body: JSON.stringify(userIds),
+      });
+      return toProjectItem(dto);
+    } catch (error) {
+      return handleApiError(error, '删除项目成员');
+    }
+  }
+
   // 删除项目
   static async deleteProject(id: string): Promise<void> {
     try {

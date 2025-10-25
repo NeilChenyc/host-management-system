@@ -145,7 +145,7 @@ export default function MainLayout({
                 }}
               >
                 <Avatar size="small" icon={<UserOutlined />} style={{ backgroundColor: '#1890ff' }} />
-                <span style={{ fontSize: '14px' }}>{user?.name || 'User'}</span>
+                <span style={{ fontSize: '14px' }}>{user?.name || user?.username || 'User'}</span>
               </div>
             </Dropdown>
           </div>
