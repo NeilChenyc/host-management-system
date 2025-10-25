@@ -1,8 +1,29 @@
 package com.elec5619.backend.controller;
 
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestAttribute;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.elec5619.backend.constants.PermissionConstants;
 import com.elec5619.backend.entity.AlertRule;
 import com.elec5619.backend.exception.GlobalExceptionHandler;
 import com.elec5619.backend.service.AlertRuleService;
+import com.elec5619.backend.util.PermissionChecker;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -10,12 +31,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 /**
  * Alert Rule controller.
@@ -28,6 +43,9 @@ import java.util.List;
 public class AlertRuleController {
 
     private final AlertRuleService alertRuleService;
+    
+    @Autowired
+    private PermissionChecker permissionChecker;
 
     @Autowired
     public AlertRuleController(AlertRuleService alertRuleService) {
@@ -57,9 +75,15 @@ public class AlertRuleController {
             responseCode = "400",
             description = "Invalid alert rule data or duplicate rule name",
             content = @Content
-        )
+        ),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - insufficient permissions")
     })
-    public ResponseEntity<?> createAlertRule(@Valid @RequestBody AlertRule alertRule) {
+    public ResponseEntity<?> createAlertRule(
+            @Valid @RequestBody AlertRule alertRule,
+            @RequestAttribute("userId") Long userId) {
+        // 只有Admin和Manager可以创建告警规则
+        permissionChecker.requirePermission(userId, PermissionConstants.ALERT_MANAGE_ALL);
         try {
             if (alertRule.getEnabled() == null) {
                 alertRule.setEnabled(true);
@@ -104,9 +128,13 @@ public class AlertRuleController {
                 mediaType = "application/json",
                 schema = @Schema(implementation = AlertRule.class)
             )
-        )
+        ),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - insufficient permissions")
     })
-    public ResponseEntity<List<AlertRule>> getAllAlertRules() {
+    public ResponseEntity<List<AlertRule>> getAllAlertRules(@RequestAttribute("userId") Long userId) {
+        // 所有角色都可以查看告警规则列表（只读）
+        permissionChecker.requirePermission(userId, PermissionConstants.ALERT_READ_ALL);
         List<AlertRule> rules = alertRuleService.getAllAlertRules();
         return ResponseEntity.ok(rules);
     }
@@ -134,9 +162,15 @@ public class AlertRuleController {
             responseCode = "404",
             description = "Alert rule not found",
             content = @Content
-        )
+        ),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - insufficient permissions")
     })
-    public ResponseEntity<AlertRule> getAlertRuleById(@PathVariable Long ruleId) {
+    public ResponseEntity<AlertRule> getAlertRuleById(
+            @PathVariable Long ruleId,
+            @RequestAttribute("userId") Long userId) {
+        // 所有角色都可以查看告警规则详情
+        permissionChecker.requirePermission(userId, PermissionConstants.ALERT_READ_ALL);
         return alertRuleService.getAlertRuleById(ruleId)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
@@ -171,9 +205,16 @@ public class AlertRuleController {
             responseCode = "400",
             description = "Invalid alert rule data",
             content = @Content
-        )
+        ),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - insufficient permissions")
     })
-    public ResponseEntity<AlertRule> updateAlertRule(@PathVariable Long ruleId, @Valid @RequestBody AlertRule alertRule) {
+    public ResponseEntity<AlertRule> updateAlertRule(
+            @PathVariable Long ruleId,
+            @Valid @RequestBody AlertRule alertRule,
+            @RequestAttribute("userId") Long userId) {
+        // 只有Admin和Manager可以更新告警规则
+        permissionChecker.requirePermission(userId, PermissionConstants.ALERT_MANAGE_ALL);
         try {
             AlertRule updatedRule = alertRuleService.updateAlertRule(ruleId, alertRule);
             return ResponseEntity.ok(updatedRule);
@@ -201,9 +242,15 @@ public class AlertRuleController {
             responseCode = "404",
             description = "Alert rule not found",
             content = @Content
-        )
+        ),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - insufficient permissions")
     })
-    public ResponseEntity<Void> deleteAlertRule(@PathVariable Long ruleId) {
+    public ResponseEntity<Void> deleteAlertRule(
+            @PathVariable Long ruleId,
+            @RequestAttribute("userId") Long userId) {
+        // 只有Admin和Manager可以删除告警规则
+        permissionChecker.requirePermission(userId, PermissionConstants.ALERT_MANAGE_ALL);
         try {
             alertRuleService.deleteAlertRule(ruleId);
             return ResponseEntity.noContent().build();
@@ -230,9 +277,15 @@ public class AlertRuleController {
                 mediaType = "application/json",
                 schema = @Schema(implementation = AlertRule.class)
             )
-        )
+        ),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - insufficient permissions")
     })
-    public ResponseEntity<List<AlertRule>> getAlertRulesByEnabled(@PathVariable Boolean enabled) {
+    public ResponseEntity<List<AlertRule>> getAlertRulesByEnabled(
+            @PathVariable Boolean enabled,
+            @RequestAttribute("userId") Long userId) {
+        // 所有角色都可以查看告警规则列表
+        permissionChecker.requirePermission(userId, PermissionConstants.ALERT_READ_ALL);
         List<AlertRule> rules = alertRuleService.getAlertRulesByEnabled(enabled);
         return ResponseEntity.ok(rules);
     }
@@ -255,9 +308,15 @@ public class AlertRuleController {
                 mediaType = "application/json",
                 schema = @Schema(implementation = AlertRule.class)
             )
-        )
+        ),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - insufficient permissions")
     })
-    public ResponseEntity<List<AlertRule>> getAlertRulesBySeverity(@PathVariable String severity) {
+    public ResponseEntity<List<AlertRule>> getAlertRulesBySeverity(
+            @PathVariable String severity,
+            @RequestAttribute("userId") Long userId) {
+        // 所有角色都可以查看告警规则列表
+        permissionChecker.requirePermission(userId, PermissionConstants.ALERT_READ_ALL);
         List<AlertRule> rules = alertRuleService.getAlertRulesBySeverity(severity);
         return ResponseEntity.ok(rules);
     }
@@ -286,9 +345,16 @@ public class AlertRuleController {
             responseCode = "404",
             description = "Alert rule not found",
             content = @Content
-        )
+        ),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - insufficient permissions")
     })
-    public ResponseEntity<AlertRule> toggleAlertRuleStatus(@PathVariable Long ruleId, @RequestParam Boolean enabled) {
+    public ResponseEntity<AlertRule> toggleAlertRuleStatus(
+            @PathVariable Long ruleId,
+            @RequestParam Boolean enabled,
+            @RequestAttribute("userId") Long userId) {
+        // 只有Admin和Manager可以修改告警规则状态
+        permissionChecker.requirePermission(userId, PermissionConstants.ALERT_MANAGE_ALL);
         try {
             AlertRule updatedRule = alertRuleService.toggleAlertRuleStatus(ruleId, enabled);
             return ResponseEntity.ok(updatedRule);
@@ -304,9 +370,15 @@ public class AlertRuleController {
     @Operation(summary = "Get Alert Rules by Project", description = "Retrieve alert rules under a specific project")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Alert rules retrieved",
-            content = @Content(mediaType = "application/json", schema = @Schema(implementation = AlertRule.class)))
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = AlertRule.class))),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - insufficient permissions")
     })
-    public ResponseEntity<List<AlertRule>> getRulesByProject(@PathVariable Long projectId) {
+    public ResponseEntity<List<AlertRule>> getRulesByProject(
+            @PathVariable Long projectId,
+            @RequestAttribute("userId") Long userId) {
+        // 所有角色都可以查看告警规则列表
+        permissionChecker.requirePermission(userId, PermissionConstants.ALERT_READ_ALL);
         return ResponseEntity.ok(alertRuleService.getAlertRulesByProjectId(projectId));
     }
 }

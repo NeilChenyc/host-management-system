@@ -15,10 +15,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.elec5619.backend.constants.PermissionConstants;
 import com.elec5619.backend.dto.RoleUpdateDto;
 import com.elec5619.backend.dto.UserResponseDto;
 import com.elec5619.backend.exception.GlobalExceptionHandler;
 import com.elec5619.backend.service.UserService;
+import com.elec5619.backend.util.PermissionChecker;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -40,6 +42,9 @@ public class UserController {
 
     @Autowired
     private UserService userService;
+    
+    @Autowired
+    private PermissionChecker permissionChecker;
 
     /**
      * Get all users
@@ -48,7 +53,7 @@ public class UserController {
     @GetMapping
     @Operation(
         summary = "Get All Users",
-        description = "Retrieve a list of all users in the system"
+        description = "Retrieve a list of all users in the system. All authenticated users can view the user list."
     )
     @ApiResponses(value = {
         @ApiResponse(
@@ -58,9 +63,15 @@ public class UserController {
                 mediaType = "application/json",
                 schema = @Schema(implementation = UserResponseDto.class)
             )
-        )
+        ),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - insufficient permissions")
     })
-    public ResponseEntity<List<UserResponseDto>> getAllUsers() {
+    public ResponseEntity<List<UserResponseDto>> getAllUsers(
+            @Parameter(hidden = true) @org.springframework.web.bind.annotation.RequestAttribute("userId") Long userId) {
+        // 所有角色都可以查看用户列表（只读）
+        permissionChecker.requirePermission(userId, PermissionConstants.USER_READ_ALL);
+        
         List<UserResponseDto> users = userService.getAllUsers();
         return ResponseEntity.ok(users);
     }
@@ -107,7 +118,7 @@ public class UserController {
     @PutMapping("/{id}/role")
     @Operation(
         summary = "Update User Role",
-        description = "Update the role assigned to a specific user"
+        description = "Update the role assigned to a specific user. Requires Admin or Manager role."
     )
     @ApiResponses(value = {
         @ApiResponse(
@@ -123,6 +134,14 @@ public class UserController {
             description = "Invalid input data"
         ),
         @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized - invalid or missing JWT token"
+        ),
+        @ApiResponse(
+            responseCode = "403",
+            description = "Forbidden - insufficient permissions"
+        ),
+        @ApiResponse(
             responseCode = "404",
             description = "User not found"
         )
@@ -131,7 +150,11 @@ public class UserController {
             @Parameter(description = "User ID", required = true)
             @PathVariable Long id,
             @Parameter(description = "New role for the user", required = true)
-            @RequestBody RoleUpdateDto roleUpdateDto) {
+            @RequestBody RoleUpdateDto roleUpdateDto,
+            @Parameter(hidden = true) @org.springframework.web.bind.annotation.RequestAttribute("userId") Long currentUserId) {
+        // 只有Admin和Manager可以更新用户角色
+        permissionChecker.requirePermission(currentUserId, PermissionConstants.USER_MANAGE_ALL);
+        
         try {
             // 实际更新数据库中的用户角色
             Optional<UserResponseDto> updatedUser = userService.updateUserRole(id, roleUpdateDto.getRole());

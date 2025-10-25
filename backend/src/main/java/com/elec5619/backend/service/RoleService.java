@@ -12,11 +12,11 @@ import org.springframework.stereotype.Service;
 
 import com.elec5619.backend.constants.PermissionConstants;
 import com.elec5619.backend.entity.Project;
-import com.elec5619.backend.entity.User;
 import com.elec5619.backend.entity.ProjectMember;
+import com.elec5619.backend.entity.User;
+import com.elec5619.backend.repository.ProjectMemberRepository;
 import com.elec5619.backend.repository.ProjectRepository;
 import com.elec5619.backend.repository.UserRepository;
-import com.elec5619.backend.repository.ProjectMemberRepository;
 
 /**
  * Service class for role-based permission management.
@@ -34,19 +34,36 @@ public class RoleService {
     @Autowired
     private ProjectMemberRepository projectMemberRepository;
     // 硬编码的角色权限映射
+    // Manager和Admin拥有相同的权限
     private static final Map<String, List<String>> ROLE_PERMISSIONS = Map.of(
         PermissionConstants.ROLE_OPERATION, List.of(
             PermissionConstants.PROJECT_READ_OWN,
             PermissionConstants.PROJECT_WRITE_OWN,
-            PermissionConstants.PROJECT_READ_COMPANY
+            PermissionConstants.PROJECT_READ_COMPANY,
+            PermissionConstants.USER_READ_ALL,        // Operation可以查看用户列表（只读）
+            PermissionConstants.SERVER_READ_ALL,      // Operation可以查看服务器（只读）
+            PermissionConstants.ALERT_READ_ALL        // Operation可以查看告警（只读）
         ),
         PermissionConstants.ROLE_MANAGER, List.of(
-            PermissionConstants.PROJECT_READ_COMPANY
+            PermissionConstants.PROJECT_READ_ALL,
+            PermissionConstants.PROJECT_WRITE_ALL,
+            PermissionConstants.USER_READ_ALL,        // Manager可以查看用户
+            PermissionConstants.USER_MANAGE_ALL,      // Manager可以管理用户
+            PermissionConstants.SERVER_READ_ALL,      // Manager可以查看服务器
+            PermissionConstants.SERVER_MANAGE_ALL,    // Manager可以管理服务器
+            PermissionConstants.ALERT_READ_ALL,       // Manager可以查看告警
+            PermissionConstants.ALERT_MANAGE_ALL,     // Manager可以管理告警
+            PermissionConstants.SYSTEM_MANAGE_ALL
         ),
         PermissionConstants.ROLE_ADMIN, List.of(
             PermissionConstants.PROJECT_READ_ALL,
             PermissionConstants.PROJECT_WRITE_ALL,
-            PermissionConstants.USER_MANAGE_ALL,
+            PermissionConstants.USER_READ_ALL,        // Admin可以查看用户
+            PermissionConstants.USER_MANAGE_ALL,      // Admin可以管理用户
+            PermissionConstants.SERVER_READ_ALL,      // Admin可以查看服务器
+            PermissionConstants.SERVER_MANAGE_ALL,    // Admin可以管理服务器
+            PermissionConstants.ALERT_READ_ALL,       // Admin可以查看告警
+            PermissionConstants.ALERT_MANAGE_ALL,     // Admin可以管理告警
             PermissionConstants.SYSTEM_MANAGE_ALL
         )
     );

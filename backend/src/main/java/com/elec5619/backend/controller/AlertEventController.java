@@ -1,29 +1,44 @@
 package com.elec5619.backend.controller;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestAttribute;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.elec5619.backend.constants.PermissionConstants;
 import com.elec5619.backend.entity.AlertEvent;
 import com.elec5619.backend.exception.GlobalExceptionHandler;
 import com.elec5619.backend.service.AlertEventService;
 import com.elec5619.backend.service.AlertSystemService;
+import com.elec5619.backend.util.PermissionChecker;
+
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
-import org.springframework.data.domain.Sort;
-import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.time.LocalDateTime;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/alert-events")
@@ -33,6 +48,9 @@ public class AlertEventController {
 
     private final AlertEventService alertEventService;
     private final AlertSystemService alertSystemService;
+    
+    @Autowired
+    private PermissionChecker permissionChecker;
 
     @Autowired
     public AlertEventController(AlertEventService alertEventService,
@@ -46,9 +64,15 @@ public class AlertEventController {
     @ApiResponses(value = {
         @ApiResponse(responseCode = "201", description = "Alert event created successfully",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = AlertEvent.class))),
-        @ApiResponse(responseCode = "400", description = "Invalid alert event data", content = @Content)
+        @ApiResponse(responseCode = "400", description = "Invalid alert event data", content = @Content),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - insufficient permissions")
     })
-    public ResponseEntity<AlertEvent> createAlertEvent(@Valid @RequestBody AlertEvent alertEvent) {
+    public ResponseEntity<AlertEvent> createAlertEvent(
+            @Valid @RequestBody AlertEvent alertEvent,
+            @RequestAttribute("userId") Long userId) {
+        // 只有Admin和Manager可以创建告警事件
+        permissionChecker.requirePermission(userId, PermissionConstants.ALERT_MANAGE_ALL);
         AlertEvent createdEvent = alertEventService.createAlertEvent(alertEvent);
         return new ResponseEntity<>(createdEvent, HttpStatus.CREATED);
     }
@@ -58,9 +82,13 @@ public class AlertEventController {
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Alert events retrieved successfully",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = AlertEvent.class))),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - insufficient permissions"),
         @ApiResponse(responseCode = "500", description = "Internal server error", content = @Content)
     })
-    public ResponseEntity<?> getAllAlertEvents() {
+    public ResponseEntity<?> getAllAlertEvents(@RequestAttribute("userId") Long userId) {
+        // 所有角色都可以查看告警事件列表
+        permissionChecker.requirePermission(userId, PermissionConstants.ALERT_READ_ALL);
         try {
             List<AlertEvent> events = alertEventService.getAllAlertEvents();
             return ResponseEntity.ok(events);
@@ -81,9 +109,15 @@ public class AlertEventController {
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Alert event retrieved successfully",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = AlertEvent.class))),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - insufficient permissions"),
         @ApiResponse(responseCode = "404", description = "Alert event not found", content = @Content)
     })
-    public ResponseEntity<AlertEvent> getAlertEventById(@PathVariable Long eventId) {
+    public ResponseEntity<AlertEvent> getAlertEventById(
+            @PathVariable Long eventId,
+            @RequestAttribute("userId") Long userId) {
+        // 所有角色都可以查看告警事件详情
+        permissionChecker.requirePermission(userId, PermissionConstants.ALERT_READ_ALL);
         return alertEventService.getAlertEventById(eventId)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
@@ -94,10 +128,17 @@ public class AlertEventController {
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Alert event updated successfully",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = AlertEvent.class))),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - insufficient permissions"),
         @ApiResponse(responseCode = "404", description = "Alert event not found", content = @Content),
         @ApiResponse(responseCode = "400", description = "Invalid alert event data", content = @Content)
     })
-    public ResponseEntity<AlertEvent> updateAlertEvent(@PathVariable Long eventId, @Valid @RequestBody AlertEvent alertEvent) {
+    public ResponseEntity<AlertEvent> updateAlertEvent(
+            @PathVariable Long eventId,
+            @Valid @RequestBody AlertEvent alertEvent,
+            @RequestAttribute("userId") Long userId) {
+        // 只有Admin和Manager可以更新告警事件
+        permissionChecker.requirePermission(userId, PermissionConstants.ALERT_MANAGE_ALL);
         try {
             AlertEvent updatedEvent = alertEventService.updateAlertEvent(eventId, alertEvent);
             return ResponseEntity.ok(updatedEvent);
@@ -110,9 +151,15 @@ public class AlertEventController {
     @Operation(summary = "Delete Alert Event", description = "Delete an alert event by its ID")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "204", description = "Alert event deleted successfully", content = @Content),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - insufficient permissions"),
         @ApiResponse(responseCode = "404", description = "Alert event not found", content = @Content)
     })
-    public ResponseEntity<Void> deleteAlertEvent(@PathVariable Long eventId) {
+    public ResponseEntity<Void> deleteAlertEvent(
+            @PathVariable Long eventId,
+            @RequestAttribute("userId") Long userId) {
+        // 只有Admin和Manager可以删除告警事件
+        permissionChecker.requirePermission(userId, PermissionConstants.ALERT_MANAGE_ALL);
         try {
             alertEventService.deleteAlertEvent(eventId);
             return ResponseEntity.noContent().build();
@@ -123,19 +170,28 @@ public class AlertEventController {
 
     @GetMapping("/rule/{ruleId}")
     @Operation(summary = "Get Alert Events by Rule ID", description = "Retrieve alert events triggered by a specific rule")
-    public ResponseEntity<List<AlertEvent>> getAlertEventsByRuleId(@PathVariable Long ruleId) {
+    public ResponseEntity<List<AlertEvent>> getAlertEventsByRuleId(
+            @PathVariable Long ruleId,
+            @RequestAttribute("userId") Long userId) {
+        permissionChecker.requirePermission(userId, PermissionConstants.ALERT_READ_ALL);
         return ResponseEntity.ok(alertEventService.getAlertEventsByRuleId(ruleId));
     }
 
     @GetMapping("/server/{serverId}")
     @Operation(summary = "Get Alert Events by Server ID", description = "Retrieve alert events occurring on a specific server")
-    public ResponseEntity<List<AlertEvent>> getAlertEventsByServerId(@PathVariable Long serverId) {
+    public ResponseEntity<List<AlertEvent>> getAlertEventsByServerId(
+            @PathVariable Long serverId,
+            @RequestAttribute("userId") Long userId) {
+        permissionChecker.requirePermission(userId, PermissionConstants.ALERT_READ_ALL);
         return ResponseEntity.ok(alertEventService.getAlertEventsByServerId(serverId));
     }
 
     @GetMapping("/status/{status}")
     @Operation(summary = "Get Alert Events by Status", description = "Retrieve alert events by their status")
-    public ResponseEntity<List<AlertEvent>> getAlertEventsByStatus(@PathVariable String status) {
+    public ResponseEntity<List<AlertEvent>> getAlertEventsByStatus(
+            @PathVariable String status,
+            @RequestAttribute("userId") Long userId) {
+        permissionChecker.requirePermission(userId, PermissionConstants.ALERT_READ_ALL);
         return ResponseEntity.ok(alertEventService.getAlertEventsByStatus(status));
     }
 
@@ -143,13 +199,18 @@ public class AlertEventController {
     @Operation(summary = "Get Alert Events by Time Range", description = "Retrieve alert events that started within a specific time range")
     public ResponseEntity<List<AlertEvent>> getAlertEventsByTimeRange(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime) {
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime,
+            @RequestAttribute("userId") Long userId) {
+        permissionChecker.requirePermission(userId, PermissionConstants.ALERT_READ_ALL);
         return ResponseEntity.ok(alertEventService.getAlertEventsByTimeRange(startTime, endTime));
     }
 
     @PatchMapping("/{eventId}/resolve")
     @Operation(summary = "Resolve Alert Event", description = "Mark an alert event as resolved")
-    public ResponseEntity<AlertEvent> resolveAlertEvent(@PathVariable Long eventId) {
+    public ResponseEntity<AlertEvent> resolveAlertEvent(
+            @PathVariable Long eventId,
+            @RequestAttribute("userId") Long userId) {
+        permissionChecker.requirePermission(userId, PermissionConstants.ALERT_MANAGE_ALL);
         try {
             return ResponseEntity.ok(alertEventService.resolveAlertEvent(eventId));
         } catch (IllegalArgumentException e) {
@@ -164,7 +225,9 @@ public class AlertEventController {
             @RequestParam(required = false) Long serverId,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime,
+            @RequestAttribute("userId") Long userId) {
+        permissionChecker.requirePermission(userId, PermissionConstants.ALERT_READ_ALL);
         return ResponseEntity.ok(alertEventService.getAlertEventsWithFilters(ruleId, serverId, status, startTime, endTime));
     }
 
@@ -183,7 +246,9 @@ public class AlertEventController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime,
             @Parameter(hidden = true)
-            @PageableDefault(sort = "startedAt", direction = Sort.Direction.DESC) Pageable pageable) {
+            @PageableDefault(sort = "startedAt", direction = Sort.Direction.DESC) Pageable pageable,
+            @RequestAttribute("userId") Long userId) {
+        permissionChecker.requirePermission(userId, PermissionConstants.ALERT_READ_ALL);
         return ResponseEntity.ok(
                 alertEventService.getAlertEventsWithFilters(ruleId, serverId, status, startTime, endTime, pageable));
     }
@@ -191,7 +256,10 @@ public class AlertEventController {
     // 手动触发
     @PostMapping("/test-trigger")
     @Operation(summary = "Manually trigger an alert", description = "Create an alert event manually for testing")
-    public ResponseEntity<?> manualTrigger(@Valid @RequestBody AlertEvent alertEvent) {
+    public ResponseEntity<?> manualTrigger(
+            @Valid @RequestBody AlertEvent alertEvent,
+            @RequestAttribute("userId") Long userId) {
+        permissionChecker.requirePermission(userId, PermissionConstants.ALERT_MANAGE_ALL);
         try {
             if (alertEvent.getStatus() == null) alertEvent.setStatus("firing");
             if (alertEvent.getStartedAt() == null) alertEvent.setStartedAt(LocalDateTime.now());
@@ -213,7 +281,10 @@ public class AlertEventController {
     @PostMapping("/evaluate")
     @Operation(summary = "Evaluate latest metrics for a server",
                description = "Evaluate the latest metrics and create alert events if rules are violated")
-    public ResponseEntity<List<AlertEvent>> evaluate(@RequestParam("serverId") Long serverId) {
+    public ResponseEntity<List<AlertEvent>> evaluate(
+            @RequestParam("serverId") Long serverId,
+            @RequestAttribute("userId") Long userId) {
+        permissionChecker.requirePermission(userId, PermissionConstants.ALERT_MANAGE_ALL);
         return ResponseEntity.ok(alertSystemService.evaluateMetrics(serverId));
     }
 }

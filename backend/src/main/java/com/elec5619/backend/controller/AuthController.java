@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -17,6 +18,7 @@ import com.elec5619.backend.dto.LoginDto;
 import com.elec5619.backend.dto.UserRegistrationDto;
 import com.elec5619.backend.dto.UserResponseDto;
 import com.elec5619.backend.service.UserService;
+import com.elec5619.backend.util.JwtUtil;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -40,6 +42,9 @@ public class AuthController {
 
     @Autowired
     private UserService userService;
+    
+    @Autowired
+    private JwtUtil jwtUtil;
 
     /**
      * Register a new user
@@ -121,8 +126,10 @@ public class AuthController {
             
             // 认证成功，创建响应对象
             UserResponseDto user = authenticatedUserOpt.get();
+            String jwt = jwtUtil.generateToken(user.getId(), user.getUsername(), user.getRole());
+            
             JwtResponseDto response = new JwtResponseDto();
-            response.setToken("mock-jwt-token"); // 在实际应用中，应该生成真实的JWT令牌
+            response.setToken(jwt);
             response.setType("Bearer");
             response.setId(user.getId());
             response.setUsername(user.getUsername());
@@ -159,11 +166,20 @@ public class AuthController {
             description = "User not authenticated"
         )
     })
-    public ResponseEntity<UserResponseDto> getCurrentUser() {
-        // TODO: 在实际应用中，应该从JWT token中获取当前用户ID
-        // 这里暂时返回ID为32的用户（根据你的描述，这个用户能正确返回）
-        return userService.getUserByUsername("user32")
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<UserResponseDto> getCurrentUser(@RequestHeader("Authorization") String authorizationHeader) {
+        // 从JWT token中提取用户ID（唯一识别号）
+        try {
+            if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+            String token = authorizationHeader.substring(7);
+            Long userId = jwtUtil.extractUserId(token);
+            
+            return userService.getUserById(userId)
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
     }
 }
