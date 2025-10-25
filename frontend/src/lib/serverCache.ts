@@ -6,7 +6,8 @@ class ServerCache {
   private messageShown: boolean = false; // 添加消息显示标志
 
   async getServers(forceRefresh: boolean = false): Promise<any[]> {
-    const now = Date.now();
+    // Use a stable timestamp to avoid hydration issues
+    const now = typeof window !== 'undefined' ? Date.now() : 0;
     
     // 如果缓存存在且未过期，且不是强制刷新，则返回缓存
     if (!forceRefresh && this.cache && (now - this.lastFetch) < this.CACHE_DURATION) {

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import MainLayout from '@/components/MainLayout';
+import { AuthManager } from '@/lib/auth';
 import {
   Card,
   Row,
@@ -340,22 +341,43 @@ const MonitoringDashboard: React.FC = () => {
     }
   ];
 
-  // Generate mock time series data
+  // Generate mock time series data with stable values
   const generateTimeSeriesData = (hours: number = 1): MetricData[] => {
     const data: MetricData[] = [];
     const now = new Date();
     const interval = (hours * 60) / 60; // 1 minute intervals
     
+    // Use a simple hash function to generate consistent "random" values
+    const hash = (str: string) => {
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32bit integer
+      }
+      return Math.abs(hash);
+    };
+    
     for (let i = hours * 60; i >= 0; i -= interval) {
       const timestamp = new Date(now.getTime() - i * 60 * 1000);
+      const timeStr = timestamp.toISOString();
+      
+      // Generate consistent values based on timestamp
+      const cpuBase = hash(timeStr + 'cpu') % 30 + 30; // 30-60 range
+      const memoryBase = hash(timeStr + 'memory') % 30 + 30; // 30-60 range
+      const diskBase = hash(timeStr + 'disk') % 30 + 30; // 30-60 range
+      const networkBase = hash(timeStr + 'network') % 30 + 30; // 30-60 range
+      const tempBase = hash(timeStr + 'temp') % 40 + 30; // 30-70 range
+      const loadBase = hash(timeStr + 'load') % 100 / 10; // 0-10 range
+      
       data.push({
         timestamp: timestamp.toISOString(),
-        cpu: 30 + Math.random() * 30, // 30-60 range
-        memory: 30 + Math.random() * 30, // 30-60 range
-        disk: 30 + Math.random() * 30, // 30-60 range
-        network: 30 + Math.random() * 30, // 30-60 range
-        temperature: 30 + Math.random() * 40,
-        loadAvg: Math.random() * 10 // 0-10 range
+        cpu: cpuBase,
+        memory: memoryBase,
+        disk: diskBase,
+        network: networkBase,
+        temperature: tempBase,
+        loadAvg: loadBase
       });
     }
     
@@ -381,7 +403,13 @@ const MonitoringDashboard: React.FC = () => {
   // 获取服务器概览（包含最新指标和告警数）
   const loadServersOverview = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/servers/overview');
+      const token = AuthManager.getToken();
+      const response = await fetch('http://localhost:8080/api/servers/overview', {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch servers overview');
       }

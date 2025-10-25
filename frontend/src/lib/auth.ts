@@ -34,26 +34,46 @@ const USER_KEY  = 'auth_user';
 export const AuthManager = {
   getToken(): string | null {
     if (typeof window === 'undefined') return null;
-    return localStorage.getItem(TOKEN_KEY);
+    try {
+      return localStorage.getItem(TOKEN_KEY);
+    } catch {
+      return null;
+    }
   },
   setToken(token: string) {
     if (typeof window === 'undefined') return;
-    localStorage.setItem(TOKEN_KEY, token);
+    try {
+      localStorage.setItem(TOKEN_KEY, token);
+    } catch {
+      // Ignore localStorage errors
+    }
   },
   removeToken() {
     if (typeof window === 'undefined') return;
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
+    try {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(USER_KEY);
+    } catch {
+      // Ignore localStorage errors
+    }
   },
 
   getUser(): User | null {
     if (typeof window === 'undefined') return null;
-    const raw = localStorage.getItem(USER_KEY);
-    try { return raw ? JSON.parse(raw) as User : null; } catch { return null; }
+    try {
+      const raw = localStorage.getItem(USER_KEY);
+      return raw ? JSON.parse(raw) as User : null;
+    } catch {
+      return null;
+    }
   },
   setUser(user: User) {
     if (typeof window === 'undefined') return;
-    localStorage.setItem(USER_KEY, JSON.stringify(user));
+    try {
+      localStorage.setItem(USER_KEY, JSON.stringify(user));
+    } catch {
+      // Ignore localStorage errors
+    }
   },
 
   isAuthenticated(): boolean {
@@ -110,7 +130,12 @@ http.interceptors.response.use(
   (err) => {
     const status = err?.response?.status;
     if (status === 401) {
+      console.log('401 Unauthorized - redirecting to login');
       AuthManager.logout();
+      // 如果在浏览器环境中，跳转到登录页面
+      if (typeof window !== 'undefined') {
+        window.location.href = '/auth/login';
+      }
     }
     return Promise.reject(err);
   }
@@ -145,11 +170,23 @@ export async function login(username: string, password: string): Promise<{ ok: b
     };
 
     if (!token) {
+      console.error('Login failed: token missing in response');
       return { ok: false, message: 'Login failed: token missing in response.' };
     }
 
+    console.log('Login response - Token received:', token.substring(0, 20) + '...');
+    console.log('Login response - User:', user);
+    
     AuthManager.setToken(token);
+    console.log('Token saved to localStorage');
+    
     AuthManager.setUser(user);
+    console.log('User saved to localStorage');
+    
+    // 验证保存是否成功
+    const savedToken = AuthManager.getToken();
+    console.log('Verification - Token retrieved:', savedToken ? 'YES' : 'NO');
+    
     return { ok: true, user };
   } catch (e: any) {
     const msg =

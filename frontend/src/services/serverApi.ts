@@ -1,5 +1,6 @@
 // Server API Service Layer
 // 封装后端Server CRUD接口调用
+import { AuthManager } from '@/lib/auth';
 
 // 后端数据类型定义
 export interface ServerResponseDto {
@@ -459,8 +460,12 @@ const makeRequest = async <T>(
   url: string,
   options: RequestInit = {}
 ): Promise<T> => {
-  const defaultHeaders = {
+  // 使用AuthManager.getToken()而不是直接访问localStorage
+  const token = AuthManager.getToken();
+  
+  const defaultHeaders: Record<string, string> = {
     'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 
   const config: RequestInit = {

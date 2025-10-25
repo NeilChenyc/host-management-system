@@ -99,10 +99,10 @@ const toProjectItem = (dto: ProjectResponseDto): ProjectItem => ({
 
 // Project API 服务类
 export class ProjectApiService {
-  // 列出所有项目
+  // 列出用户可见的项目（根据角色权限）
   static async getAllProjects(): Promise<ProjectItem[]> {
     try {
-      const list = await makeRequest<ProjectResponseDto[]>('/projects');
+      const list = await makeRequest<ProjectResponseDto[]>('/projects/my');
       return list.map(toProjectItem);
     } catch (error) {
       return handleApiError(error, '获取项目列表');

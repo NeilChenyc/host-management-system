@@ -43,6 +43,11 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, loading = false }) => {
       if (result.success) {
         messageApi.success('Login successful!');
         
+        // 调试：检查token是否已保存
+        const savedToken = localStorage.getItem('token');
+        console.log('Login successful - Token saved:', savedToken ? 'YES' : 'NO');
+        console.log('Token length:', savedToken?.length);
+        
         if (onLogin) {
           onLogin(values);
         }

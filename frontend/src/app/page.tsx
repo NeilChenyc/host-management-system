@@ -8,17 +8,22 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    if (!AuthManager.isAuthenticated()) {
-      router.push('/auth/login');
-    } else {
-      // Redirect authenticated users to dashboard
+    // 只检查一次，避免无限循环
+    const isAuth = AuthManager.isAuthenticated();
+    console.log('Home page - isAuthenticated:', isAuth);
+    
+    if (isAuth) {
+      // 如果已登录，跳转到dashboard
       router.push('/dashboard');
+    } else {
+      // 如果未登录，跳转到登录页
+      router.push('/auth/login');
     }
-  }, [router]);
+  }, []); // 移除router依赖，只在组件挂载时执行一次
 
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-      <p>Redirecting to dashboard...</p>
+      <p>Redirecting...</p>
     </div>
   );
 }

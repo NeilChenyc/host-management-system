@@ -67,26 +67,44 @@ export async function getByUsername(username: string): Promise<UserResponseDto |
 }
 
 export async function registerUser(payload: { username: string; email: string; password: string; role?: AppRole }): Promise<UserResponseDto> {
-  const role = payload.role ? mapToBackendRole(payload.role) : 'operation';
-  const body = {
-    username: payload.username,
-    email: payload.email,
-    password: payload.password,
-    role,
-  };
-  const { data } = await http.post('/auth/signup', body);
-  return data as UserResponseDto;
+  try {
+    const role = payload.role ? mapToBackendRole(payload.role) : 'operation';
+    const body = {
+      username: payload.username,
+      email: payload.email,
+      password: payload.password,
+      role,
+    };
+    const { data } = await http.post('/auth/signup', body);
+    return data as UserResponseDto;
+  } catch (error: any) {
+    // 提取后端返回的友好错误消息
+    const errorMessage = error?.response?.data?.message || error?.message || '注册用户失败';
+    throw new Error(errorMessage);
+  }
 }
 
 export async function updateUserRole(id: number | string, role: AppRole): Promise<UserResponseDto> {
-  const backendRole = mapToBackendRole(role);
-  // Backend expects a raw string body; send JSON string for compatibility
-  const { data } = await http.put(`/users/${id}/role`, JSON.stringify(backendRole), {
-    headers: { 'Content-Type': 'application/json' },
-  });
-  return data as UserResponseDto;
+  try {
+    const backendRole = mapToBackendRole(role);
+    // Backend expects a raw string body; send JSON string for compatibility
+    const { data } = await http.put(`/users/${id}/role`, JSON.stringify(backendRole), {
+      headers: { 'Content-Type': 'application/json' },
+    });
+    return data as UserResponseDto;
+  } catch (error: any) {
+    // 提取后端返回的友好错误消息
+    const errorMessage = error?.response?.data?.message || error?.message || '更新用户角色失败';
+    throw new Error(errorMessage);
+  }
 }
 
 export async function deleteUser(id: number | string): Promise<void> {
-  await http.delete(`/users/${id}`);
+  try {
+    await http.delete(`/users/${id}`);
+  } catch (error: any) {
+    // 提取后端返回的友好错误消息
+    const errorMessage = error?.response?.data?.message || error?.message || '删除用户失败';
+    throw new Error(errorMessage);
+  }
 }

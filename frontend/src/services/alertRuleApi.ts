@@ -1,5 +1,6 @@
 // AlertRule API Service Layer
 // 封装后端 Alert Rule 的 CRUD 与状态切换接口
+import { AuthManager } from '@/lib/auth';
 
 // 后端 AlertRule DTO
 export interface AlertRuleDto {
@@ -66,13 +67,19 @@ const handleResponse = async <T>(response: Response): Promise<T> => {
 };
 
 const makeRequest = async <T>(url: string, options: RequestInit = {}): Promise<T> => {
-  const defaultHeaders = {
+  // 使用AuthManager.getToken()而不是直接访问localStorage
+  const token = AuthManager.getToken();
+  
+  const defaultHeaders: Record<string, string> = {
     'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
+
   const config: RequestInit = {
     ...options,
     headers: { ...defaultHeaders, ...options.headers },
   };
+  
   try {
     const response = await fetch(`${API_BASE_URL}${url}`, config);
     return handleResponse<T>(response);

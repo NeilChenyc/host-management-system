@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import MainLayout from '@/components/MainLayout';
+import { AuthManager } from '@/lib/auth';
 import {
   Card,
   Table,
@@ -346,7 +347,13 @@ export default function AlertsPage() {
   // Load alert rules from API
   const loadAlertRules = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/alert-rules');
+      const token = AuthManager.getToken();
+      const response = await fetch('http://localhost:8080/api/alert-rules', {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to fetch alert rules');
@@ -384,7 +391,13 @@ export default function AlertsPage() {
   // Load alert events from API
   const loadAlertEvents = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/alert-events');
+      const token = AuthManager.getToken();
+      const response = await fetch('http://localhost:8080/api/alert-events', {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to fetch alert events');
@@ -455,7 +468,13 @@ export default function AlertsPage() {
   // Load servers from API
   const loadServers = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/servers');
+      const token = AuthManager.getToken();
+      const response = await fetch('http://localhost:8080/api/servers', {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
       if (!response.ok) throw new Error('Failed to fetch servers');
       const data = await response.json();
       setServers(data);
