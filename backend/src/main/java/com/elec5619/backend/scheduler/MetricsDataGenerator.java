@@ -20,10 +20,10 @@ public class MetricsDataGenerator {
     private ServerMetricsService serverMetricsService;
 
     /**
-     * Generate fake metrics for all servers every 5 seconds.
-     * This simulates real-time data collection from monitoring systems.
+     * Generate fake metrics for all servers every 30 minutes.
+     * This simulates periodic data collection from monitoring systems with reduced frequency.
      */
-    @Scheduled(initialDelay = 30000, fixedRate = 5000) // Start after 30 seconds, then every 5 seconds
+    @Scheduled(initialDelay = 30000, fixedRate = 1800000) // Start after 30 seconds, then every 30 minutes
     public void generateMetricsData() {
         try {
             logger.info("Starting scheduled metrics data generation...");
