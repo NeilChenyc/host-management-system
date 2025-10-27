@@ -112,7 +112,6 @@ const MonitoringDashboard: React.FC = () => {
   const [hosts, setHosts] = useState<HostMetrics[]>([]);
   const [alerts, setAlerts] = useState<SystemAlert[]>([]);
   const [selectedHost, setSelectedHost] = useState<string>('all');
-  const [timeRange, setTimeRange] = useState<string>('1h');
   const [realTimeData, setRealTimeData] = useState<MetricData[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
@@ -586,11 +585,11 @@ const MonitoringDashboard: React.FC = () => {
     { name: 'Online', value: onlineHosts, color: '#52c41a' },
     { name: 'Warning', value: warningHosts, color: '#faad14' },
     { name: 'Critical', value: criticalHosts, color: '#ff4d4f' },
-    { name: 'Offline', value: hosts.filter(h => h.status === 'offline').length, color: '#d9d9d9' }
+    { name: 'Offline', value: hosts.filter(h => h.status !== 'online').length, color: '#d9d9d9' }
   ].filter(item => item.value > 0);
 
   const resourceData = hosts.map(host => ({
-    name: host.name.split(' ').slice(-1)[0], // Short name
+    name: host.name, // Full server name
     cpu: host.cpu,
     memory: host.memory,
     disk: host.disk,
@@ -716,16 +715,6 @@ const MonitoringDashboard: React.FC = () => {
             </Col>
             <Col>
               <Space>
-                <Select
-                  value={timeRange}
-                  onChange={setTimeRange}
-                  style={{ width: 120 }}
-                >
-                  <Option value="1h">Last Hour</Option>
-                  <Option value="6h">Last 6 Hours</Option>
-                  <Option value="24h">Last 24 Hours</Option>
-                  <Option value="7d">Last 7 Days</Option>
-                </Select>
                 <Button 
                   icon={<ReloadOutlined />}
                   onClick={() => setAutoRefresh(!autoRefresh)}
@@ -761,7 +750,7 @@ const MonitoringDashboard: React.FC = () => {
           <Col span={6}>
           <Card>
             <Statistic
-                title="Total Hosts"
+                title="Total Servers"
                 value={totalHosts}
                 prefix={<ServerOutlined />}
               valueStyle={{ color: '#1890ff' }}
@@ -771,7 +760,7 @@ const MonitoringDashboard: React.FC = () => {
           <Col span={6}>
           <Card>
             <Statistic
-                title="Online Hosts"
+                title="Online Servers"
                 value={onlineHosts}
               prefix={<CheckCircleOutlined />}
                 valueStyle={{ color: '#3f8600' }}
@@ -986,12 +975,12 @@ const MonitoringDashboard: React.FC = () => {
 
           {/* Combined Host Status & Resource Usage - Match Recent Alerts width */}
           <Col span={8}>
-            <Card title="Host Status & Resource Usage">
+            <Card title="Server Status & Resource Usage">
               <ResponsiveContainer width="100%" height={300}>
                 <div style={{ height: '300px', display: 'flex', flexDirection: 'column', padding: '10px 0' }}>
                   {/* Host Status Distribution - Top Half */}
                   <div style={{ flex: 1, marginBottom: '10px' }}>
-                    <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '8px', color: '#666', textAlign: 'center' }}>Host Status Distribution</div>
+                    <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '8px', color: '#666', textAlign: 'center' }}>Server Status Distribution</div>
                     <ResponsiveContainer width="100%" height={120}>
                       <PieChart margin={{ top: 5, right: 20, bottom: 5, left: 5 }}>
                         <Pie
@@ -1077,7 +1066,7 @@ const MonitoringDashboard: React.FC = () => {
         {/* Resource Comparison Chart */}
         <Row gutter={16} style={{ marginBottom: 24 }}>
           <Col span={16}>
-            <Card title="Host Resource Comparison">
+            <Card title="Server Resource Comparison">
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart 
                   data={resourceData}

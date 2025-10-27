@@ -128,14 +128,14 @@ public class ServerMetricsService {
     }
 
     private Double generateNetworkIn() {
-        // Network in: 0-1000 MB/s
-        double value = Math.random() * 1000;
+        // Network in: 0-100 MB/s
+        double value = Math.random() * 100;
         return BigDecimal.valueOf(value).setScale(2, RoundingMode.HALF_UP).doubleValue();
     }
 
     private Double generateNetworkOut() {
-        // Network out: 0-800 MB/s (usually less than in)
-        double value = Math.random() * 800;
+        // Network out: 0-100 MB/s
+        double value = Math.random() * 100;
         return BigDecimal.valueOf(value).setScale(2, RoundingMode.HALF_UP).doubleValue();
     }
 
