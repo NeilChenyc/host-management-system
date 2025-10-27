@@ -1,0 +1,6 @@
+﻿{
+    "log_level":  "INFO",
+    "interval":  60,
+    "server_id":  2,
+    "platform_url":  "http://192.168.0.10:8080/api/servers/metrics/collect"
+}

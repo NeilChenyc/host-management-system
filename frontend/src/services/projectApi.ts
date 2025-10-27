@@ -4,12 +4,19 @@ import { AuthManager, API_BASE_URL as AUTH_API_BASE_URL } from '@/lib/auth';
 
 export type ProjectStatus = 'PLANNED' | 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'CANCELLED';
 
+// 服务器摘要（与后端 ServerSummaryDto 对应）
+export interface ServerSummary {
+  id: number;
+  serverName: string;
+  ipAddress: string;
+}
+
 // 后端数据类型定义
 export interface ProjectResponseDto {
   id: number;
   projectName: string;
   status: ProjectStatus;
-  servers?: number[]; // 后端为Set<Long>，序列化为数组
+  servers?: ServerSummary[]; // 后端返回的是 ServerSummaryDto 对象数组
   duration?: string;
   createdAt: string;
   updatedAt: string;
@@ -91,7 +98,7 @@ const toProjectItem = (dto: ProjectResponseDto): ProjectItem => ({
   id: dto.id.toString(),
   projectName: dto.projectName,
   status: dto.status,
-  servers: Array.isArray(dto.servers) ? dto.servers : [],
+  servers: Array.isArray(dto.servers) ? dto.servers.map(s => s.id) : [], // 提取服务器 ID
   duration: dto.duration,
   createdAt: dto.createdAt,
   updatedAt: dto.updatedAt,

@@ -1,15 +1,23 @@
 package com.elec5619.backend.controller;
 
-import com.elec5619.backend.entity.ServerMetrics;
-import com.elec5619.backend.service.ServerMetricsService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.elec5619.backend.entity.ServerMetrics;
+import com.elec5619.backend.service.ServerMetricsService;
 
 /**
  * REST Controller for server metrics operations.
@@ -83,6 +91,33 @@ public class ServerMetricsController {
         
         List<ServerMetrics> metrics = serverMetricsService.getAllMetrics(oneHourAgo, now);
         return ResponseEntity.ok(metrics);
+    }
+
+    /**
+     * Collect metrics from agent (Agent推送接口)
+     * This endpoint receives metrics data from monitoring agents running on servers
+     */
+    @PostMapping("/metrics/collect")
+    public ResponseEntity<?> collectMetrics(@RequestBody ServerMetrics metrics) {
+        try {
+            // Validate serverId
+            if (metrics.getServerId() == null) {
+                return ResponseEntity.badRequest().body("Server ID is required");
+            }
+            
+            // Save metrics
+            ServerMetrics savedMetrics = serverMetricsService.saveMetrics(metrics);
+            
+            return ResponseEntity.ok().body(new Object() {
+                public final String message = "Metrics received successfully";
+                public final Long metricId = savedMetrics.getMetricId();
+                public final Long serverId = savedMetrics.getServerId();
+                public final String timestamp = savedMetrics.getCollectedAt().toString();
+            });
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                    .body("Error saving metrics: " + e.getMessage());
+        }
     }
 
     /**

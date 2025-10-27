@@ -213,12 +213,32 @@ export default function ProjectsPage() {
       title: 'Servers',
       dataIndex: 'servers',
       key: 'servers',
-      render: (serverIds: number[]) => (
-        <Space>
-          <Badge count={serverIds.length} style={{ backgroundColor: '#52c41a' }} />
-          <span>{serverIds.length} servers</span>
-        </Space>
-      ),
+      render: (serverIds: number[]) => {
+        if (!serverIds || serverIds.length === 0) {
+          return <span style={{ color: '#999' }}>No servers</span>;
+        }
+        
+        // 找出对应的服务器名称
+        const serverNames = serverIds
+          .map(id => {
+            const server = servers.find(s => String(s.id) === String(id));
+            return server ? server.hostname : `Server ${id}`;
+          })
+          .filter(Boolean);
+        
+        return (
+          <Space direction="vertical" size={0}>
+    
+            <div style={{ marginTop: 4 }}>
+              {serverNames.map((name, index) => (
+                <Tag key={index} color="blue" style={{ marginBottom: 4 }}>
+                  {name}
+                </Tag>
+              ))}
+            </div>
+          </Space>
+        );
+      },
     },
     {
       title: 'Created At',
