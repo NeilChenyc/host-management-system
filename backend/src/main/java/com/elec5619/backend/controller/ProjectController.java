@@ -223,12 +223,8 @@ public class ProjectController {
     public ResponseEntity<List<ProjectResponseDto>> getProjectsByUserId(
             @Parameter(description = "User ID", required = true, example = "1")
             @PathVariable Long userId) {
-        try {
-            List<ProjectResponseDto> projects = projectService.getProjectsByUserId(userId);
-            return ResponseEntity.ok(projects);
-        } catch (Exception e) {
-            return ResponseEntity.notFound().build();
-        }
+        List<ProjectResponseDto> projects = projectService.getProjectsByUserId(userId);
+        return ResponseEntity.ok(projects);
     }
 
     @GetMapping("/my")
@@ -246,27 +242,17 @@ public class ProjectController {
         System.out.println("User ID from interceptor: " + userId);
         System.out.println("User Role from interceptor: " + userRole);
         
-        try {
-            // 根据用户角色返回不同的项目列表
-            if ("admin".equals(userRole) || "manager".equals(userRole)) {
-                System.out.println("User is admin or manager, returning all projects");
-                // Admin和Manager可以看到所有项目
-                List<ProjectResponseDto> allProjects = projectService.listAll();
-                System.out.println("Found " + allProjects.size() + " projects");
-                return ResponseEntity.ok(allProjects);
-            } else {
-                System.out.println("User is operation, returning user projects");
-                // Operation用户只能看到自己参与的项目
-                List<ProjectResponseDto> projects = projectService.getProjectsByUserId(userId);
-                System.out.println("Found " + projects.size() + " user projects");
-                return ResponseEntity.ok(projects);
-            }
-        } catch (Exception e) {
-            System.out.println("=== ERROR in getMyProjects ===");
-            System.out.println("Error message: " + e.getMessage());
-            System.out.println("Error class: " + e.getClass().getName());
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        // 根据用户角色返回不同的项目列表
+        if ("admin".equals(userRole) || "manager".equals(userRole)) {
+            System.out.println("User is admin or manager, returning all projects");
+            List<ProjectResponseDto> allProjects = projectService.listAll();
+            System.out.println("Found " + allProjects.size() + " projects");
+            return ResponseEntity.ok(allProjects);
+        } else {
+            System.out.println("User is operation, returning user projects");
+            List<ProjectResponseDto> projects = projectService.getProjectsByUserId(userId);
+            System.out.println("Found " + projects.size() + " user projects");
+            return ResponseEntity.ok(projects);
         }
     }
 

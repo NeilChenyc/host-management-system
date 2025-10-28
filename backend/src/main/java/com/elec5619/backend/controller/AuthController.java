@@ -113,34 +113,29 @@ public class AuthController {
     public ResponseEntity<?> signin(
             @Parameter(description = "User login credentials", required = true)
             @Valid @RequestBody LoginDto loginDto) {
-        try {
-            // 使用UserService的authenticateUser方法验证用户凭据
-            Optional<UserResponseDto> authenticatedUserOpt = 
-                userService.authenticateUser(loginDto.getUsername(), loginDto.getPassword());
-            
-            if (authenticatedUserOpt.isEmpty()) {
-                // 认证失败，用户不存在或密码不正确
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body("Invalid username/email or password");
-            }
-            
-            // 认证成功，创建响应对象
-            UserResponseDto user = authenticatedUserOpt.get();
-            String jwt = jwtUtil.generateToken(user.getId(), user.getUsername(), user.getRole());
-            
-            JwtResponseDto response = new JwtResponseDto();
-            response.setToken(jwt);
-            response.setType("Bearer");
-            response.setId(user.getId());
-            response.setUsername(user.getUsername());
-            response.setEmail(user.getEmail());
-            response.setRole(user.getRole());
-            
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body("Signin failed: " + e.getMessage());
+        // 使用UserService的authenticateUser方法验证用户凭据
+        Optional<UserResponseDto> authenticatedUserOpt = 
+            userService.authenticateUser(loginDto.getUsername(), loginDto.getPassword());
+        
+        if (authenticatedUserOpt.isEmpty()) {
+            // 认证失败，用户不存在或密码不正确
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body("Invalid username/email or password");
         }
+        
+        // 认证成功，创建响应对象
+        UserResponseDto user = authenticatedUserOpt.get();
+        String jwt = jwtUtil.generateToken(user.getId(), user.getUsername(), user.getRole());
+        
+        JwtResponseDto response = new JwtResponseDto();
+        response.setToken(jwt);
+        response.setType("Bearer");
+        response.setId(user.getId());
+        response.setUsername(user.getUsername());
+        response.setEmail(user.getEmail());
+        response.setRole(user.getRole());
+        
+        return ResponseEntity.ok(response);
     }
     
     /**
@@ -168,18 +163,14 @@ public class AuthController {
     })
     public ResponseEntity<UserResponseDto> getCurrentUser(@RequestHeader("Authorization") String authorizationHeader) {
         // 从JWT token中提取用户ID（唯一识别号）
-        try {
-            if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-            }
-            String token = authorizationHeader.substring(7);
-            Long userId = jwtUtil.extractUserId(token);
-            
-            return userService.getUserById(userId)
-                    .map(ResponseEntity::ok)
-                    .orElse(ResponseEntity.notFound().build());
-        } catch (Exception e) {
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
+        String token = authorizationHeader.substring(7);
+        Long userId = jwtUtil.extractUserId(token);
+        
+        return userService.getUserById(userId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 }
