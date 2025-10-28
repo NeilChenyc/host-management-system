@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Form, Input, Button, Card, message, Checkbox, Divider, Alert } from 'antd';
 import { UserOutlined, LockOutlined, EyeInvisibleOutlined, EyeTwoTone } from '@ant-design/icons';
 import Link from 'next/link';
-import { AuthManager } from '@/lib/auth';
+import AuthManager from '@/lib/auth';
 
 interface LoginFormData {
   username: string;
@@ -38,27 +38,21 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, loading = false }) => {
     // 每次提交时先清空之前的错误提示，避免旧错误一直显示
     setLoginError(null);
     try {
-      const result = await AuthManager.login(values.username, values.password);
+      await AuthManager.login(values.username, values.password);
       
-      if (result.success) {
-        messageApi.success('Login successful!');
-        
-        // 调试：检查token是否已保存
-        const savedToken = localStorage.getItem('token');
-        console.log('Login successful - Token saved:', savedToken ? 'YES' : 'NO');
-        console.log('Token length:', savedToken?.length);
-        
-        if (onLogin) {
-          onLogin(values);
-        }
-        
-        // Redirect to main page
-        window.location.href = '/';
-      } else {
-        // 新增：设置表单顶部错误提示消息，给用户更明显/持续的反馈
-        setLoginError(result.message || 'Invalid username or password.');
-        messageApi.error(result.message || 'Login failed. Please check your credentials.');
+      messageApi.success('Login successful!');
+      
+      // Debug token saved (use correct key via helper)
+      const savedToken = AuthManager.getToken();
+      console.log('Login successful - Token saved:', savedToken ? 'YES' : 'NO');
+      console.log('Token length:', savedToken?.length);
+      
+      if (onLogin) {
+        onLogin(values);
       }
+      
+      // Redirect to main page
+      window.location.href = '/';
     } catch (error) {
       // 捕获到异常（例如网络错误或服务器异常）
       setLoginError('Login failed due to a network or server error. Please try again.');

@@ -101,7 +101,8 @@ export class AuthManager {
 
   // ===== 登录（请根据后端返回结构调整字段名） =====
   static async login(username: string, password: string): Promise<{ token: string } & Json> {
-    const res = await fetch(`${API_BASE_URL}/auth/login`, {
+    // Backend expects /api/auth/signin with body { username, password }
+    const res = await fetch(`${API_BASE_URL}/api/auth/signin`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),
@@ -117,9 +118,18 @@ export class AuthManager {
       }
     }
 
-    const data = (await res.json()) as { token: string; user?: StoredUser } & Json;
+    const data = (await res.json()) as { token: string; id?: number | string; username?: string; email?: string; role?: string } & Json;
     if (data?.token) this.setToken(data.token);
-    if (data?.user) this.setUser(data.user);
+    // Normalize and store user info from backend response
+    const user: StoredUser | null = data
+      ? {
+          id: data.id,
+          username: data.username,
+          email: data.email,
+          role: data.role,
+        }
+      : null;
+    if (user) this.setUser(user);
     return data;
   }
 }
