@@ -403,7 +403,7 @@ const MonitoringDashboard: React.FC = () => {
   const loadServersOverview = async () => {
     try {
       const token = AuthManager.getToken();
-      const response = await fetch('http://localhost:8080/api/servers/overview', {
+      const response = await fetch(`${location.origin}/api/servers/overview`, {
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
