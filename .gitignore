@@ -32,8 +32,20 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files
 .env*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+# 后端服务地址（Spring Boot 端口）
+BACKEND_ORIGIN=http://localhost:8081
+
+# 前端调用统一前缀
+NEXT_PUBLIC_API_PREFIX=/api
+
+
+
 
 # vercel
 .vercel
@@ -85,3 +97,4 @@ target/
 *.swp
 *.swo
 *~
+

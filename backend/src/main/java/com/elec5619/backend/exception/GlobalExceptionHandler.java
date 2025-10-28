@@ -16,6 +16,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.transaction.TransactionSystemException;
+import jakarta.validation.ConstraintViolationException;
 
 import io.jsonwebtoken.JwtException;
 
@@ -47,21 +49,21 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(CustomJwtException.class)
     public ResponseEntity<ErrorResponse> handleJwtException(CustomJwtException ex) {
-        String friendlyMessage = "认证失败";
+        String friendlyMessage = "Authentication failed";
         if (ex.getCode() == CustomJwtException.MISSING_TOKEN) {
-            friendlyMessage = "未提供登录凭证，请先登录";
+            friendlyMessage = "Missing token. Please log in.";
         } else if (ex.getCode() == CustomJwtException.INVALID_TOKEN) {
-            friendlyMessage = "登录凭证无效，请重新登录";
+            friendlyMessage = "Invalid token. Please log in again.";
         } else if (ex.getCode() == CustomJwtException.TOKEN_EXPIRED) {
-            friendlyMessage = "登录已过期，请重新登录";
+            friendlyMessage = "Token expired. Please log in again.";
         } else if (ex.getCode() == CustomJwtException.TOKEN_PARSE_ERROR) {
-            friendlyMessage = "登录凭证解析失败，请重新登录";
+            friendlyMessage = "Token parsing failed. Please log in again.";
         }
         
         ErrorResponse errorResponse = new ErrorResponse(
                 LocalDateTime.now(),
                 ex.getCode(),
-                "认证失败",
+                "Unauthorized",
                 friendlyMessage,
                 null
         );
@@ -73,7 +75,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(PermissionException.class)
     public ResponseEntity<ErrorResponse> handlePermissionException(PermissionException ex) {
-        String friendlyMessage = "您没有权限执行此操作";
+        String friendlyMessage = "You do not have permission to perform this action";
         if (ex.getMessage() != null && !ex.getMessage().isEmpty()) {
             friendlyMessage = ex.getMessage();
         }
@@ -81,7 +83,7 @@ public class GlobalExceptionHandler {
         ErrorResponse errorResponse = new ErrorResponse(
                 LocalDateTime.now(),
                 ex.getCode(),
-                "权限不足",
+                "Forbidden",
                 friendlyMessage,
                 null
         );
@@ -123,26 +125,26 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAccessDeniedException(AccessDeniedException ex) {
-        // 提供更友好的错误消息
-        String friendlyMessage = "您没有权限执行此操作";
+        // Provide a more friendly error message
+        String friendlyMessage = "You do not have permission to perform this action";
         if (ex.getMessage() != null) {
             if (ex.getMessage().contains("USER_MANAGE_ALL") || ex.getMessage().contains("user:manage:all")) {
-                friendlyMessage = "您没有权限管理用户，仅Admin和Manager可以执行此操作";
+                friendlyMessage = "You lack user management privileges. Only Admin and Manager can perform this action.";
             } else if (ex.getMessage().contains("USER_READ_ALL") || ex.getMessage().contains("user:read:all")) {
-                friendlyMessage = "您没有权限查看用户列表";
+                friendlyMessage = "You do not have permission to view the user list.";
             } else if (ex.getMessage().contains("PROJECT_WRITE_ALL") || ex.getMessage().contains("project:write:all")) {
-                friendlyMessage = "您没有权限管理项目，仅Admin和Manager可以执行此操作";
+                friendlyMessage = "You do not have project management privileges. Only Admin and Manager can perform this action.";
             } else if (ex.getMessage().contains("Admin privileges required")) {
-                friendlyMessage = "此操作需要管理员权限";
+                friendlyMessage = "Admin privileges are required for this action.";
             } else {
-                friendlyMessage = "您没有权限执行此操作: " + ex.getMessage();
+                friendlyMessage = "Permission denied: " + ex.getMessage();
             }
         }
         
         ErrorResponse errorResponse = new ErrorResponse(
                 LocalDateTime.now(),
                 PermissionException.ACCESS_DENIED,
-                "权限不足",
+                "Forbidden",
                 friendlyMessage,
                 null
         );
@@ -226,6 +228,60 @@ public class GlobalExceptionHandler {
         );
 
         return ResponseEntity.status(code >= 40900 ? HttpStatus.CONFLICT : HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
+    /**
+     * Handle Hibernate constraint violations (e.g., unique constraints)
+     */
+    @ExceptionHandler(org.hibernate.exception.ConstraintViolationException.class)
+    public ResponseEntity<ErrorResponse> handleHibernateConstraint(org.hibernate.exception.ConstraintViolationException ex) {
+        String msg = ex.getSQLException() != null ? ex.getSQLException().getMessage() : ex.getMessage();
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                40902,
+                "Conflict",
+                msg != null && msg.toLowerCase().contains("unique") ? "Duplicate entry detected" : "Constraint violation",
+                null
+        );
+        HttpStatus status = msg != null && msg.toLowerCase().contains("unique") ? HttpStatus.CONFLICT : HttpStatus.BAD_REQUEST;
+        return ResponseEntity.status(status).body(errorResponse);
+    }
+
+    /**
+     * Handle Jakarta Bean Validation constraint violations
+     */
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ErrorResponse> handleJakartaConstraint(ConstraintViolationException ex) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                40006,
+                "Bad Request",
+                ex.getMessage(),
+                null
+        );
+        return ResponseEntity.badRequest().body(errorResponse);
+    }
+
+    /**
+     * Handle transaction exceptions that wrap constraint violations
+     */
+    @ExceptionHandler(TransactionSystemException.class)
+    public ResponseEntity<ErrorResponse> handleTransactionSystem(TransactionSystemException ex) {
+        Throwable root = ex.getRootCause();
+        if (root instanceof org.hibernate.exception.ConstraintViolationException h) {
+            return handleHibernateConstraint(h);
+        }
+        if (root instanceof ConstraintViolationException j) {
+            return handleJakartaConstraint(j);
+        }
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                50000,
+                "Internal Server Error",
+                "An unexpected error occurred",
+                null
+        );
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
     }
 
     /**

@@ -1,263 +1,127 @@
-// auth.ts — Minimal auth utilities (frontend-light, backend-enforced)
-import axios from 'axios';
+// ========================== auth.ts ==========================
+import { API_BASE_URL } from '@/services/apiBase';
 
-// ----- Config -----
-export const API_BASE_URL =
-  (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_BASE_URL)
-    ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/api`
-    : 'http://localhost:8080/api';
+type Json = Record<string, any>;
 
-// ----- Types -----
-export type AppRole = 'admin' | 'operator' | 'manager';
-
-export interface User {
-  id: string;
-  username: string;
-  name?: string;
+type StoredUser = {
+  id?: string | number;
+  username?: string;
+  role?: string;
   email?: string;
-  role: AppRole;         // 仅保留角色；权限由后端判断
-  avatar?: string;
-  department?: string;
-}
-
-export interface AuthState {
-  isAuthenticated: boolean;
-  user: User | null;
-  token: string | null;
-}
-
-// ----- Storage Keys -----
-const TOKEN_KEY = 'auth_token';
-const USER_KEY  = 'auth_user';
-
-// ----- Auth Manager (pure storage + helpers) -----
-export const AuthManager = {
-  getToken(): string | null {
-    if (typeof window === 'undefined') return null;
-    try {
-      return localStorage.getItem(TOKEN_KEY);
-    } catch {
-      return null;
-    }
-  },
-  setToken(token: string) {
-    if (typeof window === 'undefined') return;
-    try {
-      localStorage.setItem(TOKEN_KEY, token);
-    } catch {
-      // Ignore localStorage errors
-    }
-  },
-  removeToken() {
-    if (typeof window === 'undefined') return;
-    try {
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem(USER_KEY);
-    } catch {
-      // Ignore localStorage errors
-    }
-  },
-
-  getUser(): User | null {
-    if (typeof window === 'undefined') return null;
-    try {
-      const raw = localStorage.getItem(USER_KEY);
-      return raw ? JSON.parse(raw) as User : null;
-    } catch {
-      return null;
-    }
-  },
-  setUser(user: User) {
-    if (typeof window === 'undefined') return;
-    try {
-      localStorage.setItem(USER_KEY, JSON.stringify(user));
-    } catch {
-      // Ignore localStorage errors
-    }
-  },
-
-  isAuthenticated(): boolean {
-    return !!this.getToken();
-  },
-
-  getAuthState(): AuthState {
-    const token = this.getToken();
-    const user = this.getUser();
-    return {
-      isAuthenticated: !!token && !!user,
-      user: token ? user : null,
-      token: token ?? null,
-    };
-  },
-
-  logout() {
-    this.removeToken();
-    if (typeof window !== 'undefined') {
-      window.location.href = '/auth/login';
-    }
-  },
-
-  // --- Compatibility wrappers to avoid breaking existing components ---
-  async login(username: string, password: string): Promise<{ success: boolean; message: string; user?: User }> {
-    const res = await login(username, password);
-    return { success: res.ok, message: res.message ?? (res.ok ? 'Login successful' : 'Login failed'), user: res.user };
-  },
-  async register(payload: { username: string; email: string; password: string; role?: AppRole }): Promise<{ success: boolean; message?: string }> {
-    const res = await register(payload);
-    return { success: res.ok, message: res.message };
-  },
+  [k: string]: any;
 };
 
-// ----- Axios instance with auth & 401 handling -----
-export const http = axios.create({
-  baseURL: API_BASE_URL,
-  headers: { 'Content-Type': 'application/json' },
-});
+export class AuthManager {
+  private static tokenKey = 'auth_token';
+  private static userKey = 'auth_user';
 
-// 每次请求自动带上 Bearer token
-http.interceptors.request.use((config) => {
-  const token = AuthManager.getToken();
-  if (token) {
-    config.headers = config.headers ?? {};
-    (config.headers as any).Authorization = `Bearer ${token}`;
+  private static getLS(): Storage | null {
+    if (typeof window === 'undefined') return null;
+    try { return window.localStorage; } catch { return null; }
   }
-  return config;
-});
 
-// 统一处理 401：清理登录态并跳登录页
-http.interceptors.response.use(
-  (res) => res,
-  (err) => {
-    const status = err?.response?.status;
-    if (status === 401) {
-      console.log('401 Unauthorized - redirecting to login');
-      AuthManager.logout();
-      // 如果在浏览器环境中，跳转到登录页面
-      if (typeof window !== 'undefined') {
-        window.location.href = '/auth/login';
+  // ===== TOKEN =====
+  static getToken(): string | null {
+    const ls = this.getLS();
+    if (!ls) return null;
+    try { return ls.getItem(this.tokenKey); } catch { return null; }
+  }
+
+  static setToken(token: string | null) {
+    const ls = this.getLS();
+    if (!ls) return;
+    try {
+      if (token) ls.setItem(this.tokenKey, token);
+      else ls.removeItem(this.tokenKey);
+    } catch {}
+  }
+
+  // ===== USER =====
+  static getUser<T extends StoredUser = StoredUser>(): T | null {
+    const ls = this.getLS();
+    if (!ls) return null;
+    try {
+      const raw = ls.getItem(this.userKey);
+      return raw ? (JSON.parse(raw) as T) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  static setUser(user: StoredUser | null) {
+    const ls = this.getLS();
+    if (!ls) return;
+    try {
+      if (user) ls.setItem(this.userKey, JSON.stringify(user));
+      else ls.removeItem(this.userKey);
+    } catch {}
+  }
+
+  // ===== 状态 =====
+  static isAuthenticated(): boolean {
+    return !!this.getToken();
+  }
+
+  static logout() {
+    this.setToken(null);
+    this.setUser(null);
+  }
+
+  // ===== 通用 fetch =====
+  static async fetchWithAuth<T = unknown>(path: string, init?: RequestInit): Promise<T> {
+    const token = this.getToken();
+    const res = await fetch(`${API_BASE_URL}${path}`, {
+      ...init,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(init?.headers as Record<string, string>),
+      },
+    });
+
+    if (!res.ok) {
+      if (res.status === 401) {
+        this.logout();
+        if (typeof window !== 'undefined') window.location.replace('/auth/login');
+        throw new Error('Unauthorized');
+      }
+      const text = await res.text();
+      try {
+        const j = JSON.parse(text);
+        throw new Error(j.message || res.statusText);
+      } catch {
+        throw new Error(text || res.statusText);
       }
     }
-    return Promise.reject(err);
+
+    const ct = res.headers.get('content-type') || '';
+    if (!ct.includes('application/json')) return undefined as T;
+    return (await res.json()) as T;
   }
-);
 
-// ----- Auth API wrappers -----
-// 注意：真正的鉴权由后端完成，前端只保存后端给的 user + token
+  // ===== 登录（请根据后端返回结构调整字段名） =====
+  static async login(username: string, password: string): Promise<{ token: string } & Json> {
+    const res = await fetch(`${API_BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
 
-export async function login(username: string, password: string): Promise<{ ok: boolean; message?: string; user?: User }> {
-  try {
-    const { data } = await axios.post(`${API_BASE_URL}/auth/signin`, { username, password }, { headers: { 'Content-Type': 'application/json' } });
-    const token: string | undefined = data?.token;
-
-    // 后端当前返回形态：{ token, type, id, username, email, roles }
-    // 兼容同时也支持 { token, user: { id, username, email, roles } }
-    const roles: string[] = Array.isArray(data?.roles)
-      ? data.roles
-      : Array.isArray(data?.user?.roles)
-      ? data.user.roles
-      : [];
-
-    const mappedRole: AppRole =
-      roles.includes('ROLE_ADMIN') ? 'admin' :
-      roles.includes('ROLE_OPERATOR') ? 'operator' :
-      'viewer';
-
-    const user: User = {
-      id: String(data?.user?.id ?? data?.id ?? ''),
-      username: data?.user?.username ?? data?.username ?? username,
-      name: data?.user?.name ?? data?.name ?? data?.user?.username ?? data?.username ?? username,
-      email: data?.user?.email ?? data?.email ?? `${username}@example.com`,
-      role: mappedRole,
-    };
-
-    if (!token) {
-      console.error('Login failed: token missing in response');
-      return { ok: false, message: 'Login failed: token missing in response.' };
+    if (!res.ok) {
+      const text = await res.text();
+      try {
+        const j = JSON.parse(text);
+        throw new Error(j.message || res.statusText);
+      } catch {
+        throw new Error(text || res.statusText);
+      }
     }
 
-    console.log('Login response - Token received:', token.substring(0, 20) + '...');
-    console.log('Login response - User:', user);
-    
-    AuthManager.setToken(token);
-    console.log('Token saved to localStorage');
-    
-    AuthManager.setUser(user);
-    console.log('User saved to localStorage');
-    
-    // 验证保存是否成功
-    const savedToken = AuthManager.getToken();
-    console.log('Verification - Token retrieved:', savedToken ? 'YES' : 'NO');
-    
-    return { ok: true, user };
-  } catch (e: any) {
-    const msg =
-      e?.response?.data?.message ||
-      e?.response?.data?.error ||
-      e?.message ||
-      'Login failed.';
-    return { ok: false, message: msg };
+    const data = (await res.json()) as { token: string; user?: StoredUser } & Json;
+    if (data?.token) this.setToken(data.token);
+    if (data?.user) this.setUser(data.user);
+    return data;
   }
 }
 
-export async function register(payload: { username: string; email: string; password: string; role?: AppRole }) {
-  // 只转发到后端；成功后让用户手动去登录页
-  try {
-    await axios.post(`${API_BASE_URL}/auth/signup`, payload, { headers: { 'Content-Type': 'application/json' } });
-    return { ok: true };
-  } catch (e: any) {
-    const msg =
-      e?.response?.data?.message ||
-      e?.response?.data?.error ||
-      e?.message ||
-      'Registration failed.';
-    return { ok: false, message: msg };
-  }
-}
-
-// 可选：从后端刷新“当前用户”（避免本地 user 过期/变更不同步）
-export async function refreshCurrentUser() {
-  try {
-    const { data } = await http.get('/auth/me');
-    const roles: string[] = Array.isArray(data?.roles) ? data.roles : [];
-    const mappedRole: AppRole =
-      roles.includes('ROLE_ADMIN') ? 'admin' :
-      roles.includes('ROLE_OPERATOR') ? 'operator' :
-      roles.includes('ROLE_MANAGER') ? 'manager' :
-      'manager';
-
-    const user: User = {
-      id: String(data?.id ?? ''),
-      username: data?.username ?? '',
-      email: data?.email ?? '',
-      role: mappedRole,
-    };
-
-    AuthManager.setUser(user);
-    return { ok: true, user };
-  } catch {
-    return { ok: false };
-  }
-}
-
-// ----- Tiny UI helpers (UI-only, not security) -----
-export function requireAuth(): boolean {
-  // 前端路由跳转用（仅防误操作）；真正安全由后端 401 保证
-  const ok = AuthManager.isAuthenticated() && !!AuthManager.getUser();
-  if (!ok && typeof window !== 'undefined') {
-    window.location.href = '/auth/login';
-  }
-  return ok;
-}
-
-export function hasRole(role: AppRole, user?: User | null): boolean {
-  const u = user ?? AuthManager.getUser();
-  return !!u && u.role === role;
-}
-
-// --- Optional compatibility helpers ---
-export function requirePermission(_permission: string): boolean {
-  return requireAuth();
-}
-export function requireRole(role: string): boolean {
-  return requireAuth() && hasRole(role as AppRole);
-}
+export default AuthManager;
