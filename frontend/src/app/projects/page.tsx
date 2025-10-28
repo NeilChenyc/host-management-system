@@ -126,14 +126,16 @@ export default function ProjectsPage() {
   // 状态颜色映射
   const getStatusColor = (status: ProjectStatus) => {
     switch (status) {
-      case 'active':
+      case 'ACTIVE':
         return 'green';
-      case 'inactive':
-        return 'red';
-      case 'maintenance':
+      case 'PAUSED':
         return 'orange';
-      case 'planning':
-        return 'blue';
+      case 'PLANNED':
+        return 'grey';
+      case 'COMPLETED':
+        return 'purple';
+      case 'CANCELLED':
+        return 'red';
       default:
         return 'default';
     }
@@ -142,14 +144,16 @@ export default function ProjectsPage() {
   // 状态文本映射
   const getStatusText = (status: ProjectStatus) => {
     switch (status) {
-      case 'active':
+      case 'ACTIVE':
         return 'Active';
-      case 'inactive':
-        return 'Inactive';
-      case 'maintenance':
-        return 'Maintenance';
-      case 'planning':
-        return 'Planning';
+      case 'PAUSED':
+        return 'Paused';
+      case 'PLANNED':
+        return 'Planned';
+      case 'COMPLETED':
+        return 'Completed';
+      case 'CANCELLED':
+        return 'Cancelled';
       default:
         return status;
     }
@@ -208,10 +212,11 @@ export default function ProjectsPage() {
         <Tag color={getStatusColor(status)}>{getStatusText(status)}</Tag>
       ),
       filters: [
-        { text: 'Active', value: 'active' },
-        { text: 'Inactive', value: 'inactive' },
-        { text: 'Maintenance', value: 'maintenance' },
-        { text: 'Planning', value: 'planning' },
+        { text: 'Active', value: 'ACTIVE' },
+        { text: 'Paused', value: 'PAUSED' },
+        { text: 'Planned', value: 'PLANNED' },
+        { text: 'Completed', value: 'COMPLETED' },
+        { text: 'Cancelled', value: 'CANCELLED' },
       ],
       onFilter: (value, record) => record.status === value,
     },
@@ -312,9 +317,9 @@ export default function ProjectsPage() {
       );
     }
 
-    if (status !== 'all') {
+  if (status !== 'all') {
       filtered = filtered.filter((project) => project.status === status);
-    }
+  }
 
     setFilteredProjects(filtered);
   };
@@ -375,20 +380,27 @@ export default function ProjectsPage() {
     try {
       const values = await form.validateFields();
       setLoading(true);
-      
-      const projectData = {
-        ...values,
-        servers: values.servers.map((id: string) => parseInt(id))
+      const selectedStatus: ProjectStatus = values.status;
+      const projectUpdate = {
+        projectName: values.projectName,
+        servers: values.servers.map((id: string) => parseInt(id)),
+        duration: values.duration,
       };
-      
+
       if (editingProject) {
-        await ProjectApiService.updateProject(editingProject.id, projectData);
+        await ProjectApiService.updateProject(editingProject.id, projectUpdate);
+        if (selectedStatus && selectedStatus !== editingProject.status) {
+          await ProjectApiService.updateProjectStatus(editingProject.id, selectedStatus);
+        }
         messageApi.success('项目更新成功');
       } else {
-        await ProjectApiService.createProject(projectData);
+        const created = await ProjectApiService.createProject(projectUpdate);
+        if (selectedStatus && selectedStatus !== created.status) {
+          await ProjectApiService.updateProjectStatus(created.id, selectedStatus);
+        }
         messageApi.success('项目添加成功');
       }
-      
+
       await loadProjects();
       setIsModalVisible(false);
       form.resetFields();
@@ -404,12 +416,13 @@ export default function ProjectsPage() {
   // 计算统计信息
   const getStatistics = () => {
     const total = filteredProjects.length;
-    const active = filteredProjects.filter(p => p.status === 'active').length;
-    const inactive = filteredProjects.filter(p => p.status === 'inactive').length;
-    const maintenance = filteredProjects.filter(p => p.status === 'maintenance').length;
-    const planning = filteredProjects.filter(p => p.status === 'planning').length;
+    const active = filteredProjects.filter(p => p.status === 'ACTIVE').length;
+    const paused = filteredProjects.filter(p => p.status === 'PAUSED').length;
+    const planned = filteredProjects.filter(p => p.status === 'PLANNED').length;
+    const completed = filteredProjects.filter(p => p.status === 'COMPLETED').length;
+    const cancelled = filteredProjects.filter(p => p.status === 'CANCELLED').length;
     
-    return { total, active, inactive, maintenance, planning };
+    return { total, active, paused, planned, completed, cancelled };
   };
 
   // 添加项目成员
@@ -504,18 +517,18 @@ export default function ProjectsPage() {
         <Col xs={24} sm={12} md={6}>
           <Card>
             <Statistic
-              title="Inactive Projects"
-              value={stats.inactive}
-              valueStyle={{ color: '#ff4d4f' }}
+              title="Paused Projects"
+              value={stats.paused}
+              valueStyle={{ color: '#faad14' }}
             />
           </Card>
         </Col>
         <Col xs={24} sm={12} md={6}>
           <Card>
             <Statistic
-              title="Maintenance"
-              value={stats.maintenance}
-              valueStyle={{ color: '#faad14' }}
+              title="Planned"
+              value={stats.planned}
+              valueStyle={{ color: '#1890ff' }}
             />
           </Card>
         </Col>
@@ -549,17 +562,18 @@ export default function ProjectsPage() {
             />
           </Col>
           <Col xs={24} sm={12} md={4}>
-            <Select
+          <Select
               value={statusFilter}
               onChange={handleStatusFilter}
               style={{ width: '100%' }}
               size="middle"
             >
               <Option value="all">All Status</Option>
-              <Option value="active">Active</Option>
-              <Option value="inactive">Inactive</Option>
-              <Option value="maintenance">Maintenance</Option>
-              <Option value="planning">Planning</Option>
+              <Option value="ACTIVE">Active</Option>
+              <Option value="PAUSED">Paused</Option>
+              <Option value="PLANNED">Planned</Option>
+              <Option value="COMPLETED">Completed</Option>
+              <Option value="CANCELLED">Cancelled</Option>
             </Select>
           </Col>
         </Row>
@@ -598,7 +612,7 @@ export default function ProjectsPage() {
           form={form}
           layout="vertical"
           initialValues={{
-            status: 'active',
+            status: 'ACTIVE',
           }}
         >
           <Form.Item
@@ -619,10 +633,11 @@ export default function ProjectsPage() {
             ]}
           >
             <Select placeholder="Please select status">
-              <Option value="active">Active</Option>
-              <Option value="inactive">Inactive</Option>
-              <Option value="maintenance">Maintenance</Option>
-              <Option value="planning">Planning</Option>
+              <Option value="ACTIVE">Active</Option>
+              <Option value="PAUSED">Paused</Option>
+              <Option value="PLANNED">Planned</Option>
+              <Option value="COMPLETED">Completed</Option>
+              <Option value="CANCELLED">Cancelled</Option>
             </Select>
           </Form.Item>
           
