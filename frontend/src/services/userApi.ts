@@ -1,4 +1,4 @@
-import { http, AppRole } from '../lib/auth';
+import AuthManager from '../lib/auth';
 
 export interface UserResponseDto {
   id: number;
@@ -7,6 +7,9 @@ export interface UserResponseDto {
   role: string;
   createdAt?: string;
 }
+
+// Define AppRole locally (previously imported)
+export type AppRole = 'admin' | 'manager' | 'operator';
 
 // Map backend single role string to app role
 export function mapToAppRole(role?: string): AppRole {
@@ -34,33 +37,28 @@ export function mapToBackendRole(role: AppRole): string {
 // ---- API wrappers ----
 export async function getAllUsers(): Promise<UserResponseDto[]> {
   try {
-    
-    const { data } = await http.get('/users');
-    const result = (Array.isArray(data) ? data : []) as UserResponseDto[];
-    return result;
+    const data = await AuthManager.fetchWithAuth<UserResponseDto[]>('/users', { method: 'GET' });
+    return Array.isArray(data) ? data : [];
   } catch (error: any) {
     console.error('❌ userApi.getAllUsers: API调用失败');
     console.error('📋 错误详情:', {
       message: error?.message,
-      response: error?.response,
-      status: error?.response?.status,
-      statusText: error?.response?.statusText,
-      data: error?.response?.data,
-      config: error?.config
+      // fetchWithAuth throws Error with message; no axios response object here
     });
     throw error;
   }
 }
 
 export async function getUserById(id: number | string): Promise<UserResponseDto> {
-  const { data } = await http.get(`/users/${id}`);
-  return data as UserResponseDto;
+  return await AuthManager.fetchWithAuth<UserResponseDto>(`/users/${id}`, { method: 'GET' });
 }
 
 export async function getByUsername(username: string): Promise<UserResponseDto | null> {
   try {
-    const { data } = await http.get(`/users/by-username/${encodeURIComponent(username)}`);
-    return data as UserResponseDto;
+    return await AuthManager.fetchWithAuth<UserResponseDto>(
+      `/users/by-username/${encodeURIComponent(username)}`,
+      { method: 'GET' }
+    );
   } catch (e) {
     return null;
   }
@@ -75,11 +73,14 @@ export async function registerUser(payload: { username: string; email: string; p
       password: payload.password,
       role,
     };
-    const { data } = await http.post('/auth/signup', body);
-    return data as UserResponseDto;
+    return await AuthManager.fetchWithAuth<UserResponseDto>('/auth/signup', {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: { 'Content-Type': 'application/json' },
+    });
   } catch (error: any) {
     // 提取后端返回的友好错误消息
-    const errorMessage = error?.response?.data?.message || error?.message || '注册用户失败';
+    const errorMessage = error?.message || '注册用户失败';
     throw new Error(errorMessage);
   }
 }
@@ -88,23 +89,24 @@ export async function updateUserRole(id: number | string, role: AppRole): Promis
   try {
     const backendRole = mapToBackendRole(role);
     // Backend expects a raw string body; send JSON string for compatibility
-    const { data } = await http.put(`/users/${id}/role`, JSON.stringify(backendRole), {
+    return await AuthManager.fetchWithAuth<UserResponseDto>(`/users/${id}/role`, {
+      method: 'PUT',
+      body: JSON.stringify(backendRole),
       headers: { 'Content-Type': 'application/json' },
     });
-    return data as UserResponseDto;
   } catch (error: any) {
     // 提取后端返回的友好错误消息
-    const errorMessage = error?.response?.data?.message || error?.message || '更新用户角色失败';
+    const errorMessage = error?.message || '更新用户角色失败';
     throw new Error(errorMessage);
   }
 }
 
 export async function deleteUser(id: number | string): Promise<void> {
   try {
-    await http.delete(`/users/${id}`);
+    await AuthManager.fetchWithAuth<void>(`/users/${id}`, { method: 'DELETE' });
   } catch (error: any) {
     // 提取后端返回的友好错误消息
-    const errorMessage = error?.response?.data?.message || error?.message || '删除用户失败';
+    const errorMessage = error?.message || '删除用户失败';
     throw new Error(errorMessage);
   }
 }
