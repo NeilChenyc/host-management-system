@@ -155,26 +155,9 @@ public class UserController {
         // 只有Admin和Manager可以更新用户角色
         permissionChecker.requirePermission(currentUserId, PermissionConstants.USER_MANAGE_ALL);
         
-        try {
-            // 实际更新数据库中的用户角色
-            Optional<UserResponseDto> updatedUser = userService.updateUserRole(id, roleUpdateDto.getRole());
-            
-            if (updatedUser.isPresent()) {
-                return ResponseEntity.ok(updatedUser.get());
-            } else {
-                return ResponseEntity.notFound().build();
-            }
-        } catch (Exception e) {
-            // Handle any other exceptions
-            GlobalExceptionHandler.ErrorResponse errorResponse = new GlobalExceptionHandler.ErrorResponse(
-                java.time.LocalDateTime.now(),
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                "Internal Server Error",
-                "Failed to update user role: " + e.getMessage(),
-                null
-            );
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
-        }
+        Optional<UserResponseDto> updatedUser = userService.updateUserRole(id, roleUpdateDto.getRole());
+        return updatedUser.map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     /**

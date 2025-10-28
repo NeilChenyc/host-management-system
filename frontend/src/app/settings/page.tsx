@@ -47,7 +47,7 @@ import type { ColumnsType } from 'antd/es/table';
 import type { RangePickerProps } from 'antd/es/date-picker';
 import dayjs from 'dayjs';
 
-const { TabPane } = Tabs;
+// NOTE: Tabs.TabPane is deprecated; use items prop instead
 const { Search } = Input;
 const { TextArea } = Input;
 const { RangePicker } = DatePicker;
@@ -586,307 +586,314 @@ export default function SettingsPage() {
     });
   };
 
+  const configTab = (
+    <Card>
+      <Form
+        form={form}
+        layout="vertical"
+        initialValues={systemConfig}
+        onFinish={handleSaveConfig}
+      >
+        <Title level={4}>Basic Settings</Title>
+        <Row gutter={16}>
+          <Col span={12}>
+            <Form.Item
+              name="siteName"
+              label="Site Name"
+              rules={[{ required: true, message: 'Please enter site name' }]}
+            >
+              <Input placeholder="Please enter site name" />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              name="adminEmail"
+              label="Admin Email"
+              rules={[
+                { required: true, message: 'Please enter admin email' },
+                { type: 'email', message: 'Please enter a valid email address' },
+              ]}
+            >
+              <Input placeholder="Please enter admin email" />
+            </Form.Item>
+          </Col>
+        </Row>
+        <Form.Item
+          name="siteDescription"
+          label="Site Description"
+        >
+          <TextArea rows={3} placeholder="Please enter site description" />
+        </Form.Item>
+
+        <Divider />
+        <Title level={4}>Security Settings</Title>
+        <Row gutter={16}>
+          <Col span={8}>
+            <Form.Item
+              name="maxLoginAttempts"
+              label="Max Login Attempts"
+              rules={[{ required: true, message: 'Please enter max login attempts' }]}
+            >
+              <InputNumber min={1} max={10} style={{ width: '100%' }} />
+            </Form.Item>
+          </Col>
+          <Col span={8}>
+            <Form.Item
+              name="sessionTimeout"
+              label="Session Timeout (minutes)"
+              rules={[{ required: true, message: 'Please enter session timeout' }]}
+            >
+              <InputNumber min={5} max={120} style={{ width: '100%' }} />
+            </Form.Item>
+          </Col>
+          <Col span={8}>
+            <Form.Item
+              name="maxFileSize"
+              label="Max File Size (MB)"
+              rules={[{ required: true, message: 'Please enter max file size' }]}
+            >
+              <InputNumber min={1} max={100} style={{ width: '100%' }} />
+            </Form.Item>
+          </Col>
+        </Row>
+        <Row gutter={16}>
+          <Col span={8}>
+            <Form.Item
+              name="enableRegistration"
+              label="Allow User Registration"
+              valuePropName="checked"
+            >
+              <Switch />
+            </Form.Item>
+          </Col>
+          <Col span={8}>
+            <Form.Item
+              name="maintenanceMode"
+              label="Maintenance Mode"
+              valuePropName="checked"
+            >
+              <Switch />
+            </Form.Item>
+          </Col>
+          <Col span={8}>
+            <Form.Item
+              name="debugMode"
+              label="Debug Mode"
+              valuePropName="checked"
+            >
+              <Switch />
+            </Form.Item>
+          </Col>
+        </Row>
+
+        <Divider />
+        <Title level={4}>Notification Settings</Title>
+        <Row gutter={16}>
+          <Col span={12}>
+            <Form.Item
+              name="enableEmailNotification"
+              label="Enable Email Notification"
+              valuePropName="checked"
+            >
+              <Switch />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              name="enableSMSNotification"
+              label="Enable SMS Notification"
+              valuePropName="checked"
+            >
+              <Switch />
+            </Form.Item>
+          </Col>
+        </Row>
+
+        <Divider />
+        <Title level={4}>System Maintenance</Title>
+        <Row gutter={16}>
+          <Col span={8}>
+            <Form.Item
+              name="backupInterval"
+              label="Backup Interval (hours)"
+              rules={[{ required: true, message: 'Please enter backup interval' }]}
+            >
+              <InputNumber min={1} max={168} style={{ width: '100%' }} />
+            </Form.Item>
+          </Col>
+          <Col span={8}>
+            <Form.Item
+              name="logRetentionDays"
+              label="Log Retention Days"
+              rules={[{ required: true, message: 'Please enter log retention days' }]}
+            >
+              <InputNumber min={1} max={365} style={{ width: '100%' }} />
+            </Form.Item>
+          </Col>
+        </Row>
+
+        <Form.Item>
+          <Space>
+            <Button
+              type="primary"
+              htmlType="submit"
+              icon={<SaveOutlined />}
+              loading={loading}
+            >
+              Save Configuration
+            </Button>
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={handleResetConfig}
+            >
+              Reset Configuration
+            </Button>
+          </Space>
+        </Form.Item>
+      </Form>
+    </Card>
+  );
+
+  const logsTab = (
+    <>
+      <Card style={{ marginBottom: 16 }}>
+        <Row gutter={[16, 16]}>
+          <Col xs={24} sm={6} md={4}>
+            <Select
+              value={logLevel}
+              onChange={handleLogLevelFilter}
+              style={{ width: '100%' }}
+              placeholder="Log Level"
+            >
+              <Select.Option value="all">All Levels</Select.Option>
+              <Select.Option value="info">Info</Select.Option>
+              <Select.Option value="warn">Warning</Select.Option>
+              <Select.Option value="error">Error</Select.Option>
+              <Select.Option value="debug">Debug</Select.Option>
+            </Select>
+          </Col>
+          <Col xs={24} sm={6} md={4}>
+            <Select
+              value={logModule}
+              onChange={handleLogModuleFilter}
+              style={{ width: '100%' }}
+              placeholder="Module Filter"
+            >
+              <Select.Option value="all">All Modules</Select.Option>
+              <Select.Option value="用户管理">User Management</Select.Option>
+              <Select.Option value="设备管理">Device Management</Select.Option>
+              <Select.Option value="系统监控">System Monitoring</Select.Option>
+              <Select.Option value="备份管理">Backup Management</Select.Option>
+              <Select.Option value="系统设置">System Settings</Select.Option>
+            </Select>
+          </Col>
+          <Col xs={24} sm={12} md={8}>
+            <RangePicker
+              value={logDateRange}
+              onChange={handleLogDateRangeFilter}
+              style={{ width: '100%' }}
+              placeholder={["Start Time", "End Time"]}
+            />
+          </Col>
+          <Col xs={24} sm={24} md={8}>
+            <Space style={{ float: 'right' }}>
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={() => {
+                  setLogLevel('all');
+                  setLogModule('all');
+                  setLogDateRange(null);
+                  setFilteredLogs(logs);
+                }}
+              >
+                Reset Filter
+              </Button>
+              <Button
+                danger
+                icon={<DeleteOutlined />}
+                onClick={handleClearLogs}
+              >
+                Clear Logs
+              </Button>
+            </Space>
+          </Col>
+        </Row>
+      </Card>
+
+      <Card>
+        <Table
+          columns={logColumns}
+          dataSource={filteredLogs}
+          rowKey="id"
+          pagination={{
+            total: filteredLogs.length,
+            pageSize: 20,
+            showSizeChanger: true,
+            showQuickJumper: true,
+            showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
+          }}
+          scroll={{ x: 1000 }}
+        />
+      </Card>
+    </>
+  );
+
+  const backupTab = (
+    <>
+      <Card style={{ marginBottom: 16 }}>
+        <Row gutter={16}>
+          <Col span={12}>
+            <Alert
+              message="Backup Reminder"
+              description="It is recommended to backup system data regularly to ensure data security. Current backup interval is 24 hours."
+              type="info"
+              showIcon
+              icon={<InfoCircleOutlined />}
+            />
+          </Col>
+          <Col span={12}>
+            <Space style={{ float: 'right' }}>
+              <Button
+                type="primary"
+                icon={<CloudUploadOutlined />}
+                onClick={handleCreateBackup}
+                loading={backupLoading}
+              >
+                Create Backup
+              </Button>
+            </Space>
+          </Col>
+        </Row>
+      </Card>
+
+      <Card>
+        <Table
+          columns={backupColumns}
+          dataSource={backupRecords}
+          rowKey="id"
+          loading={restoreLoading}
+          pagination={{
+            total: backupRecords.length,
+            pageSize: 10,
+            showSizeChanger: true,
+            showQuickJumper: true,
+            showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
+          }}
+          scroll={{ x: 1000 }}
+        />
+      </Card>
+    </>
+  );
+
+  const items = [
+    { key: 'config', label: (<span><SettingOutlined />System Configuration</span>), children: configTab },
+    { key: 'logs', label: (<span><FileTextOutlined />System Logs</span>), children: logsTab },
+    { key: 'backup', label: (<span><DatabaseOutlined />Backup & Recovery</span>), children: backupTab },
+  ];
+
   return (
     <MainLayout>
-      <Tabs defaultActiveKey="config" type="card">
-        {/* 系统配置 */}
-        <TabPane tab={<span><SettingOutlined />System Configuration</span>} key="config">
-          <Card>
-            <Form
-              form={form}
-              layout="vertical"
-              initialValues={systemConfig}
-              onFinish={handleSaveConfig}
-            >
-              <Title level={4}>Basic Settings</Title>
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item
-                    name="siteName"
-                    label="Site Name"
-                    rules={[{ required: true, message: 'Please enter site name' }]}
-                  >
-                    <Input placeholder="Please enter site name" />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item
-                    name="adminEmail"
-                    label="Admin Email"
-                    rules={[
-                      { required: true, message: 'Please enter admin email' },
-                      { type: 'email', message: 'Please enter a valid email address' },
-                    ]}
-                  >
-                    <Input placeholder="Please enter admin email" />
-                  </Form.Item>
-                </Col>
-              </Row>
-              <Form.Item
-                name="siteDescription"
-                label="Site Description"
-              >
-                <TextArea rows={3} placeholder="Please enter site description" />
-              </Form.Item>
-
-              <Divider />
-              <Title level={4}>Security Settings</Title>
-              <Row gutter={16}>
-                <Col span={8}>
-                  <Form.Item
-                    name="maxLoginAttempts"
-                    label="Max Login Attempts"
-                    rules={[{ required: true, message: 'Please enter max login attempts' }]}
-                  >
-                    <InputNumber min={1} max={10} style={{ width: '100%' }} />
-                  </Form.Item>
-                </Col>
-                <Col span={8}>
-                  <Form.Item
-                    name="sessionTimeout"
-                    label="Session Timeout (minutes)"
-                    rules={[{ required: true, message: 'Please enter session timeout' }]}
-                  >
-                    <InputNumber min={5} max={120} style={{ width: '100%' }} />
-                  </Form.Item>
-                </Col>
-                <Col span={8}>
-                  <Form.Item
-                    name="maxFileSize"
-                    label="Max File Size (MB)"
-                    rules={[{ required: true, message: 'Please enter max file size' }]}
-                  >
-                    <InputNumber min={1} max={100} style={{ width: '100%' }} />
-                  </Form.Item>
-                </Col>
-              </Row>
-              <Row gutter={16}>
-                <Col span={8}>
-                  <Form.Item
-                    name="enableRegistration"
-                    label="Allow User Registration"
-                    valuePropName="checked"
-                  >
-                    <Switch />
-                  </Form.Item>
-                </Col>
-                <Col span={8}>
-                  <Form.Item
-                    name="maintenanceMode"
-                    label="Maintenance Mode"
-                    valuePropName="checked"
-                  >
-                    <Switch />
-                  </Form.Item>
-                </Col>
-                <Col span={8}>
-                  <Form.Item
-                    name="debugMode"
-                    label="Debug Mode"
-                    valuePropName="checked"
-                  >
-                    <Switch />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Divider />
-              <Title level={4}>Notification Settings</Title>
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item
-                    name="enableEmailNotification"
-                    label="Enable Email Notification"
-                    valuePropName="checked"
-                  >
-                    <Switch />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item
-                    name="enableSMSNotification"
-                    label="Enable SMS Notification"
-                    valuePropName="checked"
-                  >
-                    <Switch />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Divider />
-              <Title level={4}>System Maintenance</Title>
-              <Row gutter={16}>
-                <Col span={8}>
-                  <Form.Item
-                    name="backupInterval"
-                    label="Backup Interval (hours)"
-                    rules={[{ required: true, message: 'Please enter backup interval' }]}
-                  >
-                    <InputNumber min={1} max={168} style={{ width: '100%' }} />
-                  </Form.Item>
-                </Col>
-                <Col span={8}>
-                  <Form.Item
-                    name="logRetentionDays"
-                    label="Log Retention Days"
-                    rules={[{ required: true, message: 'Please enter log retention days' }]}
-                  >
-                    <InputNumber min={1} max={365} style={{ width: '100%' }} />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Form.Item>
-                <Space>
-                  <Button
-                    type="primary"
-                    htmlType="submit"
-                    icon={<SaveOutlined />}
-                    loading={loading}
-                  >
-                    Save Configuration
-                  </Button>
-                  <Button
-                    icon={<ReloadOutlined />}
-                    onClick={handleResetConfig}
-                  >
-                    Reset Configuration
-                  </Button>
-                </Space>
-              </Form.Item>
-            </Form>
-          </Card>
-        </TabPane>
-
-        {/* 系统日志 */}
-        <TabPane tab={<span><FileTextOutlined />System Logs</span>} key="logs">
-          <Card style={{ marginBottom: 16 }}>
-            <Row gutter={[16, 16]}>
-              <Col xs={24} sm={6} md={4}>
-                <Select
-                  value={logLevel}
-                  onChange={handleLogLevelFilter}
-                  style={{ width: '100%' }}
-                  placeholder="Log Level"
-                >
-                  <Select.Option value="all">All Levels</Select.Option>
-                  <Select.Option value="info">Info</Select.Option>
-                  <Select.Option value="warn">Warning</Select.Option>
-                  <Select.Option value="error">Error</Select.Option>
-                  <Select.Option value="debug">Debug</Select.Option>
-                </Select>
-              </Col>
-              <Col xs={24} sm={6} md={4}>
-                <Select
-                  value={logModule}
-                  onChange={handleLogModuleFilter}
-                  style={{ width: '100%' }}
-                  placeholder="Module Filter"
-                >
-                  <Select.Option value="all">All Modules</Select.Option>
-                  <Select.Option value="用户管理">User Management</Select.Option>
-                  <Select.Option value="设备管理">Device Management</Select.Option>
-                  <Select.Option value="系统监控">System Monitoring</Select.Option>
-                  <Select.Option value="备份管理">Backup Management</Select.Option>
-                  <Select.Option value="系统设置">System Settings</Select.Option>
-                </Select>
-              </Col>
-              <Col xs={24} sm={12} md={8}>
-                <RangePicker
-                  value={logDateRange}
-                  onChange={handleLogDateRangeFilter}
-                  style={{ width: '100%' }}
-                  placeholder={['Start Time', 'End Time']}
-                />
-              </Col>
-              <Col xs={24} sm={24} md={8}>
-                <Space style={{ float: 'right' }}>
-                  <Button
-                    icon={<ReloadOutlined />}
-                    onClick={() => {
-                      setLogLevel('all');
-                      setLogModule('all');
-                      setLogDateRange(null);
-                      setFilteredLogs(logs);
-                    }}
-                  >
-                    Reset Filter
-                  </Button>
-                  <Button
-                    danger
-                    icon={<DeleteOutlined />}
-                    onClick={handleClearLogs}
-                  >
-                    Clear Logs
-                  </Button>
-                </Space>
-              </Col>
-            </Row>
-          </Card>
-
-          <Card>
-            <Table
-              columns={logColumns}
-              dataSource={filteredLogs}
-              rowKey="id"
-              pagination={{
-                total: filteredLogs.length,
-                pageSize: 20,
-                showSizeChanger: true,
-                showQuickJumper: true,
-                showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
-              }}
-              scroll={{ x: 1000 }}
-            />
-          </Card>
-        </TabPane>
-
-        {/* 备份与恢复 */}
-        <TabPane tab={<span><DatabaseOutlined />Backup & Recovery</span>} key="backup">
-          <Card style={{ marginBottom: 16 }}>
-            <Row gutter={16}>
-              <Col span={12}>
-                <Alert
-                  message="Backup Reminder"
-                  description="It is recommended to backup system data regularly to ensure data security. Current backup interval is 24 hours."
-                  type="info"
-                  showIcon
-                  icon={<InfoCircleOutlined />}
-                />
-              </Col>
-              <Col span={12}>
-                <Space style={{ float: 'right' }}>
-                  <Button
-                    type="primary"
-                    icon={<CloudUploadOutlined />}
-                    onClick={handleCreateBackup}
-                    loading={backupLoading}
-                  >
-                    Create Backup
-                  </Button>
-                </Space>
-              </Col>
-            </Row>
-          </Card>
-
-          <Card>
-            <Table
-              columns={backupColumns}
-              dataSource={backupRecords}
-              rowKey="id"
-              loading={restoreLoading}
-              pagination={{
-                total: backupRecords.length,
-                pageSize: 10,
-                showSizeChanger: true,
-                showQuickJumper: true,
-                showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
-              }}
-              scroll={{ x: 1000 }}
-            />
-          </Card>
-        </TabPane>
-      </Tabs>
+      <Tabs defaultActiveKey="config" type="card" items={items} />
     </MainLayout>
   );
 }

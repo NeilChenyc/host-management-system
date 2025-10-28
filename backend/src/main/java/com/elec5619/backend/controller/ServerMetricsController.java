@@ -99,25 +99,20 @@ public class ServerMetricsController {
      */
     @PostMapping("/metrics/collect")
     public ResponseEntity<?> collectMetrics(@RequestBody ServerMetrics metrics) {
-        try {
-            // Validate serverId
-            if (metrics.getServerId() == null) {
-                return ResponseEntity.badRequest().body("Server ID is required");
-            }
-            
-            // Save metrics
-            ServerMetrics savedMetrics = serverMetricsService.saveMetrics(metrics);
-            
-            return ResponseEntity.ok().body(new Object() {
-                public final String message = "Metrics received successfully";
-                public final Long metricId = savedMetrics.getMetricId();
-                public final Long serverId = savedMetrics.getServerId();
-                public final String timestamp = savedMetrics.getCollectedAt().toString();
-            });
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError()
-                    .body("Error saving metrics: " + e.getMessage());
+        // Validate serverId
+        if (metrics.getServerId() == null) {
+            return ResponseEntity.badRequest().body("Server ID is required");
         }
+        
+        // Save metrics
+        ServerMetrics savedMetrics = serverMetricsService.saveMetrics(metrics);
+        
+        return ResponseEntity.ok().body(new Object() {
+            public final String message = "Metrics received successfully";
+            public final Long metricId = savedMetrics.getMetricId();
+            public final Long serverId = savedMetrics.getServerId();
+            public final String timestamp = savedMetrics.getCollectedAt().toString();
+        });
     }
 
     /**
@@ -125,13 +120,8 @@ public class ServerMetricsController {
      */
     @PostMapping("/metrics/generate")
     public ResponseEntity<String> generateMetrics() {
-        try {
-            serverMetricsService.generateFakeMetricsForAllServers();
-            return ResponseEntity.ok("Metrics generated successfully for all servers");
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError()
-                    .body("Error generating metrics: " + e.getMessage());
-        }
+        serverMetricsService.generateFakeMetricsForAllServers();
+        return ResponseEntity.ok("Metrics generated successfully for all servers");
     }
 
     /**
