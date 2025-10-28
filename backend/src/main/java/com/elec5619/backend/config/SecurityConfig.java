@@ -1,6 +1,7 @@
 package com.elec5619.backend.config;
 
 import java.util.Arrays;
+import java.util.List;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,27 +21,39 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable()) // 禁用CSRF保护，便于API测试
+            // 禁用 CSRF（适用于 REST API）
+            .csrf(csrf -> csrf.disable())
+            // 启用 CORS（结合 corsConfigurationSource()）
             .cors(cors -> {})
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // 允许所有预检请求
-                .requestMatchers("/api/auth/**").permitAll()  // 允许所有认证相关的请求
-                .requestMatchers("/api/public/**").permitAll()  // 允许所有公共请求
-                .requestMatchers("/api/users/**").permitAll()  // 允许所有用户管理请求（用于测试）
-                .requestMatchers("/api/servers/**").permitAll()  // 允许服务器管理API访问
-                .requestMatchers("/api/projects/**").permitAll() // 允许所有项目API访问
-                .requestMatchers("/api/alert-events/**").permitAll() // 允许告警事件API访问
-                .requestMatchers("/api/alert-rules/**").permitAll() // 允许告警规则API访问
-                .requestMatchers("/api/example/**").permitAll() // 允许示例API访问（用于Swagger测试）
-                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/api-docs/**").permitAll()  // 允许Swagger UI访问
-                .anyRequest().authenticated()  // 其他所有请求需要认证
+                // 允许所有 OPTIONS 预检请求
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                // 放行特定 API（用于前端开发调试）
+                .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/api/public/**").permitAll()
+                .requestMatchers("/api/users/**").permitAll()
+                .requestMatchers("/api/servers/**").permitAll()
+                .requestMatchers("/api/projects/**").permitAll()
+                .requestMatchers("/api/alert-events/**").permitAll()
+                .requestMatchers("/api/alert-rules/**").permitAll()
+                .requestMatchers("/api/example/**").permitAll()
+
+                // Swagger & OpenAPI
+                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/api-docs/**").permitAll()
+
+                // 其他接口需登录认证
+                .anyRequest().authenticated()
             )
-            .httpBasic(basic -> basic.disable());  // 禁用HTTP Basic认证
+            // 禁用 HTTP Basic（改用 JWT 认证）
+            .httpBasic(basic -> basic.disable());
 
         return http.build();
     }
 
-    // 全局 CORS 配置，允许前端开发环境访问
+    /**
+     * 全局 CORS 配置 —— 允许前端 localhost:3000 访问 8081
+     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
@@ -48,9 +61,9 @@ public class SecurityConfig {
             "http://localhost:3000",
             "http://127.0.0.1:3000"
         ));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
-        configuration.setExposedHeaders(Arrays.asList("Authorization"));
+        configuration.setExposedHeaders(List.of("Authorization"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 
@@ -59,6 +72,9 @@ public class SecurityConfig {
         return source;
     }
 
+    /**
+     * 密码加密算法（BCrypt）
+     */
     @Bean
     public BCryptPasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();

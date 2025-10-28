@@ -15,6 +15,7 @@
     "@ant-design/v5-patch-for-react-19": "^1.0.3",
     "antd": "^5.27.1",
     "axios": "^1.12.2",
+    "dayjs": "^1.11.18",
     "next": "15.5.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",

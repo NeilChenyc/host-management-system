@@ -1,6 +1,10 @@
-// Project API Service Layer
-// 封装后端Project CRUD接口调用
-import { AuthManager, API_BASE_URL as AUTH_API_BASE_URL } from '@/lib/auth';
+// ============================================================
+// 🧩 Project API Service Layer
+// 封装后端 Project 模块的 CRUD 与成员管理接口
+// ============================================================
+
+import { AuthManager } from '@/lib/auth';
+import { API_BASE_URL } from './apiBase';
 
 export type ProjectStatus = 'PLANNED' | 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'CANCELLED';
 
@@ -11,7 +15,7 @@ export interface ServerSummary {
   ipAddress: string;
 }
 
-// 后端数据类型定义
+/* ---------- 后端 DTO ---------- */
 export interface ProjectResponseDto {
   id: number;
   projectName: string;
@@ -22,6 +26,7 @@ export interface ProjectResponseDto {
   updatedAt: string;
 }
 
+/* ---------- 前端表单入参 ---------- */
 export interface ProjectCreateDto {
   projectName: string;
   servers?: number[];
@@ -34,7 +39,7 @@ export interface ProjectUpdateDto {
   duration?: string;
 }
 
-// 前端数据类型定义（组件使用）
+/* ---------- 前端展示层 ---------- */
 export interface ProjectItem {
   id: string;
   projectName: string;
@@ -45,10 +50,7 @@ export interface ProjectItem {
   updatedAt: string;
 }
 
-// API基础配置（与ServerApi保持一致）
-const API_BASE_URL = AUTH_API_BASE_URL;
-
-// HTTP请求工具函数（复用ServerApi风格）
+/* ===================== 通用请求工具 ===================== */
 const handleResponse = async <T>(response: Response): Promise<T> => {
   if (!response.ok) {
     const errorText = await response.text();
@@ -61,29 +63,36 @@ const handleResponse = async <T>(response: Response): Promise<T> => {
     }
     throw new Error(errorMessage);
   }
+
   const contentType = response.headers.get('content-type');
-  if (contentType && contentType.includes('application/json')) {
+  if (contentType?.includes('application/json')) {
     return response.json();
   }
+
   return response.text() as unknown as T;
 };
 
-const makeRequest = async <T>(url: string, options: RequestInit = {}): Promise<T> => {
+const makeRequest = async <T>(
+  url: string,
+  options: RequestInit = {}
+): Promise<T> => {
   const token = AuthManager.getToken();
-  const defaultHeaders = {
+
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(options.headers as Record<string, string>),
   };
-  const config: RequestInit = {
-    ...options,
-    headers: { ...defaultHeaders, ...options.headers },
-  };
+
   try {
-    const response = await fetch(`${API_BASE_URL}${url}`, config);
+    const response = await fetch(`${API_BASE_URL}${url}`, {
+      ...options,
+      headers,
+    });
     return handleResponse<T>(response);
   } catch (error) {
     if (error instanceof Error) throw error;
-    throw new Error('Network request failed');
+    throw new Error('网络请求失败');
   }
 };
 
@@ -93,9 +102,9 @@ const handleApiError = (error: any, operation: string): never => {
   throw new Error(`${operation}操作失败: ${error?.message || '未知错误'}`);
 };
 
-// 数据转换
+/* ===================== 数据映射 ===================== */
 const toProjectItem = (dto: ProjectResponseDto): ProjectItem => ({
-  id: dto.id.toString(),
+  id: String(dto.id),
   projectName: dto.projectName,
   status: dto.status,
   servers: Array.isArray(dto.servers) ? dto.servers.map(s => s.id) : [], // 提取服务器 ID
@@ -104,9 +113,9 @@ const toProjectItem = (dto: ProjectResponseDto): ProjectItem => ({
   updatedAt: dto.updatedAt,
 });
 
-// Project API 服务类
+/* ===================== Project API ===================== */
 export class ProjectApiService {
-  // 列出用户可见的项目（根据角色权限）
+  /** 获取所有项目 */
   static async getAllProjects(): Promise<ProjectItem[]> {
     try {
       const list = await makeRequest<ProjectResponseDto[]>('/projects/my');
@@ -116,7 +125,7 @@ export class ProjectApiService {
     }
   }
 
-  // 获取项目详情
+  /** 获取项目详情 */
   static async getProjectById(id: string): Promise<ProjectItem> {
     try {
       const dto = await makeRequest<ProjectResponseDto>(`/projects/${id}`);
@@ -126,7 +135,7 @@ export class ProjectApiService {
     }
   }
 
-  // 创建项目
+  /** 创建项目 */
   static async createProject(payload: ProjectCreateDto): Promise<ProjectItem> {
     try {
       const dto = await makeRequest<ProjectResponseDto>('/projects', {
@@ -139,8 +148,11 @@ export class ProjectApiService {
     }
   }
 
-  // 更新项目（名称/服务器/周期）
-  static async updateProject(id: string, payload: ProjectUpdateDto): Promise<ProjectItem> {
+  /** 更新项目信息 */
+  static async updateProject(
+    id: string,
+    payload: ProjectUpdateDto
+  ): Promise<ProjectItem> {
     try {
       const dto = await makeRequest<ProjectResponseDto>(`/projects/${id}`, {
         method: 'PUT',
@@ -152,19 +164,23 @@ export class ProjectApiService {
     }
   }
 
-  // 更新项目状态（单独接口）
-  static async updateProjectStatus(id: string, status: ProjectStatus): Promise<ProjectItem> {
+  /** 更新项目状态 */
+  static async updateProjectStatus(
+    id: string,
+    status: ProjectStatus
+  ): Promise<ProjectItem> {
     try {
-      const dto = await makeRequest<ProjectResponseDto>(`/projects/${id}/status/${status}`, {
-        method: 'PUT',
-      });
+      const dto = await makeRequest<ProjectResponseDto>(
+        `/projects/${id}/status/${status}`,
+        { method: 'PUT' }
+      );
       return toProjectItem(dto);
     } catch (error) {
       return handleApiError(error, '更新项目状态');
     }
   }
 
-  // 获取项目成员（后端返回的是用户ID集合）
+  /** 获取项目成员 */
   static async getProjectMembers(id: string): Promise<number[]> {
     try {
       const members = await makeRequest<number[]>(`/projects/${id}/members`);
@@ -174,33 +190,45 @@ export class ProjectApiService {
     }
   }
 
-  // 添加项目成员
-  static async addProjectMembers(id: string, userIds: number[]): Promise<ProjectItem> {
+  /** 添加成员 */
+  static async addProjectMembers(
+    id: string,
+    userIds: number[]
+  ): Promise<ProjectItem> {
     try {
-      const dto = await makeRequest<ProjectResponseDto>(`/projects/${id}/members`, {
-        method: 'POST',
-        body: JSON.stringify(userIds),
-      });
+      const dto = await makeRequest<ProjectResponseDto>(
+        `/projects/${id}/members`,
+        {
+          method: 'POST',
+          body: JSON.stringify(userIds),
+        }
+      );
       return toProjectItem(dto);
     } catch (error) {
       return handleApiError(error, '添加项目成员');
     }
   }
 
-  // 删除项目成员
-  static async removeProjectMembers(id: string, userIds: number[]): Promise<ProjectItem> {
+  /** 删除成员 */
+  static async removeProjectMembers(
+    id: string,
+    userIds: number[]
+  ): Promise<ProjectItem> {
     try {
-      const dto = await makeRequest<ProjectResponseDto>(`/projects/${id}/members`, {
-        method: 'DELETE',
-        body: JSON.stringify(userIds),
-      });
+      const dto = await makeRequest<ProjectResponseDto>(
+        `/projects/${id}/members`,
+        {
+          method: 'DELETE',
+          body: JSON.stringify(userIds),
+        }
+      );
       return toProjectItem(dto);
     } catch (error) {
       return handleApiError(error, '删除项目成员');
     }
   }
 
-  // 删除项目
+  /** 删除项目 */
   static async deleteProject(id: string): Promise<void> {
     try {
       await makeRequest<void>(`/projects/${id}`, { method: 'DELETE' });

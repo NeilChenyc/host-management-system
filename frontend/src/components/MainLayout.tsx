@@ -1,3 +1,4 @@
+// ========================== MainLayout.tsx ==========================
 'use client';
 
 import React, { useEffect } from 'react';
@@ -21,21 +22,23 @@ import { AuthManager } from '@/lib/auth';
 
 const { Header, Sider, Content } = Layout;
 
-export default function MainLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function MainLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [collapsed, setCollapsed] = React.useState(false);
+  const [ready, setReady] = React.useState(false);
   const user = AuthManager.getUser();
 
+  // 登录验证
   useEffect(() => {
     if (!AuthManager.isAuthenticated()) {
-      router.push('/auth/login');
+      router.replace('/auth/login');
+    } else {
+      setReady(true);
     }
   }, [router]);
+
+  if (!ready) return null;
 
   const menuItems = [
     { key: '/dashboard', icon: <DashboardOutlined />, label: 'Server Overview' },
@@ -53,27 +56,19 @@ export default function MainLayout({
     { key: 'logout', icon: <LogoutOutlined />, label: 'Logout', danger: true },
   ];
 
-  const handleMenuClick = ({ key }: { key: string }) => {
-    router.push(key);
-  };
-
+  const handleMenuClick = ({ key }: { key: string }) => router.push(key);
   const handleUserMenuClick = ({ key }: { key: string }) => {
     if (key === 'logout') {
       AuthManager.logout();
+      router.replace('/auth/login');
     }
   };
 
-  // 根据当前路径确定选中的菜单项
   const selectedKeys = [pathname];
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      <Sider
-        trigger={null}
-        collapsible
-        collapsed={collapsed}
-        style={{ background: '#001529' }}
-      >
+      <Sider trigger={null} collapsible collapsed={collapsed} style={{ background: '#001529' }}>
         <div
           style={{
             height: 64,
@@ -122,11 +117,7 @@ export default function MainLayout({
               <Button type="text" icon={<BellOutlined />} style={{ fontSize: '16px' }} />
             </Badge>
 
-            <Dropdown
-              menu={{ items: userMenuItems, onClick: handleUserMenuClick }}
-              placement="bottomRight"
-              arrow
-            >
+            <Dropdown menu={{ items: userMenuItems, onClick: handleUserMenuClick }} placement="bottomRight" arrow>
               <div
                 style={{
                   display: 'flex',
@@ -137,12 +128,8 @@ export default function MainLayout({
                   borderRadius: '6px',
                   transition: 'background-color 0.2s',
                 }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#f5f5f5';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f5f5f5')}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
               >
                 <Avatar size="small" icon={<UserOutlined />} style={{ backgroundColor: '#1890ff' }} />
                 <span style={{ fontSize: '14px' }}>{user?.name || user?.username || 'User'}</span>
@@ -166,4 +153,3 @@ export default function MainLayout({
     </Layout>
   );
 }
-

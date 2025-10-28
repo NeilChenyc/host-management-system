@@ -1,8 +1,16 @@
+// src/services/alertRuleApi.ts
 // AlertRule API Service Layer
-// 封装后端 Alert Rule 的 CRUD 与状态切换接口
+// 统一使用 AuthManager.fetchWithAuth -> 自动附带 Authorization、统一 401 处理
+// 支持可配置前缀（默认 '/api'），并通过 API_BASE_URL 组装完整地址
+
 import { AuthManager } from '@/lib/auth';
 
-// 后端 AlertRule DTO
+/* ============ 可配置 API 前缀（后端若无 /api 前缀可将其设为 ''） ============ */
+const API_PREFIX = process.env.NEXT_PUBLIC_API_PREFIX ?? '/api';
+const api = <T>(path: string, init?: RequestInit) =>
+  AuthManager.fetchWithAuth<T>(`${API_PREFIX}${path}`, init);
+
+/* ===================== 后端 DTO ===================== */
 export interface AlertRuleDto {
   ruleId: number;
   ruleName: string;
@@ -11,7 +19,7 @@ export interface AlertRuleDto {
   comparator: '>=' | '>' | '<=' | '<' | '==' | '!=' | string;
   threshold: number;
   duration: number; // minutes
-  severity: string; // e.g. WARNING, CRITICAL, HIGH, LOW
+  severity: string; // WARNING / CRITICAL / HIGH / LOW
   enabled: boolean;
   scopeLevel?: string;
   projectId?: number;
@@ -20,7 +28,7 @@ export interface AlertRuleDto {
   updatedAt: string;
 }
 
-// 前端 AlertManagement 组件使用的 AlertRule 类型（简化映射）
+/* ===================== 前端 UI 类型 ===================== */
 export interface UiAlertRule {
   id: string;
   name: string;
@@ -40,62 +48,20 @@ export interface UiAlertRule {
   lastTriggered?: string;
 }
 
-// 表单输入类型（来自组件 Form 的值）
-export type AlertRuleFormValues = Omit<UiAlertRule, 'id' | 'createdAt' | 'updatedAt' | 'createdBy' | 'triggerCount' | 'lastTriggered'>;
+/* ===================== 表单入参类型 ===================== */
+export type AlertRuleFormValues = Omit<
+  UiAlertRule,
+  'id' | 'createdAt' | 'updatedAt' | 'createdBy' | 'triggerCount' | 'lastTriggered'
+>;
 
-// 项目统一的 API 基础地址（与其他服务文件保持一致）
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
-
-// 通用请求封装
-const handleResponse = async <T>(response: Response): Promise<T> => {
-  if (!response.ok) {
-    const errorText = await response.text();
-    let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-    try {
-      const errorJson = JSON.parse(errorText);
-      errorMessage = errorJson.message || errorMessage;
-    } catch {
-      if (errorText) errorMessage = errorText;
-    }
-    throw new Error(errorMessage);
-  }
-  const contentType = response.headers.get('content-type');
-  if (contentType && contentType.includes('application/json')) {
-    return response.json();
-  }
-  return response.text() as unknown as T;
-};
-
-const makeRequest = async <T>(url: string, options: RequestInit = {}): Promise<T> => {
-  // 使用AuthManager.getToken()而不是直接访问localStorage
-  const token = AuthManager.getToken();
-  
-  const defaultHeaders: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-
-  const config: RequestInit = {
-    ...options,
-    headers: { ...defaultHeaders, ...options.headers },
-  };
-  
-  try {
-    const response = await fetch(`${API_BASE_URL}${url}`, config);
-    return handleResponse<T>(response);
-  } catch (error) {
-    if (error instanceof Error) throw error;
-    throw new Error('Network request failed');
-  }
-};
-
-const handleApiError = (error: any, operation: string): never => {
-  console.error(`${operation} failed:`, error);
+/* ===================== 错误处理 ===================== */
+const handleApiError = (error: unknown, op: string): never => {
+  console.error(`${op} failed:`, error);
   if (error instanceof Error) throw error;
-  throw new Error(`${operation}操作失败: ${error?.message || '未知错误'}`);
+  throw new Error(`${op}失败`);
 };
 
-// 字段映射：UI <-> 后端
+/* ===================== 字段映射：UI <-> 后端 ===================== */
 const metricUiToBackend = (m: UiAlertRule['metric']): string => {
   const map: Record<UiAlertRule['metric'], string> = {
     cpu: 'cpu_usage',
@@ -121,7 +87,9 @@ const metricBackendToUi = (m: string): UiAlertRule['metric'] => {
   return map[m] || 'service';
 };
 
-const comparatorUiToBackend = (c: AlertRuleFormValues['condition']): AlertRuleDto['comparator'] => {
+const comparatorUiToBackend = (
+  c: AlertRuleFormValues['condition']
+): AlertRuleDto['comparator'] => {
   const map: Record<AlertRuleFormValues['condition'], AlertRuleDto['comparator']> = {
     greater_than: '>',
     less_than: '<',
@@ -159,15 +127,14 @@ const severityUiToBackend = (s: UiAlertRule['severity']): string => {
 };
 
 const severityBackendToUi = (s: string): UiAlertRule['severity'] => {
-  switch (s?.toUpperCase()) {
+  switch ((s || '').toUpperCase()) {
     case 'CRITICAL':
       return 'critical';
-    case 'WARNING':
-      return 'medium';
     case 'HIGH':
       return 'high';
     case 'LOW':
       return 'low';
+    case 'WARNING':
     default:
       return 'medium';
   }
@@ -183,8 +150,8 @@ const toUiRule = (dto: AlertRuleDto): UiAlertRule => ({
   severity: severityBackendToUi(dto.severity),
   duration: dto.duration,
   enabled: !!dto.enabled,
-  hostIds: [],
-  notificationChannels: [],
+  hostIds: [], // 若后端返回，请在此映射
+  notificationChannels: [], // 若后端返回，请在此映射
   createdAt: dto.createdAt,
   updatedAt: dto.updatedAt,
   createdBy: 'system',
@@ -192,89 +159,87 @@ const toUiRule = (dto: AlertRuleDto): UiAlertRule => ({
   lastTriggered: undefined,
 });
 
-const toCreateDto = (values: AlertRuleFormValues): Partial<AlertRuleDto> => ({
-  ruleName: values.name,
-  description: values.description,
-  targetMetric: metricUiToBackend(values.metric),
-  comparator: comparatorUiToBackend(values.condition),
-  threshold: values.threshold,
-  duration: values.duration,
-  severity: severityUiToBackend(values.severity),
-  enabled: values.enabled,
+const toCreateDto = (v: AlertRuleFormValues): Partial<AlertRuleDto> => ({
+  ruleName: v.name,
+  description: v.description,
+  targetMetric: metricUiToBackend(v.metric),
+  comparator: comparatorUiToBackend(v.condition),
+  threshold: v.threshold,
+  duration: v.duration,
+  severity: severityUiToBackend(v.severity),
+  enabled: v.enabled,
 });
 
-const toUpdateDto = (values: AlertRuleFormValues): Partial<AlertRuleDto> => ({
-  ruleName: values.name,
-  description: values.description,
-  targetMetric: metricUiToBackend(values.metric),
-  comparator: comparatorUiToBackend(values.condition),
-  threshold: values.threshold,
-  duration: values.duration,
-  severity: severityUiToBackend(values.severity),
-  enabled: values.enabled,
-});
+const toUpdateDto = (v: AlertRuleFormValues): Partial<AlertRuleDto> => toCreateDto(v);
 
+/* ===================== API ===================== */
 export class AlertRuleApiService {
+  /** 列表 */
   static async getAllAlertRules(): Promise<UiAlertRule[]> {
     try {
-      const list = await makeRequest<AlertRuleDto[]>('/alert-rules');
-      return list.map(toUiRule);
-    } catch (error) {
-      return handleApiError(error, '获取告警规则列表');
+      const list = await api<AlertRuleDto[]>('/alert-rules');
+      return (list || []).map(toUiRule);
+    } catch (e) {
+      return handleApiError(e, '获取告警规则列表');
     }
   }
 
+  /** 详情 */
   static async getAlertRuleById(id: string): Promise<UiAlertRule> {
     try {
-      const dto = await makeRequest<AlertRuleDto>(`/alert-rules/${id}`);
+      const dto = await api<AlertRuleDto>(`/alert-rules/${id}`);
       return toUiRule(dto);
-    } catch (error) {
-      return handleApiError(error, '获取告警规则详情');
+    } catch (e) {
+      return handleApiError(e, '获取告警规则详情');
     }
   }
 
+  /** 创建 */
   static async createAlertRule(values: AlertRuleFormValues): Promise<UiAlertRule> {
     try {
       const payload = toCreateDto(values);
-      const dto = await makeRequest<AlertRuleDto>('/alert-rules', {
+      const dto = await api<AlertRuleDto>('/alert-rules', {
         method: 'POST',
         body: JSON.stringify(payload),
       });
       return toUiRule(dto);
-    } catch (error) {
-      return handleApiError(error, '创建告警规则');
+    } catch (e) {
+      return handleApiError(e, '创建告警规则');
     }
   }
 
+  /** 更新 */
   static async updateAlertRule(id: string, values: AlertRuleFormValues): Promise<UiAlertRule> {
     try {
       const payload = toUpdateDto(values);
-      const dto = await makeRequest<AlertRuleDto>(`/alert-rules/${id}`, {
+      const dto = await api<AlertRuleDto>(`/alert-rules/${id}`, {
         method: 'PUT',
         body: JSON.stringify(payload),
       });
       return toUiRule(dto);
-    } catch (error) {
-      return handleApiError(error, '更新告警规则');
+    } catch (e) {
+      return handleApiError(e, '更新告警规则');
     }
   }
 
+  /** 删除 */
   static async deleteAlertRule(id: string): Promise<void> {
     try {
-      await makeRequest<void>(`/alert-rules/${id}`, { method: 'DELETE' });
-    } catch (error) {
-      handleApiError(error, '删除告警规则');
+      await api<void>(`/alert-rules/${id}`, { method: 'DELETE' });
+    } catch (e) {
+      handleApiError(e, '删除告警规则');
     }
   }
 
+  /** 启用/停用 */
   static async toggleAlertRuleStatus(id: string, enabled: boolean): Promise<UiAlertRule> {
     try {
-      const dto = await makeRequest<AlertRuleDto>(`/alert-rules/${id}/status?enabled=${enabled}`, {
+      const dto = await api<AlertRuleDto>(`/alert-rules/${id}/status?enabled=${enabled}`, {
         method: 'PATCH',
       });
       return toUiRule(dto);
-    } catch (error) {
-      return handleApiError(error, '更新告警规则状态');
+    } catch (e) {
+      return handleApiError(e, '更新告警规则状态');
     }
   }
 }
