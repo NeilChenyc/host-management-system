@@ -113,13 +113,23 @@ public class AlertEventController {
         @ApiResponse(responseCode = "403", description = "Forbidden - insufficient permissions"),
         @ApiResponse(responseCode = "404", description = "Alert event not found", content = @Content)
     })
-    public ResponseEntity<AlertEvent> getAlertEventById(
+    public ResponseEntity<?> getAlertEventById(
             @PathVariable Long eventId,
             @RequestAttribute("userId") Long userId) {
         // 所有角色都可以查看告警事件详情
         permissionChecker.requirePermission(userId, PermissionConstants.ALERT_READ_ALL);
         return alertEventService.getAlertEventById(eventId)
-                .map(ResponseEntity::ok)
+                .map(e -> {
+                    var dto = new AlertEventDto();
+                    dto.eventId = e.getEventId();
+                    dto.serverId = e.getServerId();
+                    dto.status = e.getStatus();
+                    dto.startedAt = e.getStartedAt();
+                    dto.resolvedAt = e.getResolvedAt();
+                    dto.triggeredValue = e.getTriggeredValue();
+                    dto.summary = e.getSummary();
+                    return ResponseEntity.ok(dto);
+                })
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
@@ -275,6 +285,17 @@ public class AlertEventController {
                 "Failed to trigger alert: " + e.getMessage(), null);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
+    }
+
+    // Lightweight DTO to avoid lazy relation serialization issues
+    static class AlertEventDto {
+        public Long eventId;
+        public Long serverId;
+        public String status;
+        public java.time.LocalDateTime startedAt;
+        public java.time.LocalDateTime resolvedAt;
+        public Double triggeredValue;
+        public String summary;
     }
 
     // 评估最新指标
