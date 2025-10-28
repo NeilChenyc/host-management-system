@@ -175,20 +175,7 @@ export default function UsersPage() {
       ],
       onFilter: (value, record) => record.role === value,
     },
-    {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status: string) => (
-        <Tag color={getStatusColor(status)}>{getStatusText(status)}</Tag>
-      ),
-      filters: [
-        { text: 'Active', value: 'active' },
-        { text: 'Inactive', value: 'inactive' },
-        { text: 'Suspended', value: 'suspended' },
-      ],
-      onFilter: (value, record) => record.status === value,
-    },
+   
     {
       title: 'Created At',
       dataIndex: 'createdAt',
