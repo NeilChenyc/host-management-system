@@ -80,6 +80,12 @@ export default function ProjectsPage() {
   const [addMembersLoading, setAddMembersLoading] = useState(false);
   const [removeMemberLoadingId, setRemoveMemberLoadingId] = useState<number | null>(null);
 
+  // 角色权限控制：operator 隐藏“新建项目”按钮
+  const currentUser = AuthManager.getUser();
+  const canCreateProject = !!currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager');
+  // 管理权限：admin/manager 可编辑、删除项目和管理成员
+  const canManageProject = canCreateProject;
+
   // 组件挂载时加载数据
   useEffect(() => {
     loadProjects(false); // 初始加载时不显示消息
@@ -268,25 +274,29 @@ export default function ProjectsPage() {
           >
             Members
           </Button>
-          <Button
-            type="link"
-            size="small"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-          >
-            Edit
-          </Button>
-          <Popconfirm
-            title="Delete Project"
-            description="Are you sure you want to delete this project?"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Yes"
-            cancelText="No"
-          >
-            <Button type="link" danger icon={<DeleteOutlined />}> 
-              Delete
+          {canManageProject && (
+            <Button
+              type="link"
+              size="small"
+              icon={<EditOutlined />}
+              onClick={() => handleEdit(record)}
+            >
+              Edit
             </Button>
-          </Popconfirm>
+          )}
+          {canManageProject && (
+            <Popconfirm
+              title="Delete Project"
+              description="Are you sure you want to delete this project?"
+              onConfirm={() => handleDelete(record.id)}
+              okText="Yes"
+              cancelText="No"
+            >
+              <Button type="link" danger icon={<DeleteOutlined />}> 
+                Delete
+              </Button>
+            </Popconfirm>
+          )}
         </Space>
       ),
     },
@@ -521,7 +531,9 @@ export default function ProjectsPage() {
             <Col>
               <Space>
                 <Button icon={<ReloadOutlined />} onClick={handleRefresh} loading={loading}>Refresh</Button>
-                <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>New Project</Button>
+                {canCreateProject && (
+                  <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>New Project</Button>
+                )}
               </Space>
             </Col>
           </Row>
@@ -644,27 +656,29 @@ export default function ProjectsPage() {
         footer={null}
         width={640}
       >
-        <div style={{ marginBottom: 16 }}>
-          <Select
-            mode="multiple"
-            style={{ width: '100%' }}
-            placeholder="选择要添加的成员"
-            value={addSelectedUserIds.map(String)}
-            onChange={(vals) => setAddSelectedUserIds(vals.map((v) => Number(v)))}
-            options={allUsers
-              .filter(u => !projectMembers.some(m => m.id === u.id))
-              .map(u => ({ label: u.username, value: String(u.id) }))}
-          />
-          <Button type="primary" style={{ marginTop: 12 }} onClick={handleAddMembers} loading={addMembersLoading}>
-            添加成员
-          </Button>
-        </div>
+        {canManageProject && (
+          <div style={{ marginBottom: 16 }}>
+            <Select
+              mode="multiple"
+              style={{ width: '100%' }}
+              placeholder="选择要添加的成员"
+              value={addSelectedUserIds.map(String)}
+              onChange={(vals) => setAddSelectedUserIds(vals.map((v) => Number(v)))}
+              options={allUsers
+                .filter(u => !projectMembers.some(m => m.id === u.id))
+                .map(u => ({ label: u.username, value: String(u.id) }))}
+            />
+            <Button type="primary" style={{ marginTop: 12 }} onClick={handleAddMembers} loading={addMembersLoading}>
+              添加成员
+            </Button>
+          </div>
+        )}
         <List
           loading={membersLoading}
           dataSource={projectMembers}
           renderItem={(m) => (
             <List.Item
-              actions={[
+              actions={canManageProject ? [
                 <Popconfirm
                   key={`remove-${m.id}`}
                   title="移除成员"
@@ -673,7 +687,7 @@ export default function ProjectsPage() {
                 >
                   <Button danger loading={removeMemberLoadingId === m.id}>移除</Button>
                 </Popconfirm>
-              ]}
+              ] : []}
             >
               <List.Item.Meta
                 avatar={<Avatar style={{ backgroundColor: '#87d068' }}>{(m.username || 'U').charAt(0).toUpperCase()}</Avatar>}
@@ -691,51 +705,3 @@ export default function ProjectsPage() {
     </MainLayout>
   );
 }
-
-// 添加项目成员
-const handleAddMembers = async () => {
-  if (!currentProjectId || addSelectedUserIds.length === 0) {
-    messageApi.warning('请选择要添加的成员');
-    return;
-  }
-  setAddMembersLoading(true);
-  try {
-    await ProjectApiService.addProjectMembers(currentProjectId, addSelectedUserIds);
-    messageApi.success('成员添加成功');
-    // 重新加载成员列表
-    const memberIds = await ProjectApiService.getProjectMembers(currentProjectId);
-    const details: UserResponseDto[] = await Promise.all(
-      memberIds.map(async (uid) => {
-        try {
-          const user = await getUserById(uid);
-          return user as UserResponseDto;
-        } catch {
-          return { id: Number(uid), username: `User-${uid}`, email: '', role: 'member' } as UserResponseDto;
-        }
-      })
-    );
-    setProjectMembers(details);
-    setAddSelectedUserIds([]);
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : '添加成员失败';
-    messageApi.error(errorMessage);
-  } finally {
-    setAddMembersLoading(false);
-  }
-};
-
-// 移除项目成员
-const handleRemoveMember = async (userId: number) => {
-  if (!currentProjectId) return;
-  setRemoveMemberLoadingId(userId);
-  try {
-    await ProjectApiService.removeProjectMembers(currentProjectId, [userId]);
-    messageApi.success('成员已移除');
-    setProjectMembers((prev) => prev.filter((m) => m.id !== userId));
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : '移除成员失败';
-    messageApi.error(errorMessage);
-  } finally {
-    setRemoveMemberLoadingId(null);
-  }
-};

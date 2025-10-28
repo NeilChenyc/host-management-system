@@ -29,6 +29,7 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import ServerApiService, { Device } from '../../services/serverApi';
 import { serverCache } from '@/lib/serverCache';
+import { AuthManager } from '@/lib/auth';
 
 const { Search } = Input;
 const { Option } = Select;
@@ -49,6 +50,8 @@ export default function ServersPage() {
   
   // Message API for React 19 compatibility
   const [messageApi, contextHolder] = message.useMessage();
+  // 当前用户是否为操作员
+  const isOperator = AuthManager.getUser()?.role === 'operator';
   
   // 组件挂载时加载服务器列表
   useEffect(() => {
@@ -206,25 +209,29 @@ export default function ServersPage() {
           >
             Detail
           </Button>
-          <Button
-            type="link"
-            size="small"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-          >
-            Edit
-          </Button>
-          <Popconfirm
-            title="Delete Device"
-            description="Are you sure you want to delete this device?"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Yes"
-            cancelText="No"
-          >
-            <Button type="link" danger icon={<DeleteOutlined />}>
-              Delete
+          {!isOperator && (
+            <Button
+              type="link"
+              size="small"
+              icon={<EditOutlined />}
+              onClick={() => handleEdit(record)}
+            >
+              Edit
             </Button>
-          </Popconfirm>
+          )}
+          {!isOperator && (
+            <Popconfirm
+              title="Delete Device"
+              description="Are you sure you want to delete this device?"
+              onConfirm={() => handleDelete(record.id)}
+              okText="Yes"
+              cancelText="No"
+            >
+              <Button type="link" danger icon={<DeleteOutlined />}>
+                Delete
+              </Button>
+            </Popconfirm>
+          )}
         </Space>
       ),
     },
@@ -383,13 +390,15 @@ export default function ServersPage() {
               >
                 Refresh
               </Button>
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={handleAdd}
-              >
-                Add Server
-              </Button>
+              {!isOperator && (
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={handleAdd}
+                >
+                  Add Server
+                </Button>
+              )}
             </Space>
           </Col>
         </Row>

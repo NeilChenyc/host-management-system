@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import MainLayout from '@/components/MainLayout';
+import React, { useState, useEffect } from "react";
+import MainLayout from "@/components/MainLayout";
 import {
   Table,
   Button,
@@ -20,7 +20,7 @@ import {
   Drawer,
   Checkbox,
   TreeSelect,
-} from 'antd';
+} from "antd";
 import {
   PlusOutlined,
   SearchOutlined,
@@ -29,15 +29,16 @@ import {
   ReloadOutlined,
   UserOutlined,
   EyeOutlined,
-} from '@ant-design/icons';
-import type { ColumnsType } from 'antd/es/table';
+} from "@ant-design/icons";
+import type { ColumnsType } from "antd/es/table";
+import { AuthManager } from "@/lib/auth";
 import {
   getAllUsers,
   registerUser,
   updateUserRole,
   deleteUser as apiDeleteUser,
   mapToAppRole,
-} from '../../services/userApi';
+} from "../../services/userApi";
 
 const { Search } = Input;
 const { Option } = Select;
@@ -50,7 +51,7 @@ interface User {
   realName: string;
   email: string;
   role: string;
-  status: 'active' | 'inactive' | 'suspended';
+  status: "active" | "inactive" | "suspended";
   createdAt: string;
   lastLoginAt?: string;
   permissions: string[];
@@ -60,18 +61,21 @@ export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
-  const [searchText, setSearchText] = useState('');
-  const [roleFilter, setRoleFilter] = useState<string>('all');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [searchText, setSearchText] = useState("");
+  const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [form] = Form.useForm();
   const [detailDrawerVisible, setDetailDrawerVisible] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Message API for React 19 compatibility
   const [messageApi, contextHolder] = message.useMessage();
+
+  // 当前用户是否为操作员
+  const isOperator = AuthManager.getUser()?.role === "operator";
 
   // 组件挂载时加载用户列表
   useEffect(() => {
@@ -90,8 +94,9 @@ export default function UsersPage() {
         messageApi.success(`成功加载 ${userList.length} 个用户`);
       }
     } catch (error) {
-      console.error('Failed to load users:', error);
-      const errorMessage = error instanceof Error ? error.message : '加载用户列表失败';
+      console.error("Failed to load users:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "加载用户列表失败";
       setError(errorMessage);
       messageApi.error(errorMessage);
     } finally {
@@ -102,26 +107,26 @@ export default function UsersPage() {
   // 状态颜色映射
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active':
-        return 'green';
-      case 'inactive':
-        return 'red';
-      case 'suspended':
-        return 'orange';
+      case "active":
+        return "green";
+      case "inactive":
+        return "red";
+      case "suspended":
+        return "orange";
       default:
-        return 'default';
+        return "default";
     }
   };
 
   // 状态文本映射
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'active':
-        return 'Active';
-      case 'inactive':
-        return 'Inactive';
-      case 'suspended':
-        return 'Suspended';
+      case "active":
+        return "Active";
+      case "inactive":
+        return "Inactive";
+      case "suspended":
+        return "Suspended";
       default:
         return status;
     }
@@ -130,68 +135,75 @@ export default function UsersPage() {
   // 角色颜色映射
   const getRoleColor = (role: string) => {
     switch (role) {
-      case 'admin':
-        return 'red';
-      case 'manager':
-        return 'blue';
-      case 'operator':
-        return 'green';
+      case "admin":
+        return "red";
+      case "manager":
+        return "blue";
+      case "operator":
+        return "green";
       default:
-        return 'default';
+        return "default";
     }
   };
 
   // 表格列定义
   const columns: ColumnsType<User> = [
     {
-      title: 'User',
-      key: 'user',
+      title: "User",
+      key: "user",
       render: (_, record) => (
         <Space>
-          <Avatar icon={<UserOutlined />} style={{ backgroundColor: '#1890ff' }} />
+          <Avatar
+            icon={<UserOutlined />}
+            style={{ backgroundColor: "#1890ff" }}
+          />
           <div>
             <div style={{ fontWeight: 500 }}>{record.realName}</div>
-            <div style={{ fontSize: '12px', color: '#666' }}>@{record.username}</div>
+            <div style={{ fontSize: "12px", color: "#666" }}>
+              @{record.username}
+            </div>
           </div>
         </Space>
       ),
     },
     {
-      title: 'Email',
-      dataIndex: 'email',
-      key: 'email',
+      title: "Email",
+      dataIndex: "email",
+      key: "email",
     },
     {
-      title: 'Role',
-      dataIndex: 'role',
-      key: 'role',
+      title: "Role",
+      dataIndex: "role",
+      key: "role",
       render: (role: string) => (
         <Tag color={getRoleColor(role)}>{role.toUpperCase()}</Tag>
       ),
       filters: [
-        { text: 'Admin', value: 'admin' },
-        { text: 'Manager', value: 'manager' },
-        { text: 'Operator', value: 'operator' },
+        { text: "Admin", value: "admin" },
+        { text: "Manager", value: "manager" },
+        { text: "Operator", value: "operator" },
       ],
       onFilter: (value, record) => record.role === value,
     },
-   
+
     {
-      title: 'Created At',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
-      sorter: (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+      title: "Created At",
+      dataIndex: "createdAt",
+      key: "createdAt",
+      sorter: (a, b) =>
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
       render: (date: string) => new Date(date).toLocaleDateString(),
     },
     {
-      title: 'Last Login',
-      dataIndex: 'lastLoginAt',
-      key: 'lastLoginAt',
-      render: (date: string) => date ? new Date(date).toLocaleDateString() : 'Never',
+      title: "Last Login",
+      dataIndex: "lastLoginAt",
+      key: "lastLoginAt",
+      render: (date: string) =>
+        date ? new Date(date).toLocaleDateString() : "Never",
     },
     {
-      title: 'Actions',
-      key: 'actions',
+      title: "Actions",
+      key: "actions",
       width: 200,
       render: (_, record) => (
         <Space size="small">
@@ -203,25 +215,29 @@ export default function UsersPage() {
           >
             Detail
           </Button>
-          <Button
-            type="link"
-            size="small"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-          >
-            Edit
-          </Button>
-          <Popconfirm
-            title="Delete User"
-            description="Are you sure you want to delete this user?"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Yes"
-            cancelText="No"
-          >
-            <Button type="link" danger icon={<DeleteOutlined />}>
-              Delete
+          {!isOperator && (
+            <Button
+              type="link"
+              size="small"
+              icon={<EditOutlined />}
+              onClick={() => handleEdit(record)}
+            >
+              Edit
             </Button>
-          </Popconfirm>
+          )}
+          {!isOperator && (
+            <Popconfirm
+              title="Delete User"
+              description="Are you sure you want to delete this user?"
+              onConfirm={() => handleDelete(record.id)}
+              okText="Yes"
+              cancelText="No"
+            >
+              <Button type="link" danger icon={<DeleteOutlined />}>
+                Delete
+              </Button>
+            </Popconfirm>
+          )}
         </Space>
       ),
     },
@@ -240,11 +256,11 @@ export default function UsersPage() {
       );
     }
 
-    if (role !== 'all') {
+    if (role !== "all") {
       filtered = filtered.filter((user) => user.role === role);
     }
 
-    if (status !== 'all') {
+    if (status !== "all") {
       filtered = filtered.filter((user) => user.status === status);
     }
 
@@ -272,7 +288,7 @@ export default function UsersPage() {
   // 刷新处理
   const handleRefresh = async () => {
     await loadUsers(false); // 不显示加载消息，统一显示刷新消息
-    messageApi.success('用户列表已刷新');
+    messageApi.success("用户列表已刷新");
   };
 
   // 添加用户处理
@@ -287,7 +303,7 @@ export default function UsersPage() {
     setEditingUser(user);
     form.setFieldsValue({
       ...user,
-      permissions: user.permissions || []
+      permissions: user.permissions || [],
     });
     setIsModalVisible(true);
   };
@@ -303,11 +319,12 @@ export default function UsersPage() {
     setLoading(true);
     try {
       await apiDeleteUser(id);
-      messageApi.success('用户删除成功');
+      messageApi.success("用户删除成功");
       await loadUsers();
     } catch (error) {
-      console.error('Failed to delete user:', error);
-      const errorMessage = error instanceof Error ? error.message : '删除用户失败';
+      console.error("Failed to delete user:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "删除用户失败";
       messageApi.error(errorMessage);
     } finally {
       setLoading(false);
@@ -319,21 +336,22 @@ export default function UsersPage() {
     try {
       const values = await form.validateFields();
       setLoading(true);
-      
+
       if (editingUser) {
         await updateUserRole(editingUser.id, values.role);
-        messageApi.success('用户更新成功');
+        messageApi.success("用户更新成功");
       } else {
         await registerUser(values);
-        messageApi.success('用户添加成功');
+        messageApi.success("用户添加成功");
       }
-      
+
       await loadUsers();
       setIsModalVisible(false);
       form.resetFields();
     } catch (error) {
-      console.error('Failed to save user:', error);
-      const errorMessage = error instanceof Error ? error.message : '保存用户失败';
+      console.error("Failed to save user:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "保存用户失败";
       messageApi.error(errorMessage);
     } finally {
       setLoading(false);
@@ -346,10 +364,10 @@ export default function UsersPage() {
       {/* Error Alert */}
       {error && (
         <Card style={{ marginBottom: 16 }}>
-          <div style={{ color: '#ff4d4f', textAlign: 'center' }}>
+          <div style={{ color: "#ff4d4f", textAlign: "center" }}>
             <strong>错误:</strong> {error}
-            <Button 
-              type="link" 
+            <Button
+              type="link"
               onClick={() => loadUsers()}
               style={{ marginLeft: 8 }}
             >
@@ -375,7 +393,7 @@ export default function UsersPage() {
             <Select
               value={roleFilter}
               onChange={handleRoleFilter}
-              style={{ width: '100%' }}
+              style={{ width: "100%" }}
               size="middle"
             >
               <Option value="all">All Roles</Option>
@@ -388,7 +406,7 @@ export default function UsersPage() {
             <Select
               value={statusFilter}
               onChange={handleStatusFilter}
-              style={{ width: '100%' }}
+              style={{ width: "100%" }}
               size="middle"
             >
               <Option value="all">All Status</Option>
@@ -398,7 +416,7 @@ export default function UsersPage() {
             </Select>
           </Col>
           <Col xs={24} sm={24} md={10}>
-            <Space style={{ float: 'right' }}>
+            <Space style={{ float: "right" }}>
               <Button
                 icon={<ReloadOutlined />}
                 onClick={handleRefresh}
@@ -406,13 +424,15 @@ export default function UsersPage() {
               >
                 Refresh
               </Button>
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={handleAdd}
-              >
-                Add User
-              </Button>
+              {!isOperator && (
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={handleAdd}
+                >
+                  Add User
+                </Button>
+              )}
             </Space>
           </Col>
         </Row>
@@ -439,7 +459,7 @@ export default function UsersPage() {
 
       {/* Add/Edit User Modal */}
       <Modal
-        title={editingUser ? 'Edit User' : 'Add User'}
+        title={editingUser ? "Edit User" : "Add User"}
         open={isModalVisible}
         onOk={handleSave}
         onCancel={() => setIsModalVisible(false)}
@@ -451,8 +471,8 @@ export default function UsersPage() {
           form={form}
           layout="vertical"
           initialValues={{
-            status: 'active',
-            role: 'operator',
+            status: "active",
+            role: "operator",
           }}
         >
           <Row gutter={16}>
@@ -460,9 +480,7 @@ export default function UsersPage() {
               <Form.Item
                 label="Username"
                 name="username"
-                rules={[
-                  { required: true, message: 'Please enter username' },
-                ]}
+                rules={[{ required: true, message: "Please enter username" }]}
               >
                 <Input placeholder="Please enter username" />
               </Form.Item>
@@ -471,9 +489,7 @@ export default function UsersPage() {
               <Form.Item
                 label="Real Name"
                 name="realName"
-                rules={[
-                  { required: true, message: 'Please enter real name' },
-                ]}
+                rules={[{ required: true, message: "Please enter real name" }]}
               >
                 <Input placeholder="Please enter real name" />
               </Form.Item>
@@ -485,8 +501,8 @@ export default function UsersPage() {
                 label="Email"
                 name="email"
                 rules={[
-                  { required: true, message: 'Please enter email' },
-                  { type: 'email', message: 'Please enter a valid email' },
+                  { required: true, message: "Please enter email" },
+                  { type: "email", message: "Please enter a valid email" },
                 ]}
               >
                 <Input placeholder="Please enter email" />
@@ -496,9 +512,7 @@ export default function UsersPage() {
               <Form.Item
                 label="Role"
                 name="role"
-                rules={[
-                  { required: true, message: 'Please select role' },
-                ]}
+                rules={[{ required: true, message: "Please select role" }]}
               >
                 <Select placeholder="Please select role">
                   <Option value="admin">Admin</Option>
@@ -515,8 +529,11 @@ export default function UsersPage() {
                   label="Password"
                   name="password"
                   rules={[
-                    { required: true, message: 'Please enter password' },
-                    { min: 6, message: 'Password must be at least 6 characters' },
+                    { required: true, message: "Please enter password" },
+                    {
+                      min: 6,
+                      message: "Password must be at least 6 characters",
+                    },
                   ]}
                 >
                   <Input.Password placeholder="Please enter password" />
@@ -526,15 +543,17 @@ export default function UsersPage() {
                 <Form.Item
                   label="Confirm Password"
                   name="confirmPassword"
-                  dependencies={['password']}
+                  dependencies={["password"]}
                   rules={[
-                    { required: true, message: 'Please confirm password' },
+                    { required: true, message: "Please confirm password" },
                     ({ getFieldValue }) => ({
                       validator(_, value) {
-                        if (!value || getFieldValue('password') === value) {
+                        if (!value || getFieldValue("password") === value) {
                           return Promise.resolve();
                         }
-                        return Promise.reject(new Error('Passwords do not match'));
+                        return Promise.reject(
+                          new Error("Passwords do not match")
+                        );
                       },
                     }),
                   ]}
@@ -546,7 +565,7 @@ export default function UsersPage() {
           )}
         </Form>
       </Modal>
-      
+
       {/* User Detail Drawer */}
       <Drawer
         title="User Details"
@@ -557,27 +576,43 @@ export default function UsersPage() {
       >
         {selectedUser && (
           <div>
-            <div style={{ textAlign: 'center', marginBottom: 24 }}>
-              <Avatar size={64} icon={<UserOutlined />} style={{ backgroundColor: '#1890ff' }} />
+            <div style={{ textAlign: "center", marginBottom: 24 }}>
+              <Avatar
+                size={64}
+                icon={<UserOutlined />}
+                style={{ backgroundColor: "#1890ff" }}
+              />
               <div style={{ marginTop: 16 }}>
                 <h3 style={{ margin: 0 }}>{selectedUser.realName}</h3>
-                <p style={{ margin: 0, color: '#666' }}>@{selectedUser.username}</p>
+                <p style={{ margin: 0, color: "#666" }}>
+                  @{selectedUser.username}
+                </p>
               </div>
             </div>
             <div style={{ marginBottom: 16 }}>
               <strong>Email:</strong> {selectedUser.email}
             </div>
             <div style={{ marginBottom: 16 }}>
-              <strong>Role:</strong> <Tag color={getRoleColor(selectedUser.role)}>{selectedUser.role.toUpperCase()}</Tag>
+              <strong>Role:</strong>{" "}
+              <Tag color={getRoleColor(selectedUser.role)}>
+                {selectedUser.role.toUpperCase()}
+              </Tag>
             </div>
             <div style={{ marginBottom: 16 }}>
-              <strong>Status:</strong> <Tag color={getStatusColor(selectedUser.status)}>{getStatusText(selectedUser.status)}</Tag>
+              <strong>Status:</strong>{" "}
+              <Tag color={getStatusColor(selectedUser.status)}>
+                {getStatusText(selectedUser.status)}
+              </Tag>
             </div>
             <div style={{ marginBottom: 16 }}>
-              <strong>Created At:</strong> {new Date(selectedUser.createdAt).toLocaleDateString()}
+              <strong>Created At:</strong>{" "}
+              {new Date(selectedUser.createdAt).toLocaleDateString()}
             </div>
             <div style={{ marginBottom: 16 }}>
-              <strong>Last Login:</strong> {selectedUser.lastLoginAt ? new Date(selectedUser.lastLoginAt).toLocaleDateString() : 'Never'}
+              <strong>Last Login:</strong>{" "}
+              {selectedUser.lastLoginAt
+                ? new Date(selectedUser.lastLoginAt).toLocaleDateString()
+                : "Never"}
             </div>
           </div>
         )}
