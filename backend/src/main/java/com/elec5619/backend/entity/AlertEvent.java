@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.CreationTimestamp;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.time.LocalDateTime;
 
@@ -12,6 +14,7 @@ import java.time.LocalDateTime;
  * Records each triggered and confirmed alert event.
  */
 @Entity
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Table(name = "alert_event")
 public class AlertEvent {
 
@@ -23,6 +26,7 @@ public class AlertEvent {
     @NotNull(message = "Rule ID is required")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "rule_id", nullable = false, foreignKey = @ForeignKey(ConstraintMode.CONSTRAINT))
+    @JsonIgnore
     private AlertRule alertRule;
 
     @NotNull(message = "Server ID is required")
