@@ -37,7 +37,7 @@ export function mapToBackendRole(role: AppRole): string {
 // ---- API wrappers ----
 export async function getAllUsers(): Promise<UserResponseDto[]> {
   try {
-    const data = await AuthManager.fetchWithAuth<UserResponseDto[]>('/users', { method: 'GET' });
+    const data = await AuthManager.fetchWithAuth<UserResponseDto[]>('/api/users', { method: 'GET' });
     return Array.isArray(data) ? data : [];
   } catch (error: any) {
     console.error('❌ userApi.getAllUsers: API调用失败');
@@ -50,13 +50,13 @@ export async function getAllUsers(): Promise<UserResponseDto[]> {
 }
 
 export async function getUserById(id: number | string): Promise<UserResponseDto> {
-  return await AuthManager.fetchWithAuth<UserResponseDto>(`/users/${id}`, { method: 'GET' });
+  return await AuthManager.fetchWithAuth<UserResponseDto>(`/api/users/${id}`, { method: 'GET' });
 }
 
 export async function getByUsername(username: string): Promise<UserResponseDto | null> {
   try {
     return await AuthManager.fetchWithAuth<UserResponseDto>(
-      `/users/by-username/${encodeURIComponent(username)}`,
+      `/api/users/by-username/${encodeURIComponent(username)}`,
       { method: 'GET' }
     );
   } catch (e) {
@@ -73,7 +73,7 @@ export async function registerUser(payload: { username: string; email: string; p
       password: payload.password,
       role,
     };
-    return await AuthManager.fetchWithAuth<UserResponseDto>('/auth/signup', {
+    return await AuthManager.fetchWithAuth<UserResponseDto>('/api/auth/signup', {
       method: 'POST',
       body: JSON.stringify(body),
       headers: { 'Content-Type': 'application/json' },
@@ -89,7 +89,7 @@ export async function updateUserRole(id: number | string, role: AppRole): Promis
   try {
     const backendRole = mapToBackendRole(role);
     // Backend expects a raw string body; send JSON string for compatibility
-    return await AuthManager.fetchWithAuth<UserResponseDto>(`/users/${id}/role`, {
+    return await AuthManager.fetchWithAuth<UserResponseDto>(`/api/users/${id}/role`, {
       method: 'PUT',
       body: JSON.stringify(backendRole),
       headers: { 'Content-Type': 'application/json' },
@@ -103,7 +103,7 @@ export async function updateUserRole(id: number | string, role: AppRole): Promis
 
 export async function deleteUser(id: number | string): Promise<void> {
   try {
-    await AuthManager.fetchWithAuth<void>(`/users/${id}`, { method: 'DELETE' });
+    await AuthManager.fetchWithAuth<void>(`/api/users/${id}`, { method: 'DELETE' });
   } catch (error: any) {
     // 提取后端返回的友好错误消息
     const errorMessage = error?.message || '删除用户失败';

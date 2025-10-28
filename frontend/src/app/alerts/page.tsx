@@ -4,7 +4,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import MainLayout from '@/components/MainLayout';
 import { AuthManager } from '@/lib/auth';
-import { API_BASE_URL } from '@/services/apiBase';
 import {
   AlertRuleApiService,
   type UiAlertRule,
@@ -75,34 +74,15 @@ type AlertInstance = {
 
 /** ============ 通用请求函数（带 Token & 401 处理） ============ */
 const apiFetch = async <T,>(url: string, init?: RequestInit): Promise<T> => {
-  const token = AuthManager.getToken();
-  const res = await fetch(`${API_BASE_URL}${url}`, {
+  const res = await AuthManager.fetchWithAuth<T>(`/api${url}`, {
     ...init,
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(init?.headers as Record<string, string>),
     },
   });
 
-  if (!res.ok) {
-    if (res.status === 401) {
-      AuthManager.logout();
-      if (typeof window !== 'undefined') window.location.replace('/auth/login');
-      throw new Error('Unauthorized');
-    }
-    const raw = await res.text();
-    try {
-      const j = JSON.parse(raw);
-      throw new Error(j.message || res.statusText);
-    } catch {
-      throw new Error(raw || res.statusText);
-    }
-  }
-
-  const ct = res.headers.get('content-type') || '';
-  if (!ct.includes('application/json')) return undefined as T;
-  return res.json();
+  return res;
 };
 
 /** ============ 工具函数 ============ */
@@ -124,15 +104,17 @@ const severityColor = (s: string) =>
 const statusBadge = (s: AlertInstance['status']) =>
   ({ active: 'error', resolved: 'success', acknowledged: 'warning', suppressed: 'default' } as const)[s];
 
-const metricIcon = (m: string) =>
-  ({
+const metricIcon = (m: string) => {
+  const map: Record<string, React.ReactNode> = {
     cpu: <ThunderboltOutlined />,
     memory: <ThunderboltOutlined />,
     disk: <DatabaseOutlined />,
     network: <WifiOutlined />,
     temperature: <ThunderboltOutlined />,
     service: <DesktopOutlined />,
-  }[m as any] || <WarningOutlined />);
+  };
+  return map[m] ?? <WarningOutlined />;
+};
 
 type ServerLite = { id: number; serverName: string; ipAddress: string };
 
@@ -190,7 +172,7 @@ export default function AlertsPage() {
         metric: e.metricName || 'cpu',
         currentValue: Number(e.currentValue ?? 0),
         threshold: Number(e.threshold ?? 0),
-        severity: String(e.severity || 'low').toLowerCase(),
+        severity: (String(e.severity || 'low').toLowerCase() as 'low' | 'medium' | 'high' | 'critical'),
         status: mapBackendStatusToFrontend(e.status),
         message: e.message || '',
         triggeredAt: e.startedAt || new Date().toISOString(),
@@ -580,8 +562,8 @@ export default function AlertsPage() {
                   min={0}
                   max={100}
                   style={{ width: '100%' }}
-                  formatter={(v) => `${v}%`}
-                  parser={(v) => Number(String(v).replace('%', ''))}
+                  formatter={(v?: string | number) => `${v ?? ''}%`}
+                  parser={(v?: string) => Number(String(v ?? '').replace('%', ''))}
                 />
               </Form.Item>
             </Col>

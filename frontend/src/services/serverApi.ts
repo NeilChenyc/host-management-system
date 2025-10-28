@@ -3,8 +3,7 @@
 // 封装后端服务器管理模块的 CRUD 与指标接口
 // ============================================================
 
-import { AuthManager } from '@/lib/auth';
-import { API_BASE_URL } from './apiBase';
+import AuthManager from '@/lib/auth';
 
 /* ===================== 类型定义 ===================== */
 // ---------- 后端 DTO ----------
@@ -51,6 +50,13 @@ export interface Device {
   lastUpdate: string;
 }
 
+// Metrics shape expected by dashboard
+export type MetricData = {
+  timestamp: string;
+  metricType: 'CPU Usage' | 'Memory Usage' | 'Disk Usage' | 'Network In' | 'Temperature' | 'Load Average';
+  value: number;
+};
+
 /* ===================== 状态映射函数 ===================== */
 const mapBackendStatusToFrontend = (
   backendStatus: ServerResponseDto['status']
@@ -94,27 +100,20 @@ const handleResponse = async <T>(response: Response): Promise<T> => {
   return response.text() as unknown as T;
 };
 
-const makeRequest = async <T>(
-  url: string,
-  options: RequestInit = {}
-): Promise<T> => {
-  const token = AuthManager.getToken();
-
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...(options.headers as Record<string, string>),
-  };
-
+const makeRequest = async <T>(url: string, options: RequestInit = {}): Promise<T> => {
   try {
-    const response = await fetch(`${API_BASE_URL}${url}`, {
+    // Always use AuthManager to attach JWT and base URL; ensure JSON header
+    const init: RequestInit = {
       ...options,
-      headers,
-    });
-    return handleResponse<T>(response);
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options.headers as Record<string, string>),
+      },
+    };
+    return await AuthManager.fetchWithAuth<T>(url, init);
   } catch (error) {
     if (error instanceof Error) throw error;
-    throw new Error('网络请求失败');
+    throw new Error('Network request failed');
   }
 };
 
@@ -126,44 +125,44 @@ const handleApiError = (error: any, operation: string): never => {
 
 /* ===================== Server API ===================== */
 export class ServerApiService {
-  /** 获取所有服务器 */
+  /** Get all servers */
   static async getAllServers(): Promise<Device[]> {
     try {
-      const list = await makeRequest<ServerResponseDto[]>('/servers');
+      const list = await makeRequest<ServerResponseDto[]>('/api/servers');
       return list.map(convertServerResponseToDevice);
     } catch (error) {
-      return handleApiError(error, '获取服务器列表');
+      return handleApiError(error, 'Get server list');
     }
   }
 
-  /** 根据ID获取服务器 */
+  /** Get server by ID */
   static async getServerById(id: string): Promise<Device> {
     try {
-      const dto = await makeRequest<ServerResponseDto>(`/servers/${id}`);
+      const dto = await makeRequest<ServerResponseDto>(`/api/servers/${id}`);
       return convertServerResponseToDevice(dto);
     } catch (error) {
-      return handleApiError(error, '获取服务器详情');
+      return handleApiError(error, 'Get server detail');
     }
   }
 
-  /** 根据名称获取服务器 */
+  /** Get server by name */
   static async getServerByName(name: string): Promise<Device> {
     try {
       const dto = await makeRequest<ServerResponseDto>(
-        `/servers/name/${encodeURIComponent(name)}`
+        `/api/servers/name/${encodeURIComponent(name)}`
       );
       return convertServerResponseToDevice(dto);
     } catch (error) {
-      return handleApiError(error, '根据名称查找服务器');
+      return handleApiError(error, 'Find server by name');
     }
   }
 
-  /** 创建服务器 */
+  /** Create server */
   static async createServer(
     device: Omit<Device, 'id' | 'lastUpdate'>
   ): Promise<Device> {
     try {
-      const dto = await makeRequest<ServerResponseDto>('/servers', {
+      const dto = await makeRequest<ServerResponseDto>('/api/servers', {
         method: 'POST',
         body: JSON.stringify({
           serverName: device.hostname,
@@ -176,17 +175,17 @@ export class ServerApiService {
       });
       return convertServerResponseToDevice(dto);
     } catch (error) {
-      return handleApiError(error, '创建服务器');
+      return handleApiError(error, 'Create server');
     }
   }
 
-  /** 更新服务器 */
+  /** Update server */
   static async updateServer(
     id: string,
     device: Partial<Device>
   ): Promise<Device> {
     try {
-      const dto = await makeRequest<ServerResponseDto>(`/servers/${id}`, {
+      const dto = await makeRequest<ServerResponseDto>(`/api/servers/${id}`, {
         method: 'PUT',
         body: JSON.stringify({
           serverName: device.hostname,
@@ -199,17 +198,55 @@ export class ServerApiService {
       });
       return convertServerResponseToDevice(dto);
     } catch (error) {
-      return handleApiError(error, '更新服务器信息');
+      return handleApiError(error, 'Update server');
     }
   }
 
-  /** 删除服务器 */
+  /** Delete server */
   static async deleteServer(id: string): Promise<void> {
     try {
-      await makeRequest<void>(`/servers/${id}`, { method: 'DELETE' });
+      await makeRequest<void>(`/api/servers/${id}`, { method: 'DELETE' });
     } catch (error) {
-      handleApiError(error, '删除服务器');
+      handleApiError(error, 'Delete server');
     }
+  }
+
+  /** Get metrics for a server (transformed to dashboard format) */
+  static async getServerMetrics(serverId: string, limit: number = 200): Promise<MetricData[]> {
+    // Backend returns array of ServerMetrics with fields like cpuUsage, memoryUsage, etc.
+    const dtos = await makeRequest<Array<{
+      collectedAt: string;
+      cpuUsage?: number;
+      memoryUsage?: number;
+      diskUsage?: number;
+      networkIn?: number;
+      temperature?: number;
+      loadAvg?: number;
+    }>>(`/api/servers/${encodeURIComponent(serverId)}/metrics?limit=${encodeURIComponent(String(limit))}`);
+
+    const result: MetricData[] = [];
+    for (const m of dtos) {
+      const ts = m.collectedAt;
+      if (typeof m.cpuUsage === 'number') {
+        result.push({ timestamp: ts, metricType: 'CPU Usage', value: m.cpuUsage });
+      }
+      if (typeof m.memoryUsage === 'number') {
+        result.push({ timestamp: ts, metricType: 'Memory Usage', value: m.memoryUsage });
+      }
+      if (typeof m.diskUsage === 'number') {
+        result.push({ timestamp: ts, metricType: 'Disk Usage', value: m.diskUsage });
+      }
+      if (typeof m.networkIn === 'number') {
+        result.push({ timestamp: ts, metricType: 'Network In', value: m.networkIn });
+      }
+      if (typeof m.temperature === 'number') {
+        result.push({ timestamp: ts, metricType: 'Temperature', value: m.temperature });
+      }
+      if (typeof m.loadAvg === 'number') {
+        result.push({ timestamp: ts, metricType: 'Load Average', value: m.loadAvg });
+      }
+    }
+    return result;
   }
 }
 

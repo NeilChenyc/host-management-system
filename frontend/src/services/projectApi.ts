@@ -4,7 +4,6 @@
 // ============================================================
 
 import { AuthManager } from '@/lib/auth';
-import { API_BASE_URL } from './apiBase';
 
 export type ProjectStatus = 'PLANNED' | 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'CANCELLED';
 
@@ -72,24 +71,15 @@ const handleResponse = async <T>(response: Response): Promise<T> => {
   return response.text() as unknown as T;
 };
 
-const makeRequest = async <T>(
-  url: string,
-  options: RequestInit = {}
-): Promise<T> => {
-  const token = AuthManager.getToken();
-
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...(options.headers as Record<string, string>),
-  };
-
+const makeRequest = async <T>(url: string, options: RequestInit = {}): Promise<T> => {
   try {
-    const response = await fetch(`${API_BASE_URL}${url}`, {
+    return await AuthManager.fetchWithAuth<T>(url, {
       ...options,
-      headers,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options.headers as Record<string, string>),
+      },
     });
-    return handleResponse<T>(response);
   } catch (error) {
     if (error instanceof Error) throw error;
     throw new Error('网络请求失败');
@@ -118,7 +108,7 @@ export class ProjectApiService {
   /** 获取所有项目 */
   static async getAllProjects(): Promise<ProjectItem[]> {
     try {
-      const list = await makeRequest<ProjectResponseDto[]>('/projects/my');
+      const list = await makeRequest<ProjectResponseDto[]>('/api/projects/my');
       return list.map(toProjectItem);
     } catch (error) {
       return handleApiError(error, '获取项目列表');
@@ -128,7 +118,7 @@ export class ProjectApiService {
   /** 获取项目详情 */
   static async getProjectById(id: string): Promise<ProjectItem> {
     try {
-      const dto = await makeRequest<ProjectResponseDto>(`/projects/${id}`);
+      const dto = await makeRequest<ProjectResponseDto>(`/api/projects/${id}`);
       return toProjectItem(dto);
     } catch (error) {
       return handleApiError(error, '获取项目详情');
@@ -138,7 +128,7 @@ export class ProjectApiService {
   /** 创建项目 */
   static async createProject(payload: ProjectCreateDto): Promise<ProjectItem> {
     try {
-      const dto = await makeRequest<ProjectResponseDto>('/projects', {
+      const dto = await makeRequest<ProjectResponseDto>('/api/projects', {
         method: 'POST',
         body: JSON.stringify(payload),
       });
@@ -154,7 +144,7 @@ export class ProjectApiService {
     payload: ProjectUpdateDto
   ): Promise<ProjectItem> {
     try {
-      const dto = await makeRequest<ProjectResponseDto>(`/projects/${id}`, {
+      const dto = await makeRequest<ProjectResponseDto>(`/api/projects/${id}`, {
         method: 'PUT',
         body: JSON.stringify(payload),
       });
@@ -171,7 +161,7 @@ export class ProjectApiService {
   ): Promise<ProjectItem> {
     try {
       const dto = await makeRequest<ProjectResponseDto>(
-        `/projects/${id}/status/${status}`,
+        `/api/projects/${id}/status/${status}`,
         { method: 'PUT' }
       );
       return toProjectItem(dto);
@@ -183,7 +173,7 @@ export class ProjectApiService {
   /** 获取项目成员 */
   static async getProjectMembers(id: string): Promise<number[]> {
     try {
-      const members = await makeRequest<number[]>(`/projects/${id}/members`);
+      const members = await makeRequest<number[]>(`/api/projects/${id}/members`);
       return Array.isArray(members) ? members : [];
     } catch (error) {
       return handleApiError(error, '获取项目成员');
@@ -197,7 +187,7 @@ export class ProjectApiService {
   ): Promise<ProjectItem> {
     try {
       const dto = await makeRequest<ProjectResponseDto>(
-        `/projects/${id}/members`,
+        `/api/projects/${id}/members`,
         {
           method: 'POST',
           body: JSON.stringify(userIds),
@@ -216,7 +206,7 @@ export class ProjectApiService {
   ): Promise<ProjectItem> {
     try {
       const dto = await makeRequest<ProjectResponseDto>(
-        `/projects/${id}/members`,
+        `/api/projects/${id}/members`,
         {
           method: 'DELETE',
           body: JSON.stringify(userIds),
@@ -231,7 +221,7 @@ export class ProjectApiService {
   /** 删除项目 */
   static async deleteProject(id: string): Promise<void> {
     try {
-      await makeRequest<void>(`/projects/${id}`, { method: 'DELETE' });
+      await makeRequest<void>(`/api/projects/${id}`, { method: 'DELETE' });
     } catch (error) {
       handleApiError(error, '删除项目');
     }
