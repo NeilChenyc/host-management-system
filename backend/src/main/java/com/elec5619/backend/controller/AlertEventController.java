@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.elec5619.backend.constants.PermissionConstants;
+import com.elec5619.backend.dto.AlertEventResponseDto;
 import com.elec5619.backend.entity.AlertEvent;
 import com.elec5619.backend.exception.GlobalExceptionHandler;
 import com.elec5619.backend.service.AlertEventService;
@@ -37,6 +38,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
@@ -81,26 +83,19 @@ public class AlertEventController {
     @Operation(summary = "Get All Alert Events", description = "Retrieve a list of all alert events in the system")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Alert events retrieved successfully",
-            content = @Content(mediaType = "application/json", schema = @Schema(implementation = AlertEvent.class))),
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = AlertEventResponseDto.class))),
         @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing JWT token"),
         @ApiResponse(responseCode = "403", description = "Forbidden - insufficient permissions"),
         @ApiResponse(responseCode = "500", description = "Internal server error", content = @Content)
     })
     public ResponseEntity<?> getAllAlertEvents(@RequestAttribute("userId") Long userId) {
-        // 所有角色都可以查看告警事件列表
-        permissionChecker.requirePermission(userId, PermissionConstants.ALERT_READ_ALL);
         try {
-            List<AlertEvent> events = alertEventService.getAllAlertEvents();
+            permissionChecker.requirePermission(userId, PermissionConstants.ALERT_READ_ALL);
+            List<AlertEventResponseDto> events = alertEventService.getAllAlertEventsWithNames();
             return ResponseEntity.ok(events);
         } catch (Exception e) {
-            GlobalExceptionHandler.ErrorResponse errorResponse = new GlobalExceptionHandler.ErrorResponse(
-                java.time.LocalDateTime.now(),
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                "Internal Server Error",
-                "Failed to retrieve alert events: " + e.getMessage(),
-                null
-            );
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error retrieving alert events: " + e.getMessage());
         }
     }
 
@@ -122,7 +117,8 @@ public class AlertEventController {
                 .map(e -> {
                     var dto = new AlertEventDto();
                     dto.eventId = e.getEventId();
-                    dto.serverId = e.getServerId();
+                    dto.serverName = ""; // Will be populated by service layer
+                    dto.ruleName = ""; // Will be populated by service layer
                     dto.status = e.getStatus();
                     dto.startedAt = e.getStartedAt();
                     dto.resolvedAt = e.getResolvedAt();
@@ -290,22 +286,66 @@ public class AlertEventController {
     // Lightweight DTO to avoid lazy relation serialization issues
     static class AlertEventDto {
         public Long eventId;
-        public Long serverId;
+        public String serverName;
+        public String ruleName;
         public String status;
         public java.time.LocalDateTime startedAt;
         public java.time.LocalDateTime resolvedAt;
         public Double triggeredValue;
         public String summary;
+        public java.time.LocalDateTime createdAt;
     }
 
     // 评估最新指标
     @PostMapping("/evaluate")
     @Operation(summary = "Evaluate latest metrics for a server",
                description = "Evaluate the latest metrics and create alert events if rules are violated")
-    public ResponseEntity<List<AlertEvent>> evaluate(
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Metrics evaluated successfully",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = AlertEvent.class))),
+        @ApiResponse(responseCode = "400", description = "Invalid server ID or server not found", content = @Content),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - insufficient permissions"),
+        @ApiResponse(responseCode = "500", description = "Internal server error during evaluation", content = @Content)
+    })
+    public ResponseEntity<?> evaluate(
             @RequestParam("serverId") Long serverId,
             @RequestAttribute("userId") Long userId) {
         permissionChecker.requirePermission(userId, PermissionConstants.ALERT_MANAGE_ALL);
-        return ResponseEntity.ok(alertSystemService.evaluateMetrics(serverId));
+        
+        // Parameter validation
+        if (serverId == null || serverId <= 0) {
+            GlobalExceptionHandler.ErrorResponse errorResponse = new GlobalExceptionHandler.ErrorResponse(
+                java.time.LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "Bad Request",
+                "Invalid server ID, must be a positive integer",
+                null
+            );
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+        
+        try {
+            List<AlertEvent> triggeredAlerts = alertSystemService.evaluateMetrics(serverId);
+            return ResponseEntity.ok(triggeredAlerts);
+        } catch (IllegalArgumentException e) {
+            GlobalExceptionHandler.ErrorResponse errorResponse = new GlobalExceptionHandler.ErrorResponse(
+                java.time.LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "Bad Request",
+                "Server not found or invalid: " + e.getMessage(),
+                null
+            );
+            return ResponseEntity.badRequest().body(errorResponse);
+        } catch (Exception e) {
+            GlobalExceptionHandler.ErrorResponse errorResponse = new GlobalExceptionHandler.ErrorResponse(
+                java.time.LocalDateTime.now(),
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                "Internal Server Error",
+                "Error occurred while evaluating metrics: " + e.getMessage(),
+                null
+            );
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
     }
 }

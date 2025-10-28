@@ -1,6 +1,7 @@
 package com.elec5619.backend.service;
 
 import com.elec5619.backend.entity.AlertEvent;
+import com.elec5619.backend.dto.AlertEventResponseDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -17,6 +18,8 @@ public interface AlertEventService {
     AlertEvent createAlertEvent(AlertEvent alertEvent);
 
     List<AlertEvent> getAllAlertEvents();
+
+    List<AlertEventResponseDto> getAllAlertEventsWithNames();
 
     Optional<AlertEvent> getAlertEventById(Long eventId);
 

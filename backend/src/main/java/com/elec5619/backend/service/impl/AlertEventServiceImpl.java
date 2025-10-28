@@ -2,7 +2,10 @@ package com.elec5619.backend.service.impl;
 
 import com.elec5619.backend.entity.AlertEvent;
 import com.elec5619.backend.entity.AlertRule;
+import com.elec5619.backend.entity.Server;
+import com.elec5619.backend.dto.AlertEventResponseDto;
 import com.elec5619.backend.repository.AlertEventRepository;
+import com.elec5619.backend.repository.ServerRepository;
 import com.elec5619.backend.service.AlertEventService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -17,10 +20,12 @@ import java.util.Optional;
 public class AlertEventServiceImpl implements AlertEventService {
 
     private final AlertEventRepository alertEventRepository;
+    private final ServerRepository serverRepository;
 
     @Autowired
-    public AlertEventServiceImpl(AlertEventRepository alertEventRepository) {
+    public AlertEventServiceImpl(AlertEventRepository alertEventRepository, ServerRepository serverRepository) {
         this.alertEventRepository = alertEventRepository;
+        this.serverRepository = serverRepository;
     }
 
     @Override
@@ -41,6 +46,38 @@ public class AlertEventServiceImpl implements AlertEventService {
     @Override
     public List<AlertEvent> getAllAlertEvents() {
         return alertEventRepository.findAll();
+    }
+
+    @Override
+    public List<AlertEventResponseDto> getAllAlertEventsWithNames() {
+        List<AlertEvent> events = alertEventRepository.findAll();
+        return events.stream()
+                .map(this::convertToResponseDto)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    private AlertEventResponseDto convertToResponseDto(AlertEvent event) {
+        AlertEventResponseDto dto = new AlertEventResponseDto();
+        dto.setEventId(event.getEventId());
+        dto.setStatus(event.getStatus());
+        dto.setStartedAt(event.getStartedAt());
+        dto.setResolvedAt(event.getResolvedAt());
+        dto.setTriggeredValue(event.getTriggeredValue());
+        dto.setSummary(event.getSummary());
+        dto.setCreatedAt(event.getCreatedAt());
+        
+        // Get server name
+        if (event.getServerId() != null) {
+            serverRepository.findById(event.getServerId())
+                    .ifPresent(server -> dto.setServerName(server.getServerName()));
+        }
+        
+        // Get rule name
+        if (event.getAlertRule() != null) {
+            dto.setRuleName(event.getAlertRule().getRuleName());
+        }
+        
+        return dto;
     }
 
     @Override
