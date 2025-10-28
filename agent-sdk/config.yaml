@@ -1,0 +1,38 @@
+# System Health Agent Configuration
+
+# Database connection settings
+db:
+  host: aws-1-ap-southeast-2.pooler.supabase.com
+  port: 5432
+  database: postgres
+  user: postgres.zphjbywuwrxwzjdbxiaq
+  password: gGZVcZAhq71IEMjn
+  sslmode: require  # Options: disable, allow, prefer, require, verify-ca, verify-full
+
+# Logging configuration
+logging:
+  level: INFO  # Options: DEBUG, INFO, WARNING, ERROR, CRITICAL
+
+# Server identification (optional - agent will auto-register if not specified)
+server_identification:
+  # Method 1: Direct server ID (optional - if not set, agent will auto-register)
+  # server_id: 1
+  
+  # Method 2: Auto-resolve by server name and IP (legacy - not used with auto-registration)
+  # server_name: "web-server-01"
+  # auto_detect_ip: true
+
+# Metrics collection settings
+metrics:
+  # Collection interval in seconds (minimum: 1, recommended: 5-60)
+  interval_seconds: 5
+  
+  # Disk mount point to monitor (default: root filesystem)
+  disk_mount: "/System/Volumes/Data"
+  
+  # Include temperature monitoring (may not work on all systems)
+  include_temperature: true
+  
+  # Network interface to monitor (null = all interfaces combined)
+  # Examples: "eth0", "ens33", "wlan0", null
+  network_interface: null

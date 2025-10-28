@@ -4,6 +4,9 @@ import os
 import socket
 import time
 import logging
+import uuid
+import hashlib
+import platform
 from datetime import datetime
 
 import yaml
@@ -39,31 +42,185 @@ def db_connect(cfg: dict):
     return conn
 
 
-def resolve_server_id(conn, cfg, logger) -> int:
-    sid = cfg.get('server_identification', {}).get('server_id')
-    if sid:
-        return int(sid)
+def get_machine_identifier():
+    """Generate a unique machine identifier based on hardware characteristics."""
+    try:
+        # Get MAC address
+        mac = ':'.join(['{:02x}'.format((uuid.getnode() >> elements) & 0xff) 
+                       for elements in range(0, 2*6, 2)][::-1])
+        
+        # Get hostname
+        hostname = socket.gethostname()
+        
+        # Get platform info
+        system_info = f"{platform.system()}-{platform.machine()}-{platform.processor()}"
+        
+        # Create a unique identifier
+        unique_string = f"{mac}-{hostname}-{system_info}"
+        machine_id = hashlib.md5(unique_string.encode()).hexdigest()[:16]
+        
+        return machine_id
+    except Exception:
+        # Fallback to a random UUID if hardware detection fails
+        return str(uuid.uuid4())[:16]
 
-    name = cfg.get('server_identification', {}).get('server_name')
-    auto_ip = cfg.get('server_identification', {}).get('auto_detect_ip', True)
-    ip = None
-    if auto_ip:
+
+def get_server_id_file_path():
+    """Get the path to store server ID locally."""
+    # Store in the same directory as the script
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(script_dir, '.server_id')
+
+
+def load_stored_server_id():
+    """Load server ID from local file if it exists."""
+    server_id_file = get_server_id_file_path()
+    if os.path.exists(server_id_file):
         try:
-            hostname = socket.gethostname()
-            ip = socket.gethostbyname(hostname)
-        except Exception as e:
-            logger.warning(f"Auto detect IP failed: {e}")
+            with open(server_id_file, 'r') as f:
+                return int(f.read().strip())
+        except (ValueError, IOError):
+            pass
+    return None
 
+
+def store_server_id(server_id: int):
+    """Store server ID to local file."""
+    server_id_file = get_server_id_file_path()
+    try:
+        with open(server_id_file, 'w') as f:
+            f.write(str(server_id))
+    except IOError as e:
+        logging.warning(f"Failed to store server ID: {e}")
+
+
+def get_system_info():
+    """Get system information for server registration."""
+    try:
+        # Get CPU info
+        cpu_info = platform.processor() or "Unknown CPU"
+        if not cpu_info or cpu_info == "Unknown CPU":
+            # Try to get more detailed CPU info
+            try:
+                import cpuinfo
+                cpu_info = cpuinfo.get_cpu_info().get('brand_raw', 'Unknown CPU')
+            except ImportError:
+                cpu_info = f"{platform.machine()} CPU"
+        
+        # Get memory info
+        memory = psutil.virtual_memory()
+        memory_gb = round(memory.total / (1024**3))
+        memory_info = f"{memory_gb}GB"
+        
+        # Get OS info
+        os_info = f"{platform.system()} {platform.release()}"
+        
+        # Get IP address
+        hostname = socket.gethostname()
+        ip_address = socket.gethostbyname(hostname)
+        
+        return {
+            'cpu': cpu_info,
+            'memory': memory_info,
+            'operating_system': os_info,
+            'ip_address': ip_address,
+            'hostname': hostname
+        }
+    except Exception as e:
+        logging.warning(f"Failed to get system info: {e}")
+        return {
+            'cpu': 'Unknown CPU',
+            'memory': 'Unknown',
+            'operating_system': 'Unknown OS',
+            'ip_address': '127.0.0.1',
+            'hostname': socket.gethostname()
+        }
+
+
+def register_server(conn, machine_id: str, system_info: dict, logger) -> int:
+    """Register a new server in the database."""
+    server_name = f"{system_info['hostname']}-{machine_id[:8]}"
+    
     with conn.cursor() as cur:
+        # Check if server already exists by machine_id (stored in server_name for uniqueness)
         cur.execute(
-            "SELECT id FROM servers WHERE server_name = %s OR ip_address = %s LIMIT 1",
-            (name, ip)
+            "SELECT id FROM servers WHERE server_name LIKE %s",
+            (f"%-{machine_id[:8]}",)
         )
-        row = cur.fetchone()
-        if not row:
-            logger.error("Server ID not found by name/IP. Please set server_id in config or ensure servers table has an entry.")
-            raise RuntimeError("SERVER_ID_NOT_FOUND")
-        return int(row[0])
+        existing = cur.fetchone()
+        if existing:
+            logger.info(f"Found existing server registration: server_id={existing[0]}")
+            return int(existing[0])
+        
+        # Insert new server
+        cur.execute("""
+            INSERT INTO servers (server_name, ip_address, cpu, memory, operating_system, status, created_at, updated_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING id
+        """, (
+            server_name,
+            system_info['ip_address'],
+            system_info['cpu'],
+            system_info['memory'],
+            system_info['operating_system'],
+            'online',
+            datetime.now(),
+            datetime.now()
+        ))
+        
+        server_id = cur.fetchone()[0]
+        logger.info(f"Registered new server: server_id={server_id}, name={server_name}")
+        return int(server_id)
+
+
+def resolve_server_id(conn, cfg, logger) -> int:
+    """
+    Resolve server ID with automatic registration and binding to local machine.
+    Priority:
+    1. Check config file for explicit server_id
+    2. Check local stored server_id file
+    3. Auto-register new server and bind to this machine
+    """
+    # Method 1: Check config file for explicit server_id
+    server_identification = cfg.get('server_identification', {})
+    if server_identification:
+        sid = server_identification.get('server_id')
+        if sid:
+            logger.info(f"Using server_id from config: {sid}")
+            # Store this ID locally for future use
+            store_server_id(int(sid))
+            return int(sid)
+
+    # Method 2: Check local stored server_id
+    stored_id = load_stored_server_id()
+    if stored_id:
+        # Verify this server still exists in database
+        with conn.cursor() as cur:
+            cur.execute("SELECT id FROM servers WHERE id = %s", (stored_id,))
+            if cur.fetchone():
+                logger.info(f"Using stored server_id: {stored_id}")
+                return stored_id
+            else:
+                logger.warning(f"Stored server_id {stored_id} not found in database, will re-register")
+
+    # Method 3: Auto-register new server
+    logger.info("No valid server_id found, registering new server...")
+    
+    # Generate machine identifier
+    machine_id = get_machine_identifier()
+    logger.info(f"Generated machine identifier: {machine_id}")
+    
+    # Get system information
+    system_info = get_system_info()
+    logger.info(f"System info: {system_info}")
+    
+    # Register server in database
+    server_id = register_server(conn, machine_id, system_info, logger)
+    
+    # Store server_id locally for future use
+    store_server_id(server_id)
+    
+    return server_id
 
 
 def read_temperature(include: bool):
@@ -139,7 +296,10 @@ def collect_and_insert(conn, server_id: int, cfg: dict, logger, once=False):
             cpu = psutil.cpu_percent(interval=1)
             mem = psutil.virtual_memory().percent
             disk = psutil.disk_usage(disk_mount).percent
-            load_avg = psutil.getloadavg()[0]  # 1-minute load average
+            # Convert load average to percentage: (load_avg / cpu_count) * 100
+            load_avg_raw = psutil.getloadavg()[0]  # 1-minute load average
+            cpu_count = psutil.cpu_count()
+            load_avg = (load_avg_raw / cpu_count) * 100  # Convert to percentage
             temperature = read_temperature(include_temp)
             
             # Network metrics with rate calculation
