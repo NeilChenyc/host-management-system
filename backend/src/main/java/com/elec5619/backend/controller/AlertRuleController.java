@@ -84,31 +84,11 @@ public class AlertRuleController {
             @RequestAttribute("userId") Long userId) {
         // 只有Admin和Manager可以创建告警规则
         permissionChecker.requirePermission(userId, PermissionConstants.ALERT_MANAGE_ALL);
-        try {
-            if (alertRule.getEnabled() == null) {
-                alertRule.setEnabled(true);
-            }
-            AlertRule createdRule = alertRuleService.createAlertRule(alertRule);
-            return new ResponseEntity<>(createdRule, HttpStatus.CREATED);
-        } catch (IllegalArgumentException e) {
-            GlobalExceptionHandler.ErrorResponse errorResponse = new GlobalExceptionHandler.ErrorResponse(
-                java.time.LocalDateTime.now(),
-                HttpStatus.BAD_REQUEST.value(),
-                "Bad Request",
-                e.getMessage(),
-                null
-            );
-            return ResponseEntity.badRequest().body(errorResponse);
-        } catch (Exception e) {
-            GlobalExceptionHandler.ErrorResponse errorResponse = new GlobalExceptionHandler.ErrorResponse(
-                java.time.LocalDateTime.now(),
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                "Internal Server Error",
-                "Failed to create alert rule: " + e.getMessage(),
-                null
-            );
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        if (alertRule.getEnabled() == null) {
+            alertRule.setEnabled(true);
         }
+        AlertRule createdRule = alertRuleService.createAlertRule(alertRule);
+        return new ResponseEntity<>(createdRule, HttpStatus.CREATED);
     }
 
     /**
@@ -215,12 +195,8 @@ public class AlertRuleController {
             @RequestAttribute("userId") Long userId) {
         // 只有Admin和Manager可以更新告警规则
         permissionChecker.requirePermission(userId, PermissionConstants.ALERT_MANAGE_ALL);
-        try {
-            AlertRule updatedRule = alertRuleService.updateAlertRule(ruleId, alertRule);
-            return ResponseEntity.ok(updatedRule);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.notFound().build();
-        }
+        AlertRule updatedRule = alertRuleService.updateAlertRule(ruleId, alertRule);
+        return ResponseEntity.ok(updatedRule);
     }
 
     /**
@@ -251,12 +227,8 @@ public class AlertRuleController {
             @RequestAttribute("userId") Long userId) {
         // 只有Admin和Manager可以删除告警规则
         permissionChecker.requirePermission(userId, PermissionConstants.ALERT_MANAGE_ALL);
-        try {
-            alertRuleService.deleteAlertRule(ruleId);
-            return ResponseEntity.noContent().build();
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.notFound().build();
-        }
+        alertRuleService.deleteAlertRule(ruleId);
+        return ResponseEntity.noContent().build();
     }
 
     /**
@@ -355,12 +327,8 @@ public class AlertRuleController {
             @RequestAttribute("userId") Long userId) {
         // 只有Admin和Manager可以修改告警规则状态
         permissionChecker.requirePermission(userId, PermissionConstants.ALERT_MANAGE_ALL);
-        try {
-            AlertRule updatedRule = alertRuleService.toggleAlertRuleStatus(ruleId, enabled);
-            return ResponseEntity.ok(updatedRule);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.notFound().build();
-        }
+        AlertRule updatedRule = alertRuleService.toggleAlertRuleStatus(ruleId, enabled);
+        return ResponseEntity.ok(updatedRule);
     }
 
     /**
