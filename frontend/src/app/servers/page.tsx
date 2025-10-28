@@ -51,7 +51,8 @@ export default function ServersPage() {
   // Message API for React 19 compatibility
   const [messageApi, contextHolder] = message.useMessage();
   // 当前用户是否为操作员
-  const isOperator = AuthManager.getUser()?.role === 'operator';
+  const currentUser = AuthManager.getUser();
+  const isOperator = currentUser?.role === 'operation';
   
   // 组件挂载时加载服务器列表
   useEffect(() => {

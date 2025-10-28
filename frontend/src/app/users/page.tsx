@@ -75,7 +75,7 @@ export default function UsersPage() {
   const [messageApi, contextHolder] = message.useMessage();
 
   // 当前用户是否为操作员
-  const isOperator = AuthManager.getUser()?.role === "operator";
+  const isOperator = AuthManager.getUser()?.role === "operation";
 
   // 组件挂载时加载用户列表
   useEffect(() => {
