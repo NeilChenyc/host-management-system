@@ -28,9 +28,14 @@ public class PermissionChecker {
      * 要求用户必须有特定权限，否则抛出异常
      */
     public void requirePermission(Long userId, String permission) {
-        if (!checkPermission(userId, permission)) {
+        System.err.println("PermissionChecker.requirePermission: Checking permission for userId=" + userId + ", permission=" + permission);
+        boolean hasPermission = checkPermission(userId, permission);
+        System.err.println("PermissionChecker.requirePermission: hasPermission=" + hasPermission);
+        if (!hasPermission) {
+            System.err.println("PermissionChecker.requirePermission: Throwing AccessDeniedException");
             throw new AccessDeniedException("Insufficient permissions: " + permission);
         }
+        System.err.println("PermissionChecker.requirePermission: Permission check passed");
     }
     
     /**

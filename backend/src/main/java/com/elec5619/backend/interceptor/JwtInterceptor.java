@@ -25,6 +25,8 @@ public class JwtInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         System.out.println("=== JWT Interceptor: Processing request to " + request.getRequestURI() + " ===");
+        System.out.println("Request method: " + request.getMethod());
+        System.out.println("Handler: " + handler.getClass().getName());
         
         // 跳过不需要JWT验证的路径
         String path = request.getRequestURI();
@@ -33,6 +35,7 @@ public class JwtInterceptor implements HandlerInterceptor {
             path.startsWith("/v3/api-docs/") ||
             path.startsWith("/api-docs/")) {
             System.out.println("Skipping JWT validation for path: " + path);
+            System.out.println("=== JWT Interceptor: Returning true (skip validation) ===");
             return true;
         }
 
@@ -42,6 +45,7 @@ public class JwtInterceptor implements HandlerInterceptor {
         if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
             System.out.println("No valid Authorization header found");
             sendErrorResponse(response, CustomJwtException.MISSING_TOKEN, "Missing or invalid Authorization header");
+            System.out.println("=== JWT Interceptor: Returning false (missing token) ===");
             return false;
         }
 
@@ -53,6 +57,7 @@ public class JwtInterceptor implements HandlerInterceptor {
             if (!jwtUtil.validateToken(token)) {
                 System.out.println("Invalid token");
                 sendErrorResponse(response, CustomJwtException.INVALID_TOKEN, "Invalid or expired token");
+                System.out.println("=== JWT Interceptor: Returning false (invalid token) ===");
                 return false;
             }
 
@@ -66,10 +71,13 @@ public class JwtInterceptor implements HandlerInterceptor {
             request.setAttribute("userId", userId);
             request.setAttribute("userRole", role);
             
+            System.out.println("=== JWT Interceptor: Returning true (valid token) ===");
             return true;
         } catch (Exception e) {
             System.out.println("JWT Interceptor error: " + e.getMessage());
+            e.printStackTrace();
             sendErrorResponse(response, CustomJwtException.TOKEN_PARSE_ERROR, "Token processing failed: " + e.getMessage());
+            System.out.println("=== JWT Interceptor: Returning false (exception) ===");
             return false;
         }
     }

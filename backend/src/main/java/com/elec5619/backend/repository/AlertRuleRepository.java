@@ -69,4 +69,11 @@ public interface AlertRuleRepository extends JpaRepository<AlertRule, Long> {
      * @return Optional containing the alert rule if found
      */
     Optional<AlertRule> findByRuleName(String ruleName);
+
+    /**
+     * Delete all alert rules by project ID.
+     *
+     * @param projectId the project ID to delete alert rules for
+     */
+    void deleteByProjectId(Long projectId);
 }

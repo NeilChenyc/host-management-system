@@ -57,24 +57,20 @@ public class ServerController {
             @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing JWT token"),
             @ApiResponse(responseCode = "403", description = "Forbidden - insufficient permissions")
     })
-    public ResponseEntity<?> create(
+    public ResponseEntity<ServerResponseDto> create(
             @Valid @RequestBody ServerCreateDto dto,
             @RequestAttribute("userId") Long userId) {
-        // 只有Admin和Manager可以创建服务器
-        permissionChecker.requirePermission(userId, PermissionConstants.SERVER_MANAGE_ALL);
+        System.err.println("ServerController.create: Received request for server: " + dto.getServerName());
+        System.err.println("ServerController.create: User ID: " + userId);
         
-        try {
-            ServerResponseDto server = serverService.create(dto);
-            return ResponseEntity.ok(server);
-        } catch (ServerNameAlreadyExistsException e) {
-            return ResponseEntity.badRequest().body(Map.of(
-                "timestamp", java.time.LocalDateTime.now(),
-                "status", 400,
-                "error", "Bad Request",
-                "message", e.getMessage(),
-                "details", null
-            ));
-        }
+        // 只有Admin和Manager可以创建服务器
+        System.err.println("ServerController.create: Checking permissions...");
+        permissionChecker.requirePermission(userId, PermissionConstants.SERVER_MANAGE_ALL);
+        System.err.println("ServerController.create: Permission check passed, calling service...");
+        
+        ServerResponseDto server = serverService.create(dto);
+        System.err.println("ServerController.create: Service call completed successfully");
+        return ResponseEntity.ok(server);
     }
 
     @GetMapping

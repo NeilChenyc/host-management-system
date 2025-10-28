@@ -34,9 +34,20 @@ public class ServerService {
     private AlertEventService alertEventService;
 
     public ServerResponseDto create(ServerCreateDto dto) {
-        if (serverRepository.findByServerName(dto.getServerName()).isPresent()) {
+        System.err.println("Creating server with name: " + dto.getServerName());
+        
+        // 检查服务器名称是否已存在
+        Optional<Server> existingServer = serverRepository.findByServerName(dto.getServerName());
+        System.err.println("Existing server check result: " + existingServer.isPresent());
+        if (existingServer.isPresent()) {
+            System.err.println("Found existing server: " + existingServer.get().getId() + " - " + existingServer.get().getServerName());
+        }
+        
+        if (existingServer.isPresent()) {
+            System.err.println("Server name already exists: " + dto.getServerName());
             throw new ServerNameAlreadyExistsException("Server name already exists");
         }
+        
         Server server = new Server();
         server.setServerName(dto.getServerName());
         server.setIpAddress(dto.getIpAddress());
@@ -45,8 +56,17 @@ public class ServerService {
         server.setMemory(dto.getMemory());
         // Set status from DTO if provided, otherwise default to unknown
         server.setStatus(dto.getStatus() != null ? dto.getStatus() : ServerStatus.unknown);
-        Server saved = serverRepository.save(server);
-        return toResponse(saved);
+        
+        System.err.println("About to save server to database...");
+        try {
+            Server saved = serverRepository.save(server);
+            System.err.println("Server created successfully with ID: " + saved.getId());
+            return toResponse(saved);
+        } catch (Exception e) {
+            System.err.println("Exception during server save: " + e.getClass().getSimpleName() + " - " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     public List<ServerResponseDto> listAll() {

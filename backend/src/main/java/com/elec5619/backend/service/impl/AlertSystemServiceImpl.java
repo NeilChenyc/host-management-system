@@ -8,6 +8,7 @@ import com.elec5619.backend.repository.ServerMetricsRepository;
 import com.elec5619.backend.service.AlertEventService;
 import com.elec5619.backend.service.AlertRuleService;
 import com.elec5619.backend.service.AlertSystemService;
+import com.elec5619.backend.service.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -23,16 +24,19 @@ public class AlertSystemServiceImpl implements AlertSystemService {
     private final AlertRuleService alertRuleService;
     private final AlertEventService alertEventService;
     private final ServerMetricsRepository serverMetricsRepository;
+    private final NotificationService notificationService;
 
     private static final Logger logger = Logger.getLogger(AlertSystemServiceImpl.class.getName());
 
     @Autowired
     public AlertSystemServiceImpl(AlertRuleService alertRuleService, 
                                     AlertEventService alertEventService,
-                                    ServerMetricsRepository serverMetricsRepository) {
+                                    ServerMetricsRepository serverMetricsRepository,
+                                    NotificationService notificationService) {
         this.alertRuleService = alertRuleService;
         this.alertEventService = alertEventService;
         this.serverMetricsRepository = serverMetricsRepository;
+        this.notificationService = notificationService;
     }
 
     @Override

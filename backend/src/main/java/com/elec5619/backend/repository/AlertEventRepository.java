@@ -26,8 +26,8 @@ public interface AlertEventRepository extends JpaRepository<AlertEvent, Long> {
         WHERE (:ruleId IS NULL OR e.alertRule.ruleId = :ruleId)
           AND (:serverId IS NULL OR e.serverId = :serverId)
           AND (:status IS NULL OR e.status = :status)
-          AND (:startTime IS NULL OR e.startedAt >= :startTime)
-          AND (:endTime IS NULL OR e.startedAt <= :endTime)
+          AND (COALESCE(:startTime, NULL) IS NULL OR e.startedAt >= :startTime)
+          AND (COALESCE(:endTime, NULL) IS NULL OR e.startedAt <= :endTime)
         ORDER BY e.startedAt DESC
     """)
     List<AlertEvent> findByFilters(@Param("ruleId") Long ruleId,
@@ -42,8 +42,8 @@ public interface AlertEventRepository extends JpaRepository<AlertEvent, Long> {
         WHERE (:ruleId IS NULL OR e.alertRule.ruleId = :ruleId)
           AND (:serverId IS NULL OR e.serverId = :serverId)
           AND (:status IS NULL OR e.status = :status)
-          AND (:startTime IS NULL OR e.startedAt >= :startTime)
-          AND (:endTime IS NULL OR e.startedAt <= :endTime)
+          AND (COALESCE(:startTime, NULL) IS NULL OR e.startedAt >= :startTime)
+          AND (COALESCE(:endTime, NULL) IS NULL OR e.startedAt <= :endTime)
     """)
     Page<AlertEvent> findByFilters(@Param("ruleId") Long ruleId,
                                    @Param("serverId") Long serverId,

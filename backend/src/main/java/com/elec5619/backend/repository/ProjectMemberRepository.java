@@ -4,6 +4,10 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.elec5619.backend.entity.Project;
 import com.elec5619.backend.entity.ProjectMember;
@@ -30,8 +34,14 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, Lo
     Optional<ProjectMember> findByProjectIdAndUserId(Long projectId, Long userId);
     
     // 删除项目的所有成员
-    void deleteByProject(Project project);
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM ProjectMember pm WHERE pm.project = :project")
+    void deleteByProject(@Param("project") Project project);
     
     // 删除用户的所有项目关联
-    void deleteByUser(User user);
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM ProjectMember pm WHERE pm.user = :user")
+    void deleteByUser(@Param("user") User user);
 }

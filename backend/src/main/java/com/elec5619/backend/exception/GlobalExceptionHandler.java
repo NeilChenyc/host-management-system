@@ -125,6 +125,11 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAccessDeniedException(AccessDeniedException ex) {
+        System.out.println("=== GlobalExceptionHandler: AccessDeniedException caught ===");
+        System.out.println("Exception message: " + ex.getMessage());
+        System.out.println("Exception class: " + ex.getClass().getName());
+        ex.printStackTrace();
+        
         // Provide a more friendly error message
         String friendlyMessage = "You do not have permission to perform this action";
         if (ex.getMessage() != null) {
@@ -208,6 +213,9 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponse> handleDataIntegrityViolationException(DataIntegrityViolationException ex) {
+        System.err.println("GlobalExceptionHandler: Handling DataIntegrityViolationException: " + ex.getMessage());
+        ex.printStackTrace();
+        
         String message = "Data integrity violation";
         int code = 40004;
         
@@ -360,6 +368,22 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle server name already exists exceptions
+     */
+    @ExceptionHandler(ServerNameAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleServerNameAlreadyExistsException(ServerNameAlreadyExistsException ex) {
+        System.err.println("GlobalExceptionHandler: Handling ServerNameAlreadyExistsException: " + ex.getMessage());
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                40905,
+                "Conflict",
+                ex.getMessage(),
+                null
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+    }
+
+    /**
      * Handle illegal argument exceptions
      */
     @ExceptionHandler(IllegalArgumentException.class)
@@ -390,13 +414,18 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Handle generic exceptions
+     * Handle all other exceptions
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
+        System.err.println("=== GlobalExceptionHandler: Generic Exception caught ===");
+        System.err.println("Exception type: " + ex.getClass().getName());
+        System.err.println("Exception message: " + ex.getMessage());
+        ex.printStackTrace();
+        
         ErrorResponse errorResponse = new ErrorResponse(
                 LocalDateTime.now(),
-                50000,
+                50001,
                 "Internal Server Error",
                 "An unexpected error occurred",
                 null
