@@ -4,6 +4,7 @@ import com.elec5619.backend.entity.AlertEvent;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -51,4 +52,8 @@ public interface AlertEventRepository extends JpaRepository<AlertEvent, Long> {
                                    @Param("startTime") LocalDateTime startTime,
                                    @Param("endTime") LocalDateTime endTime,
                                    Pageable pageable);
+
+    @Modifying
+    @Query("DELETE FROM AlertEvent e WHERE e.alertRule.ruleId = :ruleId")
+    void deleteByAlertRuleRuleId(@Param("ruleId") Long ruleId);
 }

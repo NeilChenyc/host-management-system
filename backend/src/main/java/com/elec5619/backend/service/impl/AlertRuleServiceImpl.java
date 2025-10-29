@@ -2,9 +2,11 @@ package com.elec5619.backend.service.impl;
 
 import com.elec5619.backend.entity.AlertRule;
 import com.elec5619.backend.repository.AlertRuleRepository;
+import com.elec5619.backend.repository.AlertEventRepository;
 import com.elec5619.backend.service.AlertRuleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -16,10 +18,12 @@ import java.util.Optional;
 public class AlertRuleServiceImpl implements AlertRuleService {
 
     private final AlertRuleRepository alertRuleRepository;
+    private final AlertEventRepository alertEventRepository;
 
     @Autowired
-    public AlertRuleServiceImpl(AlertRuleRepository alertRuleRepository) {
+    public AlertRuleServiceImpl(AlertRuleRepository alertRuleRepository, AlertEventRepository alertEventRepository) {
         this.alertRuleRepository = alertRuleRepository;
+        this.alertEventRepository = alertEventRepository;
     }
 
     @Override
@@ -62,9 +66,15 @@ public class AlertRuleServiceImpl implements AlertRuleService {
     }
 
     @Override
+    @Transactional
     public void deleteAlertRule(Long ruleId) {
         AlertRule existingRule = alertRuleRepository.findById(ruleId)
                 .orElseThrow(() -> new IllegalArgumentException("Alert rule with ID " + ruleId + " not found"));
+        
+        // First delete all related alert events
+        alertEventRepository.deleteByAlertRuleRuleId(ruleId);
+        
+        // Then delete the alert rule
         alertRuleRepository.delete(existingRule);
     }
 
