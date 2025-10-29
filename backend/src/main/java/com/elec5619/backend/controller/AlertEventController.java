@@ -25,10 +25,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.elec5619.backend.constants.PermissionConstants;
+import com.elec5619.backend.dto.AlertEventCreateDto;
 import com.elec5619.backend.dto.AlertEventResponseDto;
 import com.elec5619.backend.entity.AlertEvent;
+import com.elec5619.backend.entity.AlertRule;
 import com.elec5619.backend.exception.GlobalExceptionHandler;
 import com.elec5619.backend.service.AlertEventService;
+import com.elec5619.backend.service.AlertRuleService;
 import com.elec5619.backend.service.AlertSystemService;
 import com.elec5619.backend.util.PermissionChecker;
 
@@ -50,15 +53,18 @@ public class AlertEventController {
 
     private final AlertEventService alertEventService;
     private final AlertSystemService alertSystemService;
+    private final AlertRuleService alertRuleService;
     
     @Autowired
     private PermissionChecker permissionChecker;
 
     @Autowired
     public AlertEventController(AlertEventService alertEventService,
-                                AlertSystemService alertSystemService) {
+                                AlertSystemService alertSystemService,
+                                AlertRuleService alertRuleService) {
         this.alertEventService = alertEventService;
         this.alertSystemService = alertSystemService;
+        this.alertRuleService = alertRuleService;
     }
 
     @PostMapping
@@ -71,12 +77,37 @@ public class AlertEventController {
         @ApiResponse(responseCode = "403", description = "Forbidden - insufficient permissions")
     })
     public ResponseEntity<AlertEvent> createAlertEvent(
-            @Valid @RequestBody AlertEvent alertEvent,
+            @Valid @RequestBody AlertEventCreateDto alertEventDto,
             @RequestAttribute("userId") Long userId) {
         // 只有Admin和Manager可以创建告警事件
         permissionChecker.requirePermission(userId, PermissionConstants.ALERT_MANAGE_ALL);
+        
+        // Convert DTO to Entity
+        AlertEvent alertEvent = convertDtoToEntity(alertEventDto);
+        
         AlertEvent createdEvent = alertEventService.createAlertEvent(alertEvent);
         return new ResponseEntity<>(createdEvent, HttpStatus.CREATED);
+    }
+
+    /**
+     * Convert AlertEventCreateDto to AlertEvent entity
+     */
+    private AlertEvent convertDtoToEntity(AlertEventCreateDto dto) {
+        AlertEvent alertEvent = new AlertEvent();
+        
+        // Get AlertRule by ruleId
+        AlertRule alertRule = alertRuleService.getAlertRuleById(dto.getRuleId())
+                .orElseThrow(() -> new IllegalArgumentException("Alert rule with ID " + dto.getRuleId() + " not found"));
+        
+        alertEvent.setAlertRule(alertRule);
+        alertEvent.setServerId(dto.getServerId());
+        alertEvent.setStatus(dto.getStatus());
+        alertEvent.setStartedAt(dto.getStartedAt());
+        alertEvent.setResolvedAt(dto.getResolvedAt());
+        alertEvent.setTriggeredValue(dto.getTriggeredValue());
+        alertEvent.setSummary(dto.getSummary());
+        
+        return alertEvent;
     }
 
     @GetMapping
