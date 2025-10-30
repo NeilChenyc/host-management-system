@@ -3,21 +3,33 @@ package com.elec5619.backend.controller;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import com.elec5619.backend.config.TestSecurityConfig;
 import org.springframework.context.annotation.Import;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import com.elec5619.backend.interceptor.JwtInterceptor;
+import com.elec5619.backend.util.JwtUtil;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(TestController.class)
+@WebMvcTest(controllers = TestController.class,
+    excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = com.elec5619.backend.config.WebConfig.class))
 @Import(TestSecurityConfig.class)
 @ActiveProfiles("test")
 class TestControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @MockBean
+    private JwtInterceptor jwtInterceptor;
+
+    @MockBean
+    private JwtUtil jwtUtil;
 
     @Test
     void testPublicTestEndpoint_Success() throws Exception {

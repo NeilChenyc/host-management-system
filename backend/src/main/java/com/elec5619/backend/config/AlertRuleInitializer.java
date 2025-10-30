@@ -45,13 +45,13 @@ public class AlertRuleInitializer implements CommandLineRunner {
         cpuAlert.setRuleName("High CPU Usage");
         cpuAlert.setDescription("Alert when CPU usage exceeds 80%");
         cpuAlert.setTargetMetric("cpu_usage");
-        cpuAlert.setComparator("GREATER_THAN");
+        cpuAlert.setComparator(">=");
         cpuAlert.setThreshold(80.0);
         cpuAlert.setDuration(60); // 1 minute
         cpuAlert.setSeverity("WARNING");
         cpuAlert.setEnabled(true);
         cpuAlert.setScopeLevel("SERVER");
-        cpuAlert.setProjectId(1L);
+        cpuAlert.setServerId(1L);
         alertRuleService.createAlertRule(cpuAlert);
 
         // Critical CPU Usage Alert
@@ -59,13 +59,13 @@ public class AlertRuleInitializer implements CommandLineRunner {
         criticalCpuAlert.setRuleName("Critical CPU Usage");
         criticalCpuAlert.setDescription("Alert when CPU usage exceeds 95%");
         criticalCpuAlert.setTargetMetric("cpu_usage");
-        criticalCpuAlert.setComparator("GREATER_THAN");
+        criticalCpuAlert.setComparator(">=");
         criticalCpuAlert.setThreshold(95.0);
         criticalCpuAlert.setDuration(30); // 30 seconds
         criticalCpuAlert.setSeverity("CRITICAL");
         criticalCpuAlert.setEnabled(true);
         criticalCpuAlert.setScopeLevel("SERVER");
-        criticalCpuAlert.setProjectId(1L);
+        criticalCpuAlert.setServerId(1L);
         alertRuleService.createAlertRule(criticalCpuAlert);
 
         // High Memory Usage Alert
@@ -73,13 +73,13 @@ public class AlertRuleInitializer implements CommandLineRunner {
         memoryAlert.setRuleName("High Memory Usage");
         memoryAlert.setDescription("Alert when memory usage exceeds 85%");
         memoryAlert.setTargetMetric("memory_usage");
-        memoryAlert.setComparator("GREATER_THAN");
+        memoryAlert.setComparator(">=");
         memoryAlert.setThreshold(85.0);
         memoryAlert.setDuration(120); // 2 minutes
         memoryAlert.setSeverity("WARNING");
         memoryAlert.setEnabled(true);
         memoryAlert.setScopeLevel("SERVER");
-        memoryAlert.setProjectId(1L);
+        memoryAlert.setServerId(1L);
         alertRuleService.createAlertRule(memoryAlert);
 
         // High Disk Usage Alert
@@ -87,13 +87,13 @@ public class AlertRuleInitializer implements CommandLineRunner {
         diskAlert.setRuleName("High Disk Usage");
         diskAlert.setDescription("Alert when disk usage exceeds 90%");
         diskAlert.setTargetMetric("disk_usage");
-        diskAlert.setComparator("GREATER_THAN");
+        diskAlert.setComparator(">=");
         diskAlert.setThreshold(90.0);
         diskAlert.setDuration(300); // 5 minutes
         diskAlert.setSeverity("CRITICAL");
         diskAlert.setEnabled(true);
         diskAlert.setScopeLevel("SERVER");
-        diskAlert.setProjectId(1L);
+        diskAlert.setServerId(1L);
         alertRuleService.createAlertRule(diskAlert);
 
         // High Temperature Alert
@@ -101,13 +101,13 @@ public class AlertRuleInitializer implements CommandLineRunner {
         temperatureAlert.setRuleName("High Temperature");
         temperatureAlert.setDescription("Alert when temperature exceeds 80°C");
         temperatureAlert.setTargetMetric("temperature");
-        temperatureAlert.setComparator("GREATER_THAN");
+        temperatureAlert.setComparator(">=");
         temperatureAlert.setThreshold(80.0);
         temperatureAlert.setDuration(180); // 3 minutes
         temperatureAlert.setSeverity("WARNING");
         temperatureAlert.setEnabled(true);
         temperatureAlert.setScopeLevel("SERVER");
-        temperatureAlert.setProjectId(1L);
+        temperatureAlert.setServerId(1L);
         alertRuleService.createAlertRule(temperatureAlert);
 
         logger.info("Created 5 sample alert rules for testing");

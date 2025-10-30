@@ -26,7 +26,7 @@ public class AlertEntityTest {
         rule.setSeverity("high");
         rule.setDuration(60);
         rule.setEnabled(true);
-        rule.setProjectId(1L);
+        rule.setServerId(1L);
         rule.setDescription("当CPU使用率持续60秒超过90%时触发告警");
         
         // 测试getter方法
@@ -37,7 +37,7 @@ public class AlertEntityTest {
         assertEquals("high", rule.getSeverity());
         assertEquals(60, rule.getDuration());
         assertTrue(rule.getEnabled());
-        assertEquals(1L, rule.getProjectId());
+        assertEquals(1L, rule.getServerId());
         assertEquals("当CPU使用率持续60秒超过90%时触发告警", rule.getDescription());
         
         // 测试setter方法的更新
@@ -48,7 +48,7 @@ public class AlertEntityTest {
         rule.setSeverity("medium");
         rule.setDuration(30);
         rule.setEnabled(false);
-        rule.setProjectId(2L);
+        rule.setServerId(2L);
         rule.setDescription("当内存使用率持续30秒低于80%时触发告警");
         
         // 测试更新后的getter方法
@@ -59,7 +59,7 @@ public class AlertEntityTest {
         assertEquals("medium", rule.getSeverity());
         assertEquals(30, rule.getDuration());
         assertFalse(rule.getEnabled());
-        assertEquals(2L, rule.getProjectId());
+        assertEquals(2L, rule.getServerId());
         assertEquals("当内存使用率持续30秒低于80%时触发告警", rule.getDescription());
         
         System.out.println("AlertRule实体类方法调用测试通过！");
@@ -73,7 +73,7 @@ public class AlertEntityTest {
         // 创建AlertRule和AlertEvent实例
         AlertRule rule = new AlertRule();
         rule.setRuleName("测试规则");
-        rule.setProjectId(1L);
+        rule.setServerId(1L);
         
         AlertEvent event = new AlertEvent();
         

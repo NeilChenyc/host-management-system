@@ -31,6 +31,9 @@ public class NotificationService {
      */
     public void sendAlertNotification(AlertEvent alertEvent) {
         try {
+            if (alertEvent == null) {
+                return; // ignore null inputs gracefully
+            }
             String alertKey = generateAlertKey(alertEvent);
             
             // Check if we should send notification (deduplication)
@@ -52,7 +55,7 @@ public class NotificationService {
             
         } catch (Exception e) {
             logger.error("Error sending notification for alert {}: {}", 
-                        alertEvent.getEventId(), e.getMessage(), e);
+                        alertEvent == null ? "null" : alertEvent.getEventId(), e.getMessage(), e);
         }
     }
 

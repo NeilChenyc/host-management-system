@@ -42,7 +42,7 @@ class AlertEventServiceTest {
         testAlertRule.setRuleId(1L);
         testAlertRule.setRuleName("Test CPU Alert");
         testAlertRule.setTargetMetric("cpuUsage");
-        testAlertRule.setComparator("GREATER_THAN");
+        testAlertRule.setComparator(">");
         testAlertRule.setThreshold(80.0);
         testAlertRule.setSeverity("CRITICAL");
 

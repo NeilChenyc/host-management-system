@@ -53,7 +53,6 @@ public interface AlertEventRepository extends JpaRepository<AlertEvent, Long> {
                                    @Param("endTime") LocalDateTime endTime,
                                    Pageable pageable);
 
-    // Delete all alert events by rule ID
     @Modifying
     @Query("DELETE FROM AlertEvent e WHERE e.alertRule.ruleId = :ruleId")
     void deleteByAlertRuleRuleId(@Param("ruleId") Long ruleId);

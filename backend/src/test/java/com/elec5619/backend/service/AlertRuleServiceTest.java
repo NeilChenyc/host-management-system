@@ -79,7 +79,12 @@ class AlertRuleServiceTest {
             }
 
             @Override
-            public List<AlertRule> getAlertRulesByProjectId(Long projectId) {
+            public List<AlertRule> getAlertRulesByServerId(Long serverId) {
+                return null; // Not implemented for this test
+            }
+
+            @Override
+            public List<AlertRule> createAlertRulesBatch(List<AlertRule> alertRules) {
                 return null; // Not implemented for this test
             }
         };
@@ -88,7 +93,7 @@ class AlertRuleServiceTest {
         testAlertRule.setRuleName("Test CPU Alert");
         testAlertRule.setDescription("Test alert for CPU usage");
         testAlertRule.setTargetMetric("cpuUsage");
-        testAlertRule.setComparator("GREATER_THAN");
+        testAlertRule.setComparator(">");
         testAlertRule.setThreshold(80.0);
         testAlertRule.setDuration(5);
         testAlertRule.setSeverity("CRITICAL");
@@ -108,7 +113,7 @@ class AlertRuleServiceTest {
         assertNotNull(result);
         assertEquals("Test CPU Alert", result.getRuleName());
         assertEquals("cpuUsage", result.getTargetMetric());
-        assertEquals("GREATER_THAN", result.getComparator());
+        assertEquals(">", result.getComparator());
         assertEquals(80.0, result.getThreshold());
         assertEquals("CRITICAL", result.getSeverity());
         assertTrue(result.getEnabled());

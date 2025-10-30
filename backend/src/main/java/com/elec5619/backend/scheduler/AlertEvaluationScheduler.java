@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -32,6 +33,7 @@ public class AlertEvaluationScheduler {
      * This checks if any metrics violate the configured alert rules.
      */
     @Scheduled(fixedRate = 30000) // Every 30 seconds
+    @Transactional
     public void evaluateAlertRules() {
         try {
             logger.info("Starting scheduled alert rule evaluation...");
@@ -81,6 +83,7 @@ public class AlertEvaluationScheduler {
      * This removes old resolved alerts to keep the database clean.
      */
     @Scheduled(fixedRate = 3600000) // Every hour
+    @Transactional
     public void cleanupResolvedAlerts() {
         try {
             logger.info("Starting scheduled cleanup of resolved alerts...");

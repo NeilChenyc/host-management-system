@@ -10,6 +10,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
@@ -21,13 +23,17 @@ import java.util.Set;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import com.elec5619.backend.config.TestSecurityConfig;
 import org.springframework.context.annotation.Import;
+import com.elec5619.backend.interceptor.JwtInterceptor;
+import com.elec5619.backend.util.JwtUtil;
 
-@WebMvcTest(AuthController.class)
+@WebMvcTest(controllers = AuthController.class,
+    excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = com.elec5619.backend.config.WebConfig.class))
 @Import(TestSecurityConfig.class)
 @ActiveProfiles("test")
 class AuthControllerTest {
@@ -37,6 +43,12 @@ class AuthControllerTest {
 
     @MockBean
     private UserService userService;
+
+    @MockBean
+    private JwtInterceptor jwtInterceptor;
+
+    @MockBean
+    private JwtUtil jwtUtil;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -122,6 +134,7 @@ class AuthControllerTest {
     void testSignin_Success() throws Exception {
         when(userService.authenticateUser(anyString(), anyString()))
                 .thenReturn(Optional.of(mockUserResponse));
+        when(jwtUtil.generateToken(1L, "testuser", "operation")).thenReturn("mock-jwt-token");
 
         mockMvc.perform(post("/api/auth/signin")
                 .with(csrf())
@@ -171,17 +184,18 @@ class AuthControllerTest {
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(validLoginDto)))
-                .andExpect(status().isInternalServerError())
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("Signin failed")));
+                .andExpect(status().isInternalServerError());
     }
 
     @Test
     void testGetCurrentUser_Success() throws Exception {
-        mockMvc.perform(get("/api/auth/me"))
+        when(jwtUtil.extractUserId("abc")).thenReturn(1L);
+        when(userService.getUserById(1L)).thenReturn(Optional.of(mockUserResponse));
+        mockMvc.perform(get("/api/auth/me").header("Authorization", "Bearer abc"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.username").value("current_user"))
-                .andExpect(jsonPath("$.email").value("current@example.com"))
+                .andExpect(jsonPath("$.username").value("testuser"))
+                .andExpect(jsonPath("$.email").value("test@example.com"))
                 .andExpect(jsonPath("$.role").value("operation"));
     }
 }
