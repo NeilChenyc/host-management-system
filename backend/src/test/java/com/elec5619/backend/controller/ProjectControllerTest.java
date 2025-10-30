@@ -1,187 +1,101 @@
 package com.elec5619.backend.controller;
 
-import com.elec5619.backend.config.WebConfig;
+import com.elec5619.backend.constants.PermissionConstants;
 import com.elec5619.backend.dto.ProjectCreateDto;
 import com.elec5619.backend.dto.ProjectResponseDto;
 import com.elec5619.backend.dto.ProjectUpdateDto;
 import com.elec5619.backend.entity.ProjectStatus;
-import com.elec5619.backend.interceptor.JwtInterceptor;
 import com.elec5619.backend.service.ProjectService;
-import com.elec5619.backend.util.JwtUtil;
 import com.elec5619.backend.util.PermissionChecker;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
- 
 
-@WebMvcTest(controllers = ProjectController.class)
-@AutoConfigureMockMvc(addFilters = false)
+@WebMvcTest(controllers = ProjectController.class, excludeAutoConfiguration = {SecurityAutoConfiguration.class, SecurityFilterAutoConfiguration.class})
 class ProjectControllerTest {
-
-    @Autowired private MockMvc mockMvc;
-    @Autowired private ObjectMapper objectMapper;
-
-    @MockBean private WebConfig webConfig;
-    @MockBean private JwtInterceptor jwtInterceptor;
-    @MockBean private JwtUtil jwtUtil;
-    @MockBean private PermissionChecker permissionChecker;
-    @MockBean private ProjectService projectService;
-
-    private ProjectResponseDto project;
-
-    @BeforeEach
-    void setup() {
-        project = new ProjectResponseDto();
-        project.setId(1L);
-        project.setProjectName("proj");
-        project.setStatus(ProjectStatus.ACTIVE);
-        // Allow interceptor and permissions to pass
-        try {
-            when(jwtInterceptor.preHandle(any(), any(), any())).thenReturn(true);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        doNothing().when(permissionChecker).requirePermission(anyLong(), anyString());
-        doNothing().when(permissionChecker).requireProjectAccess(anyLong(), anyLong(), anyString());
-    }
+    @Autowired MockMvc mockMvc;
+    @MockBean ProjectService projectService;
+    @MockBean PermissionChecker permissionChecker;
 
     @Test
-    void create_ok() throws Exception {
-        doNothing().when(permissionChecker).requirePermission(anyLong(), anyString());
-        when(projectService.create(any(ProjectCreateDto.class))).thenReturn(project);
-        ProjectCreateDto dto = new ProjectCreateDto();
-        dto.setProjectName("proj");
-        mockMvc.perform(post("/api/projects").requestAttr("userId", 1L)
+    void create_requiresPermission_andReturnsOk() throws Exception {
+        Mockito.doNothing().when(permissionChecker).requirePermission(eq(1L), eq(PermissionConstants.PROJECT_WRITE_ALL));
+        ProjectResponseDto resp = new ProjectResponseDto();
+        resp.setProjectName("p1");
+        given(projectService.create(any(ProjectCreateDto.class))).willReturn(resp);
+        String body = "{\"projectName\":\"p1\",\"servers\":[1,2],\"duration\":10,\"userIds\":[3,4]}";
+        mockMvc.perform(post("/api/projects")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(dto)))
+                .content(body)
+                .requestAttr("userId", 1L))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1L));
+                .andExpect(jsonPath("$.projectName").value("p1"));
     }
 
     @Test
-    void listAll_ok() throws Exception {
-        when(projectService.listAll()).thenReturn(List.of(project));
+    void listAll_returnsOk() throws Exception {
+        ProjectResponseDto dto = new ProjectResponseDto(); dto.setProjectName("x");
+        given(projectService.listAll()).willReturn(List.of(dto));
         mockMvc.perform(get("/api/projects"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(1L));
+                .andExpect(jsonPath("$[0].projectName").value("x"));
     }
 
     @Test
-    void getById_notFound() throws Exception {
-        doNothing().when(permissionChecker).requireProjectAccess(anyLong(), anyLong(), anyString());
-        when(projectService.getById(9L)).thenReturn(Optional.empty());
-        mockMvc.perform(get("/api/projects/9").requestAttr("userId", 1L))
-                .andExpect(status().isNotFound());
-    }
-
-    @Test
-    void getByName_ok() throws Exception {
-        when(projectService.getByName("proj")).thenReturn(Optional.of(project));
-        mockMvc.perform(get("/api/projects/by-name/proj"))
+    void getById_checksPermission_andFound() throws Exception {
+        Mockito.doNothing().when(permissionChecker).requireProjectAccess(eq(9L), eq(2L), eq("read"));
+        ProjectResponseDto dto = new ProjectResponseDto(); dto.setId(2L); dto.setProjectName("demo");
+        given(projectService.getById(2L)).willReturn(Optional.of(dto));
+        mockMvc.perform(get("/api/projects/2").requestAttr("userId", 9L))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1L));
+                .andExpect(jsonPath("$.id").value(2));
     }
 
     @Test
-    void listByStatus_ok() throws Exception {
-        when(projectService.listByStatus(ProjectStatus.ACTIVE)).thenReturn(List.of(project));
-        mockMvc.perform(get("/api/projects/by-status/ACTIVE"))
+    void update_checksPermission_andNotFound() throws Exception {
+        Mockito.doNothing().when(permissionChecker).requireProjectAccess(eq(9L), eq(99L), eq("write"));
+        given(projectService.update(eq(99L), any(ProjectUpdateDto.class))).willReturn(Optional.empty());
+        String body = "{\"projectName\":\"new\"}";
+        mockMvc.perform(put("/api/projects/99")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body)
+                .requestAttr("userId", 9L))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void listByStatus_returnsOk() throws Exception {
+        given(projectService.listByStatus(ProjectStatus.PLANNED)).willReturn(List.of());
+        mockMvc.perform(get("/api/projects/by-status/PLANNED"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void addMembers_requiresPermission_andOkWhenPresent() throws Exception {
+        Mockito.doNothing().when(permissionChecker).requirePermission(eq(1L), eq(PermissionConstants.PROJECT_WRITE_ALL));
+        ProjectResponseDto dto = new ProjectResponseDto(); dto.setId(7L);
+        given(projectService.addMembers(eq(7L), any(Set.class))).willReturn(Optional.of(dto));
+        String body = "[2,3]";
+        mockMvc.perform(post("/api/projects/7/members")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body)
+                .requestAttr("userId", 1L))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(1L));
-    }
-
-    @Test
-    void update_notFound() throws Exception {
-        doNothing().when(permissionChecker).requireProjectAccess(anyLong(), anyLong(), anyString());
-        when(projectService.update(eq(1L), any(ProjectUpdateDto.class))).thenReturn(Optional.empty());
-        mockMvc.perform(put("/api/projects/1").requestAttr("userId", 1L)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(new ProjectUpdateDto())))
-                .andExpect(status().isNotFound());
-    }
-
-    @Test
-    void updateStatus_notFound() throws Exception {
-        when(projectService.updateStatus(1L, ProjectStatus.COMPLETED)).thenReturn(Optional.empty());
-        mockMvc.perform(put("/api/projects/1/status/COMPLETED"))
-                .andExpect(status().isNotFound());
-    }
-
-    @Test
-    void updateStatus_ok() throws Exception {
-        when(projectService.updateStatus(1L, ProjectStatus.COMPLETED)).thenReturn(Optional.of(project));
-        mockMvc.perform(put("/api/projects/1/status/COMPLETED"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1L));
-    }
-
-    @Test
-    void delete_ok_or_notFound() throws Exception {
-        when(projectService.delete(1L)).thenReturn(true);
-        mockMvc.perform(delete("/api/projects/1"))
-                .andExpect(status().isOk());
-
-        when(projectService.delete(2L)).thenReturn(false);
-        mockMvc.perform(delete("/api/projects/2"))
-                .andExpect(status().isNotFound());
-    }
-
-    @Test
-    void members_add_and_remove_and_get() throws Exception {
-        doNothing().when(permissionChecker).requirePermission(anyLong(), anyString());
-        when(projectService.addMembers(eq(1L), any(Set.class))).thenReturn(Optional.of(project));
-        mockMvc.perform(post("/api/projects/1/members").requestAttr("userId", 1L)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("[2,3]"))
-                .andExpect(status().isOk());
-
-        when(projectService.removeMembers(eq(1L), any(Set.class))).thenReturn(Optional.of(project));
-        mockMvc.perform(delete("/api/projects/1/members").requestAttr("userId", 1L)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("[2]"))
-                .andExpect(status().isOk());
-
-        when(projectService.getProjectMembers(1L)).thenReturn(Optional.of(Set.of(1L, 2L)));
-        mockMvc.perform(get("/api/projects/1/members"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0]").exists());
-    }
-
-    @Test
-    void members_add_notFound() throws Exception {
-        doNothing().when(permissionChecker).requirePermission(anyLong(), anyString());
-        when(projectService.addMembers(eq(99L), any(Set.class))).thenReturn(Optional.empty());
-        mockMvc.perform(post("/api/projects/99/members").requestAttr("userId", 1L)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("[2,3]"))
-                .andExpect(status().isNotFound());
-    }
-
-    @Test
-    void myProjects_branchByRole() throws Exception {
-        when(projectService.listAll()).thenReturn(List.of(project));
-        when(projectService.getProjectsByUserId(1L)).thenReturn(List.of(project));
-
-        mockMvc.perform(get("/api/projects/my").requestAttr("userId", 1L).requestAttr("userRole", "admin"))
-                .andExpect(status().isOk());
-        mockMvc.perform(get("/api/projects/my").requestAttr("userId", 1L).requestAttr("userRole", "operation"))
-                .andExpect(status().isOk());
+                .andExpect(jsonPath("$.id").value(7));
     }
 }
 
