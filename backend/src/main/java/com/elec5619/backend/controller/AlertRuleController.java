@@ -92,6 +92,51 @@ public class AlertRuleController {
     }
 
     /**
+     * Create multiple alert rules for multiple servers
+     * @param alertRules List of alert rules to create
+     * @param userId User ID from JWT token
+     * @return List of created alert rules
+     */
+    @PostMapping("/batch")
+    @Operation(
+        summary = "Create Multiple Alert Rules",
+        description = "Create multiple alert rules for multiple servers in batch"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "201",
+            description = "Alert rules created successfully",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = AlertRule.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Invalid alert rule data or duplicate rule names",
+            content = @Content
+        ),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - insufficient permissions")
+    })
+    public ResponseEntity<List<AlertRule>> createAlertRulesBatch(
+            @Valid @RequestBody List<AlertRule> alertRules,
+            @RequestAttribute("userId") Long userId) {
+        // 只有Admin和Manager可以创建告警规则
+        permissionChecker.requirePermission(userId, PermissionConstants.ALERT_MANAGE_ALL);
+        
+        // 为每个规则设置默认的enabled状态
+        for (AlertRule rule : alertRules) {
+            if (rule.getEnabled() == null) {
+                rule.setEnabled(true);
+            }
+        }
+        
+        List<AlertRule> createdRules = alertRuleService.createAlertRulesBatch(alertRules);
+        return new ResponseEntity<>(createdRules, HttpStatus.CREATED);
+    }
+
+    /**
      * Get all alert rules
      * @return List of all alert rules
      */
@@ -334,19 +379,19 @@ public class AlertRuleController {
     /**
      * Get alert rules by project ID
      */
-    @GetMapping("/project/{projectId}")
-    @Operation(summary = "Get Alert Rules by Project", description = "Retrieve alert rules under a specific project")
+    @GetMapping("/server/{serverId}")
+    @Operation(summary = "Get Alert Rules by Server", description = "Retrieve alert rules under a specific server")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Alert rules retrieved",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = AlertRule.class))),
         @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing JWT token"),
         @ApiResponse(responseCode = "403", description = "Forbidden - insufficient permissions")
     })
-    public ResponseEntity<List<AlertRule>> getRulesByProject(
-            @PathVariable Long projectId,
+    public ResponseEntity<List<AlertRule>> getRulesByServer(
+            @PathVariable Long serverId,
             @RequestAttribute("userId") Long userId) {
         // 所有角色都可以查看告警规则列表
         permissionChecker.requirePermission(userId, PermissionConstants.ALERT_READ_ALL);
-        return ResponseEntity.ok(alertRuleService.getAlertRulesByProjectId(projectId));
+        return ResponseEntity.ok(alertRuleService.getAlertRulesByServerId(serverId));
     }
 }

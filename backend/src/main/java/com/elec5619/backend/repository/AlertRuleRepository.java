@@ -23,12 +23,12 @@ public interface AlertRuleRepository extends JpaRepository<AlertRule, Long> {
     List<AlertRule> findByEnabled(Boolean enabled);
 
     /**
-     * Find alert rules by project ID.
+     * Find alert rules by server ID.
      *
-     * @param projectId the project ID to search for
-     * @return List of alert rules for the specified project
+     * @param serverId the server ID to search for
+     * @return List of alert rules for the specified server
      */
-    List<AlertRule> findByProjectId(Long projectId);
+    List<AlertRule> findByServerId(Long serverId);
 
     /**
      * Find alert rules by severity.
@@ -71,9 +71,9 @@ public interface AlertRuleRepository extends JpaRepository<AlertRule, Long> {
     Optional<AlertRule> findByRuleName(String ruleName);
 
     /**
-     * Delete all alert rules by project ID.
+     * Delete all alert rules by server ID.
      *
-     * @param projectId the project ID to delete alert rules for
+     * @param serverId the server ID to delete alert rules for
      */
-    void deleteByProjectId(Long projectId);
+    void deleteByServerId(Long serverId);
 }

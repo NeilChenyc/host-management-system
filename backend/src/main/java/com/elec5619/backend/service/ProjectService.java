@@ -135,7 +135,7 @@ public class ProjectService {
             if (!projectRepository.existsById(id)) return false;
             
             // 先删除项目相关的告警规则，避免外键约束错误
-            alertRuleRepository.deleteByProjectId(id);
+            alertRuleRepository.deleteByServerId(id);
             
             // 然后删除项目成员关联记录，避免外键约束错误
             Optional<Project> projectOpt = projectRepository.findById(id);

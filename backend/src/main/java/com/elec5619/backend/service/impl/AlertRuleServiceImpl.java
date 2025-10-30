@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -24,6 +25,28 @@ public class AlertRuleServiceImpl implements AlertRuleService {
     public AlertRuleServiceImpl(AlertRuleRepository alertRuleRepository, AlertEventRepository alertEventRepository) {
         this.alertRuleRepository = alertRuleRepository;
         this.alertEventRepository = alertEventRepository;
+    }
+
+    @Override
+    @Transactional
+    public List<AlertRule> createAlertRulesBatch(List<AlertRule> alertRules) {
+        List<AlertRule> createdRules = new ArrayList<>();
+        
+        for (AlertRule alertRule : alertRules) {
+            // 清除ID以确保创建新记录
+            alertRule.setRuleId(null);
+            
+            // 检查规则名称唯一性
+            if (alertRuleRepository.existsByRuleName(alertRule.getRuleName())) {
+                throw new IllegalArgumentException("Alert rule with name '" + alertRule.getRuleName() + "' already exists");
+            }
+            
+            // 保存规则
+            AlertRule createdRule = alertRuleRepository.save(alertRule);
+            createdRules.add(createdRule);
+        }
+        
+        return createdRules;
     }
 
     @Override
@@ -59,7 +82,7 @@ public class AlertRuleServiceImpl implements AlertRuleService {
         existingRule.setSeverity(alertRule.getSeverity());
         existingRule.setEnabled(alertRule.getEnabled());
         existingRule.setScopeLevel(alertRule.getScopeLevel());
-        existingRule.setProjectId(alertRule.getProjectId());
+        existingRule.setServerId(alertRule.getServerId());
         existingRule.setTargetFilter(alertRule.getTargetFilter());
 
         return alertRuleRepository.save(existingRule);
@@ -97,7 +120,7 @@ public class AlertRuleServiceImpl implements AlertRuleService {
     }
 
     @Override
-    public List<AlertRule> getAlertRulesByProjectId(Long projectId) {
-        return alertRuleRepository.findByProjectId(projectId);
+    public List<AlertRule> getAlertRulesByServerId(Long serverId) {
+        return alertRuleRepository.findByServerId(serverId);
     }
 }

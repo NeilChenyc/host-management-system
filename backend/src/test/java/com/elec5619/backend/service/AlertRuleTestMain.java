@@ -30,7 +30,8 @@ public class AlertRuleTestMain {
         rule.setSeverity("high");
         rule.setDuration(60);
         rule.setEnabled(true);
-        rule.setProjectId(1L);
+        rule.setServerId(1L);
+        rule.setServerId(1L);
         rule.setDescription("测试描述");
         
         // 测试getter方法并输出结果
@@ -41,7 +42,8 @@ public class AlertRuleTestMain {
         System.out.println("Severity: " + rule.getSeverity());
         System.out.println("Duration: " + rule.getDuration());
         System.out.println("Enabled: " + rule.getEnabled());
-        System.out.println("Project ID: " + rule.getProjectId());
+        System.out.println("Server ID: " + rule.getServerId());
+        System.out.println("Server ID: " + rule.getServerId());
         System.out.println("Description: " + rule.getDescription());
         
         // 测试AlertRuleService

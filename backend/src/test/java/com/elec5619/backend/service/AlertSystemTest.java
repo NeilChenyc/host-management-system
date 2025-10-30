@@ -49,7 +49,7 @@ public class AlertSystemTest {
         rule.setSeverity("high");
         rule.setDuration(60);
         rule.setEnabled(true);
-        rule.setProjectId(1L);
+        rule.setServerId(1L);
         rule.setDescription("当CPU使用率持续60秒超过90%时触发告警");
 
         AlertRule createdRule = alertRuleService.createAlertRule(rule);
@@ -70,12 +70,12 @@ public class AlertSystemTest {
         List<AlertRule> enabledRules = alertRuleService.getAlertRulesByEnabled(true);
         assertFalse(enabledRules.isEmpty());
 
-        // 按严重级别过滤规则
-        List<AlertRule> highSeverityRules = alertRuleService.getAlertRulesBySeverity("high");
+        // 按严重程度过滤规则
+        List<AlertRule> highSeverityRules = alertRuleService.getAlertRulesBySeverity("HIGH");
         assertFalse(highSeverityRules.isEmpty());
 
         // 按项目ID过滤规则
-        List<AlertRule> projectRules = alertRuleService.getAlertRulesByProjectId(1L);
+        List<AlertRule> projectRules = alertRuleService.getAlertRulesByServerId(1L);
         assertFalse(projectRules.isEmpty());
 
         // 删除告警规则
@@ -98,7 +98,8 @@ public class AlertSystemTest {
         rule.setSeverity("medium");
         rule.setDuration(30);
         rule.setEnabled(true);
-        rule.setProjectId(1L);
+        rule.setServerId(1L);
+        rule.setServerId(1L);
 
         AlertRule createdRule = alertRuleService.createAlertRule(rule);
 
@@ -162,7 +163,8 @@ public class AlertSystemTest {
         rule1.setSeverity("high");
         rule1.setDuration(60);
         rule1.setEnabled(true);
-        rule1.setProjectId(1L);
+        rule1.setServerId(1L);
+        rule1.setServerId(1L);
 
         AlertRule createdRule1 = alertRuleService.createAlertRule(rule1);
         assertNotNull(createdRule1.getRuleId());
@@ -176,7 +178,8 @@ public class AlertSystemTest {
         rule2.setSeverity("medium");
         rule2.setDuration(30);
         rule2.setEnabled(true);
-        rule2.setProjectId(1L);
+        rule2.setServerId(1L);
+        rule2.setServerId(1L);
 
         assertThrows(IllegalArgumentException.class, () -> {
             alertRuleService.createAlertRule(rule2);

@@ -54,8 +54,9 @@ public class AlertRule {
     @Column(name = "scope_level", length = 50)
     private String scopeLevel;
 
-    @Column(name = "project_id")
-    private Long projectId;
+    @NotNull(message = "Server ID is required")
+    @Column(name = "server_id", nullable = false)
+    private Long serverId;
 
     @Column(name = "target_filter")
     private String targetFilter;
@@ -152,12 +153,12 @@ public class AlertRule {
         this.scopeLevel = scopeLevel;
     }
 
-    public Long getProjectId() {
-        return projectId;
+    public Long getServerId() {
+        return serverId;
     }
 
-    public void setProjectId(Long projectId) {
-        this.projectId = projectId;
+    public void setServerId(Long serverId) {
+        this.serverId = serverId;
     }
 
     public String getTargetFilter() {

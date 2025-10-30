@@ -88,7 +88,7 @@ public class AlertSystemServiceImpl implements AlertSystemService {
             long age = ChronoUnit.MINUTES.between(latest.getCollectedAt(), LocalDateTime.now());
             if (age > 5) logger.warning("Metrics may be stale (" + age + " minutes old)");
 
-            List<AlertRule> rules = alertRuleService.getAlertRulesByProjectId(serverId);
+            List<AlertRule> rules = alertRuleService.getAlertRulesByServerId(serverId);
             for (AlertRule rule : rules) {
                 if (Boolean.TRUE.equals(rule.getEnabled()) && evaluateRuleAgainstMetrics(rule, latest)) {
                     // ✅ 去重

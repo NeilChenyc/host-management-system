@@ -42,7 +42,7 @@ public class AlertEntityMainTest {
             rule.setSeverity("high");
             rule.setDuration(60);
             rule.setEnabled(true);
-            rule.setProjectId(1L);
+            rule.setServerId(1L);
             rule.setDescription("当CPU使用率持续60秒超过90%时触发告警");
             
             // 测试getter方法并输出结果
@@ -53,7 +53,7 @@ public class AlertEntityMainTest {
             System.out.println("   ✓ Severity: " + rule.getSeverity());
             System.out.println("   ✓ Duration: " + rule.getDuration());
             System.out.println("   ✓ Enabled: " + rule.getEnabled());
-            System.out.println("   ✓ Project ID: " + rule.getProjectId());
+            System.out.println("   ✓ Server ID: " + rule.getServerId());
             System.out.println("   ✓ Description: " + rule.getDescription());
             
             // 验证所有getter方法返回正确的值
@@ -65,7 +65,7 @@ public class AlertEntityMainTest {
                 "high".equals(rule.getSeverity()) &&
                 60 == rule.getDuration() &&
                 Boolean.TRUE.equals(rule.getEnabled()) &&
-                1L == rule.getProjectId() &&
+                1L == rule.getServerId() &&
                 "当CPU使用率持续60秒超过90%时触发告警".equals(rule.getDescription());
             
             if (allTestsPassed) {
@@ -89,7 +89,8 @@ public class AlertEntityMainTest {
             // 创建AlertRule和AlertEvent实例
             AlertRule rule = new AlertRule();
             rule.setRuleName("内存使用率过高测试");
-            rule.setProjectId(1L);
+            rule.setServerId(1L);
+            rule.setServerId(1L);
             
             AlertEvent event = new AlertEvent();
             
@@ -104,7 +105,7 @@ public class AlertEntityMainTest {
             
             // 测试getter方法并输出结果
             System.out.println("   ✓ AlertRule Name: " + event.getAlertRule().getRuleName());
-            System.out.println("   ✓ Server ID: " + event.getServerId());
+            System.out.println("   ✓ Server ID: " + rule.getServerId());
             System.out.println("   ✓ Status: " + event.getStatus());
             System.out.println("   ✓ Started At: " + event.getStartedAt());
             System.out.println("   ✓ Triggered Value: " + event.getTriggeredValue());

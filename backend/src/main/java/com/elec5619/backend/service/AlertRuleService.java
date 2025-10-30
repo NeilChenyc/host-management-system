@@ -75,10 +75,18 @@ public interface AlertRuleService {
     AlertRule toggleAlertRuleStatus(Long ruleId, Boolean enabled);
     
     /**
-     * Get alert rules by project ID.
+     * Create multiple alert rules in batch.
      *
-     * @param projectId the project ID to filter by
-     * @return list of alert rules for the specified project
+     * @param alertRules the list of alert rules to create
+     * @return the list of created alert rules
      */
-    List<AlertRule> getAlertRulesByProjectId(Long projectId);
+    List<AlertRule> createAlertRulesBatch(List<AlertRule> alertRules);
+
+    /**
+     * Get alert rules by server ID.
+     *
+     * @param serverId the server ID to filter by
+     * @return list of alert rules for the specified server
+     */
+    List<AlertRule> getAlertRulesByServerId(Long serverId);
 }
