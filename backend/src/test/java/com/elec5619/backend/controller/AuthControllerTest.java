@@ -4,31 +4,38 @@ import com.elec5619.backend.dto.UserRegistrationDto;
 import com.elec5619.backend.dto.UserResponseDto;
 import com.elec5619.backend.service.UserService;
 import com.elec5619.backend.util.JwtUtil;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import java.util.Optional;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(controllers = AuthController.class, excludeAutoConfiguration = {SecurityAutoConfiguration.class, SecurityFilterAutoConfiguration.class})
+@ExtendWith(MockitoExtension.class)
 class AuthControllerTest {
-    @Autowired MockMvc mockMvc;
-    @MockBean UserService userService;
-    @MockBean JwtUtil jwtUtil;
+    private MockMvc mockMvc;
+    @Mock UserService userService;
+    @Mock JwtUtil jwtUtil;
+    @InjectMocks AuthController authController;
+
+    @BeforeEach
+    void setup() {
+        mockMvc = MockMvcBuilders.standaloneSetup(authController).build();
+    }
 
     @Test
     void signup_created() throws Exception {
-        UserResponseDto user = new UserResponseDto(); user.setId(1L); user.setUsername("u"); user.setEmail("e@mail");
+        UserResponseDto user = new UserResponseDto(); user.setId(1L); user.setUsername("user123"); user.setEmail("e@mail.com");
         given(userService.createUser(any(UserRegistrationDto.class))).willReturn(user);
-        String body = "{\"username\":\"u\",\"email\":\"e@mail\",\"password\":\"p\"}";
+        String body = "{\"username\":\"user123\",\"email\":\"e@mail.com\",\"password\":\"pass123\"}";
         mockMvc.perform(post("/api/auth/signup")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))

@@ -1,21 +1,20 @@
 package com.elec5619.backend.controller;
 
-import com.elec5619.backend.config.WebConfig;
 import com.elec5619.backend.constants.PermissionConstants;
 import com.elec5619.backend.dto.UserResponseDto;
 import com.elec5619.backend.service.UserService;
+import com.elec5619.backend.util.JwtUtil;
 import com.elec5619.backend.util.PermissionChecker;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.FilterType;
-import org.springframework.boot.test.mock.mockito.MockBean; // TODO: If upgrade Spring Boot 3.4+ may need alternative to MockBean
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.web.servlet.MockMvc;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import java.util.List;
 import java.util.Optional;
 import static org.mockito.ArgumentMatchers.eq;
@@ -23,13 +22,20 @@ import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(controllers = UserController.class,
-        excludeAutoConfiguration = {SecurityAutoConfiguration.class, SecurityFilterAutoConfiguration.class},
-        excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = WebConfig.class))
+@ExtendWith(MockitoExtension.class)
 class UserControllerTest {
-    @Autowired MockMvc mockMvc;
-    @MockBean UserService userService;
-    @MockBean PermissionChecker permissionChecker;
+    private MockMvc mockMvc;
+
+    @Mock UserService userService;
+    @Mock PermissionChecker permissionChecker;
+    @Mock JwtUtil jwtUtil;
+
+    @InjectMocks UserController userController;
+
+    @BeforeEach
+    void setup() {
+        mockMvc = MockMvcBuilders.standaloneSetup(userController).build();
+    }
 
     @Test
     @DisplayName("Get all users with valid permission returns 200 and list")
@@ -39,7 +45,8 @@ class UserControllerTest {
         given(userService.getAllUsers()).willReturn(List.of(dto));
         Mockito.doNothing().when(permissionChecker).requirePermission(eq(1L), eq(PermissionConstants.USER_READ_ALL));
 
-        mockMvc.perform(get("/api/users").requestAttr("userId", 1L))
+        mockMvc.perform(get("/api/users")
+                .requestAttr("userId", 1L))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].username").value("test"));
     }

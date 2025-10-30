@@ -6,16 +6,18 @@ import com.elec5619.backend.dto.ProjectResponseDto;
 import com.elec5619.backend.dto.ProjectUpdateDto;
 import com.elec5619.backend.entity.ProjectStatus;
 import com.elec5619.backend.service.ProjectService;
+import com.elec5619.backend.util.JwtUtil;
 import com.elec5619.backend.util.PermissionChecker;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -25,11 +27,18 @@ import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(controllers = ProjectController.class, excludeAutoConfiguration = {SecurityAutoConfiguration.class, SecurityFilterAutoConfiguration.class})
+@ExtendWith(MockitoExtension.class)
 class ProjectControllerTest {
-    @Autowired MockMvc mockMvc;
-    @MockBean ProjectService projectService;
-    @MockBean PermissionChecker permissionChecker;
+    private MockMvc mockMvc;
+    @Mock ProjectService projectService;
+    @Mock PermissionChecker permissionChecker;
+    @Mock JwtUtil jwtUtil;
+    @InjectMocks ProjectController projectController;
+
+    @BeforeEach
+    void setup() {
+        mockMvc = MockMvcBuilders.standaloneSetup(projectController).build();
+    }
 
     @Test
     void create_requiresPermission_andReturnsOk() throws Exception {

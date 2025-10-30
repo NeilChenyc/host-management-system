@@ -6,15 +6,17 @@ import com.elec5619.backend.entity.AlertEvent;
 import com.elec5619.backend.service.AlertEventService;
 import com.elec5619.backend.service.AlertRuleService;
 import com.elec5619.backend.service.AlertSystemService;
+import com.elec5619.backend.util.JwtUtil;
 import com.elec5619.backend.util.PermissionChecker;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -23,13 +25,21 @@ import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(controllers = AlertEventController.class, excludeAutoConfiguration = {SecurityAutoConfiguration.class, SecurityFilterAutoConfiguration.class})
+@ExtendWith(MockitoExtension.class)
 class AlertEventControllerTest {
-    @Autowired MockMvc mockMvc;
-    @MockBean AlertEventService alertEventService;
-    @MockBean AlertSystemService alertSystemService;
-    @MockBean AlertRuleService alertRuleService;
-    @MockBean PermissionChecker permissionChecker;
+    private MockMvc mockMvc;
+    @Mock AlertEventService alertEventService;
+    @Mock AlertSystemService alertSystemService;
+    @Mock AlertRuleService alertRuleService;
+    @Mock PermissionChecker permissionChecker;
+    @Mock JwtUtil jwtUtil;
+
+    @BeforeEach
+    void setup() {
+        AlertEventController controller = new AlertEventController(alertEventService, alertSystemService, alertRuleService);
+        ReflectionTestUtils.setField(controller, "permissionChecker", permissionChecker);
+        mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
+    }
 
     @Test
     void getAll_requiresReadPermission_andOk() throws Exception {

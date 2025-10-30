@@ -3,16 +3,18 @@ package com.elec5619.backend.controller;
 import com.elec5619.backend.constants.PermissionConstants;
 import com.elec5619.backend.entity.AlertRule;
 import com.elec5619.backend.service.AlertRuleService;
+import com.elec5619.backend.util.JwtUtil;
 import com.elec5619.backend.util.PermissionChecker;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import java.util.List;
 import java.util.Optional;
 import static org.mockito.ArgumentMatchers.any;
@@ -21,11 +23,19 @@ import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(controllers = AlertRuleController.class, excludeAutoConfiguration = {SecurityAutoConfiguration.class, SecurityFilterAutoConfiguration.class})
+@ExtendWith(MockitoExtension.class)
 class AlertRuleControllerTest {
-    @Autowired MockMvc mockMvc;
-    @MockBean AlertRuleService alertRuleService;
-    @MockBean PermissionChecker permissionChecker;
+    private MockMvc mockMvc;
+    @Mock AlertRuleService alertRuleService;
+    @Mock PermissionChecker permissionChecker;
+    @Mock JwtUtil jwtUtil;
+
+    @BeforeEach
+    void setup() {
+        AlertRuleController controller = new AlertRuleController(alertRuleService);
+        ReflectionTestUtils.setField(controller, "permissionChecker", permissionChecker);
+        mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
+    }
 
     @Test
     void createRule_checksPermission_andCreated() throws Exception {
