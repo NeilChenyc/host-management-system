@@ -55,7 +55,7 @@ public class AlertRule {
     private String scopeLevel;
 
     @NotNull(message = "Server ID is required")
-    @Column(name = "server_id", nullable = false)
+    @Column(name = "server_id")
     private Long serverId;
 
     @Column(name = "target_filter")

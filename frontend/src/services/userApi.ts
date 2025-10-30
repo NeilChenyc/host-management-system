@@ -8,6 +8,13 @@ export interface UserResponseDto {
   createdAt?: string;
 }
 
+export interface UserUpdateDto {
+  username?: string;
+  email?: string;
+  currentPassword?: string;
+  newPassword?: string;
+}
+
 // Define AppRole locally (previously imported)
 export type AppRole = 'admin' | 'manager' | 'operator';
 
@@ -88,15 +95,29 @@ export async function registerUser(payload: { username: string; email: string; p
 export async function updateUserRole(id: number | string, role: AppRole): Promise<UserResponseDto> {
   try {
     const backendRole = mapToBackendRole(role);
-    // Backend expects a raw string body; send JSON string for compatibility
+    // Backend expects RoleUpdateDto object with role field
     return await AuthManager.fetchWithAuth<UserResponseDto>(`/api/users/${id}/role`, {
       method: 'PUT',
-      body: JSON.stringify(backendRole),
+      body: JSON.stringify({ role: backendRole }),
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error: any) {
     // 提取后端返回的友好错误消息
     const errorMessage = error?.message || '更新用户角色失败';
+    throw new Error(errorMessage);
+  }
+}
+
+export async function updateUserProfile(updateData: UserUpdateDto): Promise<UserResponseDto> {
+  try {
+    return await AuthManager.fetchWithAuth<UserResponseDto>('/api/users/profile', {
+      method: 'PUT',
+      body: JSON.stringify(updateData),
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (error: any) {
+    // 提取后端返回的友好错误消息
+    const errorMessage = error?.message || '更新用户信息失败';
     throw new Error(errorMessage);
   }
 }

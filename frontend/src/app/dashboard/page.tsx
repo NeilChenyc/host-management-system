@@ -489,13 +489,84 @@ const MonitoringDashboard: React.FC = () => {
     }
   };
 
+  // 辅助函数：映射指标类型
+  const mapMetricType = (metric: string): SystemAlert['type'] => {
+    const metricMap: Record<string, SystemAlert['type']> = {
+      'cpu': 'cpu',
+      'memory': 'memory',
+      'disk': 'disk',
+      'network': 'network',
+      'temperature': 'temperature',
+      'service': 'service'
+    };
+    return metricMap[metric.toLowerCase()] || 'cpu';
+  };
+  
+  // 辅助函数：映射严重性
+  const mapSeverity = (severity: string): SystemAlert['severity'] => {
+    const severityMap: Record<string, SystemAlert['severity']> = {
+      'low': 'low',
+      'medium': 'medium',
+      'high': 'high',
+      'critical': 'critical',
+      'warning': 'medium'
+    };
+    return severityMap[severity.toLowerCase()] || 'medium';
+  };
+  
+  // 辅助函数：映射状态
+  const mapStatus = (status: string): SystemAlert['status'] => {
+    const statusMap: Record<string, SystemAlert['status']> = {
+      'active': 'active',
+      'firing': 'active',
+      'resolved': 'resolved',
+      'acknowledged': 'acknowledged'
+    };
+    return statusMap[status.toLowerCase()] || 'active';
+  };
+
+  // 获取真实的告警事件数据
+  const loadAlerts = async () => {
+    try {
+      const token = AuthManager.getToken();
+      const response = await fetch(`${location.origin}/api/alert-events`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch alert events');
+      }
+      const data = await response.json();
+      
+      // 转换API数据为前端需要的格式
+      const alertsData: SystemAlert[] = (data || []).map((event: any) => ({
+        id: String(event.eventId ?? event.id ?? ''),
+        hostId: String(event.serverId ?? event.server_id ?? event.hostId ?? ''),
+        hostName: event.serverName ?? event.server?.serverName ?? `Server ${event.serverId ?? event.server_id ?? 'Unknown'}`,
+        type: mapMetricType(event.metric ?? event.targetMetric ?? 'cpu'),
+        severity: mapSeverity(event.severity ?? 'medium'),
+        message: event.message ?? `${event.metric ?? 'Metric'} alert triggered`,
+        timestamp: event.triggeredAt ?? event.createdAt ?? new Date().toISOString(),
+        status: mapStatus(event.status ?? 'active')
+      }));
+      
+      setAlerts(alertsData);
+    } catch (error) {
+      console.error('Failed to load alerts:', error);
+      // 如果API失败，使用空数组而不是mock数据
+      setAlerts([]);
+    }
+  };
+
   useEffect(() => {
     // 初始化时加载服务器列表和概览数据
     loadServers();
     loadServersOverview(); // 加载真实的服务器概览数据
     
-    // Initialize mock data for alerts (可以后续替换为真实API)
-    setAlerts(mockAlerts);
+    // 加载真实的告警数据
+    loadAlerts();
 
     // Setup WebSocket connection (mock)
     const connectWebSocket = () => {
@@ -505,8 +576,9 @@ const MonitoringDashboard: React.FC = () => {
       // Real-time data updates
       if (autoRefresh) {
         intervalRef.current = setInterval(() => {
-          // 定期刷新服务器概览数据（每10秒）
+          // 定期刷新服务器概览数据和告警数据（每10秒）
           loadServersOverview();
+          loadAlerts();
         }, 10000); // Update every 10 seconds
       }
     };
@@ -738,7 +810,11 @@ const MonitoringDashboard: React.FC = () => {
             closable
             style={{ marginBottom: 24 }}
             action={
-              <Button size="small" danger>
+              <Button 
+                size="small" 
+                danger
+                onClick={() => window.location.href = '/alerts'}
+              >
                 View All Alerts
               </Button>
             }
@@ -775,7 +851,13 @@ const MonitoringDashboard: React.FC = () => {
                 value={activeAlerts}
                 prefix={<BellOutlined />}
                 valueStyle={{ color: activeAlerts > 0 ? '#cf1322' : '#3f8600' }}
+                suffix={activeAlerts === 0 ? 'No alerts' : undefined}
             />
+            {activeAlerts === 0 && (
+              <div style={{ marginTop: 8, fontSize: '12px', color: '#52c41a' }}>
+                All systems normal
+              </div>
+            )}
           </Card>
         </Col>
           <Col span={6}>

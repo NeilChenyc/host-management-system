@@ -22,7 +22,7 @@ export interface AlertRuleDto {
   severity: string; // WARNING / CRITICAL / HIGH / LOW
   enabled: boolean;
   scopeLevel?: string;
-  projectId?: number;
+  serverId: number; // 必需字段，绑定特定服务器
   targetFilter?: string;
   createdAt: string;
   updatedAt: string;
@@ -150,7 +150,7 @@ const toUiRule = (dto: AlertRuleDto): UiAlertRule => ({
   severity: severityBackendToUi(dto.severity),
   duration: dto.duration,
   enabled: !!dto.enabled,
-  hostIds: [], // 若后端返回，请在此映射
+  hostIds: [String(dto.serverId)], // serverId是必需的，直接映射到hostIds
   notificationChannels: [], // 若后端返回，请在此映射
   createdAt: dto.createdAt,
   updatedAt: dto.updatedAt,
@@ -159,16 +159,28 @@ const toUiRule = (dto: AlertRuleDto): UiAlertRule => ({
   lastTriggered: undefined,
 });
 
-const toCreateDto = (v: AlertRuleFormValues): Partial<AlertRuleDto> => ({
-  ruleName: v.name,
-  description: v.description,
-  targetMetric: metricUiToBackend(v.metric),
-  comparator: comparatorUiToBackend(v.condition),
-  threshold: v.threshold,
-  duration: v.duration,
-  severity: severityUiToBackend(v.severity),
-  enabled: v.enabled,
-});
+const toCreateDto = (v: AlertRuleFormValues): Partial<AlertRuleDto> => {
+  const dto: Partial<AlertRuleDto> = {
+    ruleName: v.name,
+    description: v.description,
+    targetMetric: metricUiToBackend(v.metric),
+    comparator: comparatorUiToBackend(v.condition),
+    threshold: v.threshold,
+    duration: v.duration,
+    severity: severityUiToBackend(v.severity),
+    enabled: v.enabled,
+  };
+  
+  // serverId是必需的，使用用户选择的第一个服务器
+  if (v.hostIds && v.hostIds.length > 0) {
+    dto.serverId = parseInt(v.hostIds[0]);
+  } else {
+    // 如果没有选择服务器，抛出错误或使用默认值
+    throw new Error('必须选择至少一个目标服务器');
+  }
+  
+  return dto;
+};
 
 const toUpdateDto = (v: AlertRuleFormValues): Partial<AlertRuleDto> => toCreateDto(v);
 

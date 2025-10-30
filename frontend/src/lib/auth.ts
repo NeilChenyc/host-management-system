@@ -132,6 +132,29 @@ export class AuthManager {
     if (user) this.setUser(user);
     return data;
   }
+
+  // ===== 注册 =====
+  static async register(userData: { username: string; email: string; password: string; role: string }): Promise<{ success: boolean; message?: string } & Json> {
+    // Backend expects /api/auth/signup with body { username, email, password, role }
+    const res = await fetch(`${API_BASE_URL}/api/auth/signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userData),
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      try {
+        const j = JSON.parse(text);
+        return { success: false, message: j.message || res.statusText };
+      } catch {
+        return { success: false, message: text || res.statusText };
+      }
+    }
+
+    const data = (await res.json()) as { message?: string } & Json;
+    return { success: true, message: data.message || 'Registration successful' };
+  }
 }
 
 export default AuthManager;

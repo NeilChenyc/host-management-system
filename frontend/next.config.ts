@@ -7,7 +7,7 @@ import type { NextConfig } from 'next';
  * NEXT_PUBLIC_API_PREFIX:  前端调用 API 的统一前缀（通常为 /api）
  * =========================================================== */
 const BACKEND_ORIGIN =
-  process.env.BACKEND_ORIGIN || 'http://localhost:8081'; // 后端地址
+  process.env.BACKEND_ORIGIN || 'http://localhost:8080'; // 后端地址
 const API_PREFIX =
   process.env.NEXT_PUBLIC_API_PREFIX?.startsWith('/')
     ? process.env.NEXT_PUBLIC_API_PREFIX

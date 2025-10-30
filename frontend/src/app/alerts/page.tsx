@@ -59,7 +59,7 @@ type AlertInstance = {
   serverId: string;
   serverName: string;
   metric: string;
-  currentValue: number;
+  triggeredValue: number; // 重命名为更准确的字段名
   threshold: number;
   severity: 'low' | 'medium' | 'high' | 'critical';
   status: 'active' | 'resolved' | 'acknowledged' | 'suppressed';
@@ -163,22 +163,34 @@ export default function AlertsPage() {
   const loadEvents = async () => {
     try {
       const data = await apiFetch<any[]>('/alert-events');
-      const mapped: AlertInstance[] = (data || []).map((e) => ({
-        id: String(e.eventId ?? ''),
-        ruleId: String(e.ruleId ?? ''),
-        ruleName: e.ruleName || 'Unknown',
-        serverId: String(e.serverId ?? ''),
-        serverName: `Server ${e.serverId}`,
-        metric: e.metricName || 'cpu',
-        currentValue: Number(e.currentValue ?? 0),
-        threshold: Number(e.threshold ?? 0),
-        severity: (String(e.severity || 'low').toLowerCase() as 'low' | 'medium' | 'high' | 'critical'),
-        status: mapBackendStatusToFrontend(e.status),
-        message: e.message || '',
-        triggeredAt: e.startedAt || new Date().toISOString(),
-        resolvedAt: e.endedAt,
-        projects: e.projects || [],
-      }));
+      
+      const mapped: AlertInstance[] = (data || []).map((e) => {
+        // 直接使用后端返回的 serverId 和 serverName
+        const serverIdStr = e.serverId != null ? String(e.serverId) : '';
+        const serverName = e.serverName || (e.serverId != null ? `Server ${e.serverId}` : 'Unknown Server');
+
+        // 直接使用后端返回的 ruleId（从 eventId 推断或其他字段）
+        const ruleIdRaw = e.ruleId ?? e.rule?.ruleId ?? e.rule?.id;
+        const ruleIdStr = ruleIdRaw != null ? String(ruleIdRaw) : '';
+
+        return {
+          id: String(e.eventId ?? e.id ?? ''),
+          ruleId: ruleIdStr,
+          ruleName: e.ruleName ?? 'Unknown',
+          serverId: serverIdStr,
+          serverName,
+          metric: e.metricName || 'cpu',
+          triggeredValue: Number(e.triggeredValue ?? e.currentValue ?? 0),
+          // 直接使用后端返回的 threshold
+          threshold: Number(e.threshold ?? 0),
+          severity: (String(e.severity || 'low').toLowerCase() as 'low' | 'medium' | 'high' | 'critical'),
+          status: mapBackendStatusToFrontend(e.status),
+          message: e.summary || e.message || '',
+          triggeredAt: e.startedAt || new Date().toISOString(),
+          resolvedAt: e.resolvedAt,
+          projects: e.projects || [],
+        };
+      });
       setEvents(mapped);
     } catch (e: any) {
       message.error(e.message || '加载告警事件失败');
@@ -194,10 +206,63 @@ export default function AlertsPage() {
     }
   };
 
+  // Acknowledge alert event
+  const acknowledgeEvent = async (eventId: string) => {
+    try {
+      await apiFetch(`/alert-events/${eventId}/acknowledge`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      
+      // 更新本地状态
+      setEvents(prevEvents => 
+        prevEvents.map(event => 
+          event.id === eventId 
+            ? { ...event, status: 'acknowledged' as const, acknowledgedAt: new Date().toISOString() }
+            : event
+        )
+      );
+      
+      setTimeout(() => {
+        message.success('告警已确认');
+      }, 0);
+    } catch (e: any) {
+      setTimeout(() => {
+        message.error(e.message || '确认告警失败');
+      }, 0);
+    }
+  };
+
+  // Resolve alert event (标记为已解决，不删除，仅设置resolvedAt)
+  const resolveEvent = async (eventId: string) => {
+    try {
+      await apiFetch(`/alert-events/${eventId}/resolve`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      // 更新本地状态：标记为已解决，并填充resolvedAt
+      setEvents((prev) =>
+        prev.map((evt) =>
+          evt.id === eventId
+            ? { ...evt, status: 'resolved', resolvedAt: new Date().toISOString() }
+            : evt
+        )
+      );
+
+      message.success('Alert marked as resolved');
+    } catch (e: any) {
+      message.error(e.message || 'Failed to resolve alert');
+    }
+  };
+
   useEffect(() => {
-    loadRules();
-    loadEvents();
-    loadServers();
+    const loadData = async () => {
+      await loadServers(); // 先加载服务器列表
+      await loadRules();
+      await loadEvents(); // 然后加载事件，这样可以正确显示服务器名称
+    };
+    loadData();
   }, []);
 
   /** ===== 表格列定义 ===== */
@@ -231,15 +296,36 @@ export default function AlertsPage() {
       {
         title: 'Value',
         key: 'value',
-        render: (_: any, r: AlertInstance) => (
-          <div>
-            <span style={{ fontWeight: 600, color: r.currentValue > r.threshold ? '#ff4d4f' : '#52c41a' }}>
-              {r.currentValue}%
+        render: (_: any, record: AlertInstance) => {
+          const formatValue = (value: number, metric: string) => {
+            if (metric === 'cpu' || metric === 'memory' || metric === 'disk') {
+              return `${value.toFixed(1)}%`;
+            } else if (metric === 'temperature') {
+              return `${value.toFixed(1)}°C`;
+            } else if (metric === 'network_in' || metric === 'network_out') {
+              return `${(value / 1024 / 1024).toFixed(2)} MB/s`;
+            } else {
+              return value.toFixed(2);
+            }
+          };
+
+          const triggeredValueFormatted = formatValue(record.triggeredValue, record.metric);
+          const thresholdFormatted = formatValue(record.threshold, record.metric);
+          // 颜色：超阈值或处于激活态时显示红色，已确认为橙色，已解决为绿色
+          const breached = record.threshold > 0 && record.triggeredValue >= record.threshold;
+          const color = record.status === 'active' || breached
+            ? '#f5222d'
+            : record.status === 'acknowledged'
+            ? '#faad14'
+            : '#52c41a';
+          
+          return (
+            <span style={{ color }}>
+              {triggeredValueFormatted} / {thresholdFormatted}
             </span>
-            <span style={{ color: '#666' }}> / {r.threshold}%</span>
-          </div>
-        ),
-        width: 140,
+          );
+        },
+        width: 150,
       },
       {
         title: 'Triggered',
@@ -248,6 +334,65 @@ export default function AlertsPage() {
           <Tooltip title={dayjs(t).format('YYYY-MM-DD HH:mm:ss')}>{dayjs(t).fromNow()}</Tooltip>
         ),
         width: 170,
+      },
+      {
+        title: 'Actions',
+        key: 'actions',
+        render: (_: any, record: AlertInstance) => (
+          <Space>
+            {record.status === 'active' && (
+              <>
+                <Button
+                  type="primary"
+                  size="small"
+                  icon={<CheckCircleOutlined />}
+                  onClick={() => acknowledgeEvent(record.id)}
+                >
+                  Acknowledge
+                </Button>
+                <Popconfirm
+                  title="确定要标记为已解决吗？"
+                  onConfirm={() => resolveEvent(record.id)}
+                  okText="确定"
+                  cancelText="取消"
+                >
+                  <Button
+                    type="default"
+                    size="small"
+                    danger
+                    icon={<DeleteOutlined />}
+                  >
+                    Resolve
+                  </Button>
+                </Popconfirm>
+              </>
+            )}
+            {record.status === 'acknowledged' && (
+              <>
+                <Tag color="orange">Acknowledged</Tag>
+                <Popconfirm
+                  title="确定要标记为已解决吗？"
+                  onConfirm={() => resolveEvent(record.id)}
+                  okText="确定"
+                  cancelText="取消"
+                >
+                  <Button
+                    type="default"
+                    size="small"
+                    danger
+                    icon={<DeleteOutlined />}
+                  >
+                    Resolve
+                  </Button>
+                </Popconfirm>
+              </>
+            )}
+            {record.status === 'resolved' && (
+              <Tag color="green">Resolved</Tag>
+            )}
+          </Space>
+        ),
+        width: 200,
       },
     ],
     []

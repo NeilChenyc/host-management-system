@@ -592,7 +592,7 @@ export default function ProjectsPage() {
             showSizeChanger: true,
             showQuickJumper: true,
             showTotal: (total, range) =>
-              `第 ${range[0]}-${range[1]} 条，共 ${total} 条记录`,
+              ` ${range[0]}-${range[1]} of ${total} items`,
           }}
           scroll={{ x: 1200 }}
         />

@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Form, Input, Button, Card, message, Checkbox, Divider, Alert } from 'antd';
 import { UserOutlined, LockOutlined, EyeInvisibleOutlined, EyeTwoTone } from '@ant-design/icons';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import AuthManager from '@/lib/auth';
 
 interface LoginFormData {
@@ -25,6 +26,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, loading = false }) => {
   
   // Message API for React 19 compatibility
   const [messageApi, contextHolder] = message.useMessage();
+  const router = useRouter();
 
   /**
    * 处理登录表单提交
@@ -51,8 +53,8 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, loading = false }) => {
         onLogin(values);
       }
       
-      // Redirect to main page
-      window.location.href = '/';
+      // Redirect to main page using Next.js router
+      router.push('/');
     } catch (error) {
       // 捕获到异常（例如网络错误或服务器异常）
       setLoginError('Login failed due to a network or server error. Please try again.');

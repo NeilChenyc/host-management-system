@@ -7,8 +7,10 @@ import java.time.LocalDateTime;
  */
 public class AlertEventResponseDto {
     private Long eventId;
+    private Long serverId;
     private String serverName;
     private String ruleName;
+    private Double threshold;
     private String status;
     private LocalDateTime startedAt;
     private LocalDateTime resolvedAt;
@@ -28,6 +30,14 @@ public class AlertEventResponseDto {
         this.eventId = eventId;
     }
 
+    public Long getServerId() {
+        return serverId;
+    }
+
+    public void setServerId(Long serverId) {
+        this.serverId = serverId;
+    }
+
     public String getServerName() {
         return serverName;
     }
@@ -42,6 +52,14 @@ public class AlertEventResponseDto {
 
     public void setRuleName(String ruleName) {
         this.ruleName = ruleName;
+    }
+
+    public Double getThreshold() {
+        return threshold;
+    }
+
+    public void setThreshold(Double threshold) {
+        this.threshold = threshold;
     }
 
     public String getStatus() {

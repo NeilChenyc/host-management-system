@@ -25,7 +25,7 @@ server_identification:
 # Metrics collection settings
 metrics:
   # Collection interval in seconds (minimum: 1, recommended: 5-60)
-  interval_seconds: 5
+interval_seconds: 20
   
   # Disk mount point to monitor (default: root filesystem)
   disk_mount: "/"
@@ -36,3 +36,8 @@ metrics:
   # Network interface to monitor (null = all interfaces combined)
   # Examples: "eth0", "ens33", "wlan0", null
   network_interface: null
+  
+  # Display network metrics as percentage of bandwidth (true) or absolute MB/s (false)
+  # When true, the agent will attempt to detect interface bandwidth and show usage as percentage
+  # When false or bandwidth detection fails, shows absolute values in MB/s
+  network_as_percentage: true

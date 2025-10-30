@@ -43,6 +43,7 @@ import ServerApiService, {
   Device, 
   MetricSummary, 
   MetricRange, 
+  MetricData,
   LatestMetric 
 } from '../../../services/serverApi';
 import MainLayout from '../../../components/MainLayout';
@@ -75,7 +76,7 @@ const ServerDetailPage: React.FC = () => {
   const [server, setServer] = useState<Device | null>(null);
   const [latestMetrics, setLatestMetrics] = useState<LatestMetric[]>([]);
   const [metricsSummary, setMetricsSummary] = useState<MetricSummary[]>([]);
-  const [metricsRange, setMetricsRange] = useState<MetricRange[]>([]);
+  const [metricsRange, setMetricsRange] = useState<MetricData[]>([]);
   const [chartData, setChartData] = useState<ChartMetricData[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -214,7 +215,7 @@ const ServerDetailPage: React.FC = () => {
     
     try {
       setLoading(true);
-      const range = await ServerApiService.getServerMetricsRange(serverId, startTime, endTime);
+      const range = await ServerApiService.getServerMetrics(serverId, 1000);
       // Ensure range is in array format
       setMetricsRange(Array.isArray(range) ? range : []);
       if (Array.isArray(range) && range.length > 0) {
@@ -795,36 +796,13 @@ const ServerDetailPage: React.FC = () => {
             </div>
             {metricsRange.length > 0 ? (
               <div>
-                {metricsRange.map((range) => (
-                  <Card
-                    key={range.metricType}
-                    title={range.metricType}
-                    style={{ marginBottom: 16 }}
-                  >
-                    <Text type="secondary">
-                      Time Range: {new Date(range.startTime).toLocaleString()} - {new Date(range.endTime).toLocaleString()}
-                    </Text>
-                    <Table
-                      dataSource={range.data}
-                      columns={[
-                        {
-                          title: 'Time',
-                          dataIndex: 'timestamp',
-                          key: 'timestamp',
-                          render: (timestamp: string) => new Date(timestamp).toLocaleString(),
-                        },
-                        {
-                          title: 'Value',
-                          dataIndex: 'value',
-                          key: 'value',
-                        },
-                      ]}
-                      rowKey="timestamp"
-                      pagination={{ pageSize: 10 }}
-                      size="small"
-                    />
-                  </Card>
-                ))}
+                <Alert
+                  message="Historical Data Loaded"
+                  description={`Found ${metricsRange.length} metric records`}
+                  type="success"
+                  style={{ marginBottom: 16 }}
+                />
+                {/* TODO: Implement proper historical data visualization */}
               </div>
             ) : (
               <div style={{ textAlign: 'center', padding: '50px' }}>

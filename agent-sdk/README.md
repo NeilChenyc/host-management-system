@@ -52,10 +52,16 @@ This SDK also supports an “adapter layer” to integrate common monitoring too
 - CPU: `cpu_usage` (percentage)
 - Memory: `memory_usage` (percentage)
 - Disk: `disk_usage` (percentage; default mount `/`, configurable)
-- Network: `network_in`, `network_out` (MB/s, derived from sampling interval)
+- Network: `network_in`, `network_out` (percentage of bandwidth or MB/s, configurable)
 - Load: `load_avg` (1-minute average)
 - Temperature: `temperature` (may be unavailable on some cloud hosts; empty is fine)
 - Timestamp: `collected_at` (written by Agent)
+
+**Network Monitoring Features**
+- **Bandwidth Detection**: Automatically detects network interface bandwidth on Linux (via ethtool or /sys), macOS, and Windows
+- **Percentage Mode**: When `network_as_percentage: true`, displays network usage as percentage of detected bandwidth
+- **Fallback Mode**: When bandwidth detection fails or `network_as_percentage: false`, shows absolute values in MB/s
+- **Interface Selection**: Monitor specific interface or all interfaces combined via `network_interface` setting
 
 Field names and table mapping follow the entity classes: `ServerMetrics` maps to `server_metrics` with columns `server_id`, `cpu_usage`, `memory_usage`, `disk_usage`, `network_in`, `network_out`, `load_avg`, `temperature`, `collected_at`. `Server` maps to `servers`, including `server_name`, `ip_address`, etc.
 

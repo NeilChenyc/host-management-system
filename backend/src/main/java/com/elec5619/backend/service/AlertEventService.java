@@ -37,6 +37,8 @@ public interface AlertEventService {
 
     AlertEvent resolveAlertEvent(Long eventId);
 
+    AlertEvent acknowledgeAlertEvent(Long eventId);
+
     List<AlertEvent> getAlertEventsWithFilters(Long ruleId, Long serverId, String status,
                                                LocalDateTime startTime, LocalDateTime endTime);
 

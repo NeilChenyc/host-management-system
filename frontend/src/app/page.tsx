@@ -14,10 +14,10 @@ export default function Home() {
     
     if (isAuth) {
       // 如果已登录，跳转到dashboard
-      router.push('/dashboard');
+      router.replace('/dashboard'); // 使用 replace 而不是 push
     } else {
       // 如果未登录，跳转到登录页
-      router.push('/auth/login');
+      router.replace('/auth/login'); // 使用 replace 而不是 push
     }
   }, []); // 移除router依赖，只在组件挂载时执行一次
 

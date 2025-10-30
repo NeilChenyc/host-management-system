@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.elec5619.backend.dto.UserRegistrationDto;
 import com.elec5619.backend.dto.UserResponseDto;
+import com.elec5619.backend.dto.UserUpdateDto;
 import com.elec5619.backend.entity.User;
 import com.elec5619.backend.repository.UserRepository;
 
@@ -149,6 +150,51 @@ public class UserService {
         dto.setRole(user.getRole());
         
         return dto;
+    }
+
+    /**
+     * Update user information
+     * @param userId User ID
+     * @param updateDto User update data
+     * @return Optional containing updated user if successful
+     */
+    @Transactional
+    public Optional<UserResponseDto> updateUserInfo(Long userId, UserUpdateDto updateDto) {
+        return userRepository.findById(userId)
+                .map(user -> {
+                    // Verify current password if new password is provided
+                    if (updateDto.getNewPassword() != null && !updateDto.getNewPassword().trim().isEmpty()) {
+                        if (updateDto.getCurrentPassword() == null || 
+                            !passwordEncoder.matches(updateDto.getCurrentPassword(), user.getPasswordHash())) {
+                            throw new IllegalArgumentException("Current password is incorrect");
+                        }
+                        // Update password
+                        user.setPasswordHash(passwordEncoder.encode(updateDto.getNewPassword()));
+                    }
+                    
+                    // Update username if provided
+                    if (updateDto.getUsername() != null && !updateDto.getUsername().trim().isEmpty()) {
+                        // Check if username already exists (excluding current user)
+                        Optional<User> existingUser = userRepository.findByUsername(updateDto.getUsername());
+                        if (existingUser.isPresent() && !existingUser.get().getId().equals(userId)) {
+                            throw new IllegalArgumentException("Username already exists");
+                        }
+                        user.setUsername(updateDto.getUsername());
+                    }
+                    
+                    // Update email if provided
+                    if (updateDto.getEmail() != null && !updateDto.getEmail().trim().isEmpty()) {
+                        // Check if email already exists (excluding current user)
+                        Optional<User> existingUser = userRepository.findByEmail(updateDto.getEmail());
+                        if (existingUser.isPresent() && !existingUser.get().getId().equals(userId)) {
+                            throw new IllegalArgumentException("Email already exists");
+                        }
+                        user.setEmail(updateDto.getEmail());
+                    }
+                    
+                    User savedUser = userRepository.save(user);
+                    return convertToUserResponseDto(savedUser);
+                });
     }
 
     /**

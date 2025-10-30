@@ -56,7 +56,7 @@ export default function ServersPage() {
   
   // 组件挂载时加载服务器列表
   useEffect(() => {
-    loadServers(true); // 首次加载时显示消息
+    loadServers(false); 
   }, []);
 
   // 加载服务器列表
@@ -67,15 +67,13 @@ export default function ServersPage() {
       const serverList = await serverCache.getServers(forceRefresh);
       setDevices(serverList);
       setFilteredDevices(serverList);
-      // 使用缓存的消息控制机制
-      if (showMessage && serverCache.shouldShowMessage()) {
-        messageApi.success(`成功加载 ${serverList.length} 台服务器`);
-      }
     } catch (error) {
       console.error('Failed to load servers:', error);
       const errorMessage = error instanceof Error ? error.message : '加载服务器列表失败';
       setError(errorMessage);
-      messageApi.error(errorMessage);
+      setTimeout(() => {
+        messageApi.error(errorMessage);
+      }, 0);
     } finally {
       setLoading(false);
     }
@@ -195,6 +193,22 @@ export default function ServersPage() {
       dataIndex: 'lastUpdate',
       key: 'lastUpdate',
       sorter: (a, b) => new Date(a.lastUpdate).getTime() - new Date(b.lastUpdate).getTime(),
+      render: (timestamp: string) => {
+        if (!timestamp) return '-';
+        try {
+          return new Date(timestamp).toLocaleString('en-US', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+          });
+        } catch (error) {
+          return timestamp; // 如果解析失败，显示原始值
+        }
+      },
     },
     {
       title: 'Actions',
@@ -273,8 +287,11 @@ export default function ServersPage() {
   // Refresh handler
   const handleRefresh = async () => {
     serverCache.resetMessageFlag(); // 重置消息标志
-    await loadServers(true, true); // 刷新时显示消息并强制刷新
-    messageApi.success('服务器列表已刷新');
+    await loadServers(false, true); // 刷新时强制刷新，不显示加载消息
+    // 使用 setTimeout 避免在渲染过程中调用消息API
+    setTimeout(() => {
+      messageApi.success('服务器列表已刷新');
+    }, 0);
   };
 
   // Add device handler
@@ -296,13 +313,17 @@ export default function ServersPage() {
     setLoading(true);
     try {
       await ServerApiService.deleteServer(id);
-      messageApi.success('服务器删除成功');
+      setTimeout(() => {
+        messageApi.success('服务器删除成功');
+      }, 0);
       // 重新加载服务器列表
       await loadServers();
     } catch (error) {
       console.error('Failed to delete server:', error);
       const errorMessage = error instanceof Error ? error.message : '删除服务器失败';
-      messageApi.error(errorMessage);
+      setTimeout(() => {
+        messageApi.error(errorMessage);
+      }, 0);
     } finally {
       setLoading(false);
     }
@@ -317,11 +338,15 @@ export default function ServersPage() {
       if (editingDevice) {
         // Edit mode - 更新服务器
         await ServerApiService.updateServer(editingDevice.id, values);
-        messageApi.success('服务器更新成功');
+        setTimeout(() => {
+          messageApi.success('服务器更新成功');
+        }, 0);
       } else {
         // Add mode - 创建新服务器
         await ServerApiService.createServer(values);
-        messageApi.success('服务器添加成功');
+        setTimeout(() => {
+          messageApi.success('服务器添加成功');
+        }, 0);
       }
       
       // 重新加载服务器列表
@@ -331,7 +356,9 @@ export default function ServersPage() {
     } catch (error) {
       console.error('Failed to save server:', error);
       const errorMessage = error instanceof Error ? error.message : '保存服务器失败';
-      messageApi.error(errorMessage);
+      setTimeout(() => {
+        messageApi.error(errorMessage);
+      }, 0);
     } finally {
       setLoading(false);
     }
@@ -418,7 +445,7 @@ export default function ServersPage() {
             showSizeChanger: true,
             showQuickJumper: true,
             showTotal: (total, range) =>
-              `第 ${range[0]}-${range[1]} 条，共 ${total} 条记录`,
+              ` ${range[0]}-${range[1]} of ${total} items`,
           }}
           scroll={{ x: 1200 }}
         />
@@ -568,7 +595,19 @@ export default function ServersPage() {
             </Row>
             <Row gutter={[16, 16]}>
               <Col span={24}>
-                <strong>Last Update:</strong> {selectedDevice.lastUpdate}
+                <strong>Last Update:</strong> {
+                  selectedDevice.lastUpdate 
+                    ? new Date(selectedDevice.lastUpdate).toLocaleString('en-US', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: false
+                      })
+                    : '-'
+                }
               </Col>
             </Row>
           </div>

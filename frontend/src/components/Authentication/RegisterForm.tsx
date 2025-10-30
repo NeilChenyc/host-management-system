@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Form, Input, Button, Card, Modal, Divider, message, Select } from 'antd';
 import { UserOutlined, LockOutlined, MailOutlined, EyeInvisibleOutlined, EyeTwoTone, TeamOutlined } from '@ant-design/icons';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { AuthManager } from '@/lib/auth';
 
 interface RegisterFormData {
@@ -23,6 +24,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onRegister, loading = false
   const [isLoading, setIsLoading] = useState(false);
   // 使用 antd v5 的 useMessage，在组件树中提供上下文，确保提示在所有环境下可见
   const [messageApi, contextHolder] = message.useMessage();
+  const router = useRouter();
 
   /**
    * 处理注册提交逻辑（成功时不弹窗）：
@@ -56,7 +58,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onRegister, loading = false
         // 成功后仅使用轻提示，然后自动跳转到登录页
         messageApi.success(result.message || 'Registration successful! Please sign in.');
         setTimeout(() => {
-          window.location.href = '/auth/login';
+          router.push('/auth/login');
         }, 2000);
       } else {
         // 使用 Modal 弹窗展示后端返回的错误信息，帮助用户理解失败原因

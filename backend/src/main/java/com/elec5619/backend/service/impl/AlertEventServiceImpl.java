@@ -61,6 +61,7 @@ public class AlertEventServiceImpl implements AlertEventService {
     private AlertEventResponseDto convertToResponseDto(AlertEvent event) {
         AlertEventResponseDto dto = new AlertEventResponseDto();
         dto.setEventId(event.getEventId());
+        dto.setServerId(event.getServerId());
         dto.setStatus(event.getStatus());
         dto.setStartedAt(event.getStartedAt());
         dto.setResolvedAt(event.getResolvedAt());
@@ -74,9 +75,10 @@ public class AlertEventServiceImpl implements AlertEventService {
                     .ifPresent(server -> dto.setServerName(server.getServerName()));
         }
         
-        // Get rule name
+        // Get rule name and threshold
         if (event.getAlertRule() != null) {
             dto.setRuleName(event.getAlertRule().getRuleName());
+            dto.setThreshold(event.getAlertRule().getThreshold());
         }
         
         return dto;
@@ -140,6 +142,15 @@ public class AlertEventServiceImpl implements AlertEventService {
                 .orElseThrow(() -> new IllegalArgumentException("Alert event with ID " + eventId + " not found"));
         existingEvent.setStatus("resolved");
         existingEvent.setResolvedAt(LocalDateTime.now());
+        return alertEventRepository.save(existingEvent);
+    }
+
+    @Override
+    public AlertEvent acknowledgeAlertEvent(Long eventId) {
+        AlertEvent existingEvent = alertEventRepository.findById(eventId)
+                .orElseThrow(() -> new IllegalArgumentException("Alert event with ID " + eventId + " not found"));
+        existingEvent.setStatus("acknowledged");
+        // 注意：这里可以添加acknowledgedAt和acknowledgedBy字段，如果AlertEvent实体有这些字段的话
         return alertEventRepository.save(existingEvent);
     }
 

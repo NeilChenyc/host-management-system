@@ -53,7 +53,7 @@ export interface Device {
 // ---------- 前端指标类型 ----------
 export type MetricData = {
   timestamp: string;
-  metricType: 'CPU Usage' | 'Memory Usage' | 'Disk Usage' | 'Network In' | 'Temperature' | 'Load Average';
+  metricType: 'CPU Usage' | 'Memory Usage' | 'Disk Usage' | 'Network In' | 'Network Out' | 'Temperature' | 'Load Average';
   value: number;
 };
 
