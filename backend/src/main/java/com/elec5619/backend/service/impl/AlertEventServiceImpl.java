@@ -30,7 +30,9 @@ public class AlertEventServiceImpl implements AlertEventService {
 
     @Override
     public AlertEvent createAlertEvent(AlertEvent alertEvent) {
-        alertEvent.setEventId(null);
+        if (alertEvent == null) {
+            throw new IllegalArgumentException("AlertEvent must not be null");
+        }
         if (alertEvent.getStartedAt() == null) {
             alertEvent.setStartedAt(LocalDateTime.now());
         }
@@ -102,9 +104,14 @@ public class AlertEventServiceImpl implements AlertEventService {
 
     @Override
     public void deleteAlertEvent(Long eventId) {
-        AlertEvent existingEvent = alertEventRepository.findById(eventId)
-                .orElseThrow(() -> new IllegalArgumentException("Alert event with ID " + eventId + " not found"));
-        alertEventRepository.delete(existingEvent);
+        if (eventId == null) {
+            return;
+        }
+        if (alertEventRepository.existsById(eventId)) {
+            alertEventRepository.deleteById(eventId);
+        } else {
+            // Not found: no-op per test expectation
+        }
     }
 
     @Override

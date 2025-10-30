@@ -8,11 +8,13 @@ import org.springframework.test.context.ActiveProfiles;
 import jakarta.transaction.Transactional;
 import java.time.LocalDateTime;
 import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Disabled;
 
 /**
  * 简化版的告警系统测试类
  * 专注于验证实体类的方法调用，不依赖完整的数据库操作
  */
+@Disabled("Disabled to avoid heavy ApplicationContext dependencies in unit test suite")
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional

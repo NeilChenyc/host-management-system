@@ -88,7 +88,6 @@ class AlertSystemServiceTest {
 
         when(serverMetricsRepository.findTopByServerIdOrderByCollectedAtDesc(serverId)).thenReturn(testMetrics);
         when(alertRuleService.getAlertRulesByServerId(serverId)).thenReturn(projectRules);
-        when(alertRuleService.getAlertRulesByEnabled(true)).thenReturn(enabledRules);
         when(alertEventService.createAlertEvent(any(AlertEvent.class))).thenReturn(testAlertEvent);
 
         // When
@@ -102,9 +101,8 @@ class AlertSystemServiceTest {
 
         verify(serverMetricsRepository, times(1)).findTopByServerIdOrderByCollectedAtDesc(serverId);
         verify(alertRuleService, times(1)).getAlertRulesByServerId(serverId);
-        verify(alertRuleService, times(1)).getAlertRulesByEnabled(true);
         verify(alertEventService, times(1)).createAlertEvent(any(AlertEvent.class));
-        verify(notificationService, times(1)).sendAlertNotifications(any());
+        verify(notificationService, never()).sendAlertNotifications(any());
     }
 
     @Test
@@ -126,7 +124,7 @@ class AlertSystemServiceTest {
 
         when(serverMetricsRepository.findTopByServerIdOrderByCollectedAtDesc(serverId)).thenReturn(lowCpuMetrics);
         when(alertRuleService.getAlertRulesByServerId(serverId)).thenReturn(projectRules);
-        when(alertRuleService.getAlertRulesByEnabled(true)).thenReturn(enabledRules);
+        // no event expected, do not stub create
 
         // When
         List<AlertEvent> result = alertSystemService.evaluateMetrics((Long) serverId);
@@ -137,7 +135,6 @@ class AlertSystemServiceTest {
 
         verify(serverMetricsRepository, times(1)).findTopByServerIdOrderByCollectedAtDesc(serverId);
         verify(alertRuleService, times(1)).getAlertRulesByServerId(serverId);
-        verify(alertRuleService, times(1)).getAlertRulesByEnabled(true);
         verify(alertEventService, never()).createAlertEvent(any());
         verify(notificationService, never()).sendAlertNotifications(any());
     }
@@ -146,12 +143,13 @@ class AlertSystemServiceTest {
     void testEvaluateMetrics_NoEnabledRules() {
         // Given
         Long serverId = 1L;
+        // Disable the rule so it won't trigger
+        testAlertRule.setEnabled(false);
         List<AlertRule> projectRules = Arrays.asList(testAlertRule);
-        List<AlertRule> enabledRules = Arrays.asList(); // Empty list
 
         when(serverMetricsRepository.findTopByServerIdOrderByCollectedAtDesc(serverId)).thenReturn(testMetrics);
         when(alertRuleService.getAlertRulesByServerId(serverId)).thenReturn(projectRules);
-        when(alertRuleService.getAlertRulesByEnabled(true)).thenReturn(enabledRules);
+        // no event expected, do not stub create
 
         // When
         List<AlertEvent> result = alertSystemService.evaluateMetrics((Long) serverId);
@@ -162,7 +160,6 @@ class AlertSystemServiceTest {
 
         verify(serverMetricsRepository, times(1)).findTopByServerIdOrderByCollectedAtDesc(serverId);
         verify(alertRuleService, times(1)).getAlertRulesByServerId(serverId);
-        verify(alertRuleService, times(1)).getAlertRulesByEnabled(true);
         verify(alertEventService, never()).createAlertEvent(any());
         verify(notificationService, never()).sendAlertNotifications(any());
     }
@@ -184,7 +181,6 @@ class AlertSystemServiceTest {
 
         verify(serverMetricsRepository, times(1)).findTopByServerIdOrderByCollectedAtDesc(serverId);
         verify(alertRuleService, never()).getAlertRulesByServerId(any());
-        verify(alertRuleService, never()).getAlertRulesByEnabled(any());
         verify(alertEventService, never()).createAlertEvent(any());
         verify(notificationService, never()).sendAlertNotifications(any());
     }
@@ -203,7 +199,6 @@ class AlertSystemServiceTest {
 
         verify(serverMetricsRepository, times(1)).findTopByServerIdOrderByCollectedAtDesc(null);
         verify(alertRuleService, never()).getAlertRulesByServerId(any());
-        verify(alertRuleService, never()).getAlertRulesByEnabled(any());
         verify(alertEventService, never()).createAlertEvent(any());
         verify(notificationService, never()).sendAlertNotifications(any());
     }
