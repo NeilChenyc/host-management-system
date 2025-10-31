@@ -59,7 +59,7 @@ export default function UsersPage() {
   // Message API for React 19 compatibility
   const [messageApi, contextHolder] = message.useMessage();
   
-  // 权限检查：只有管理员可以访问
+  // Permission check: only administrators can access
   const currentUser = AuthManager.getUser();
   
   useEffect(() => {
@@ -69,9 +69,9 @@ export default function UsersPage() {
       return;
     }
     loadUsers();
-  }, []); // 移除依赖项，只在组件挂载时执行一次
+  }, []); // Run only once on component mount
 
-  // 如果不是管理员，不渲染页面内容
+  // If not admin, do not render page content
   if (!currentUser || currentUser.role !== 'admin') {
     return null;
   }
@@ -79,11 +79,11 @@ export default function UsersPage() {
   const userRole = currentUser?.role;
   const isAdmin = userRole === 'admin';
 
-  // 过滤用户列表
+  // Filter users list
   useEffect(() => {
     let filtered = users;
     
-    // 搜索过滤
+    // Search filter
     if (searchText) {
       filtered = filtered.filter(user =>
         user.username.toLowerCase().includes(searchText.toLowerCase()) ||
@@ -91,7 +91,7 @@ export default function UsersPage() {
       );
     }
     
-    // 角色过滤
+    // Role filter
     if (roleFilter !== 'all') {
       filtered = filtered.filter(user => user.role === roleFilter);
     }
@@ -105,7 +105,7 @@ export default function UsersPage() {
     try {
       const userList = await getAllUsers();
       setUsers(userList);
-      // 移除成功提示消息
+      // No success toast on load
     } catch (error) {
       console.error('Failed to load users:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to load user list';
@@ -116,7 +116,7 @@ export default function UsersPage() {
     }
   };
 
-  // 获取角色颜色
+  // Get role color
   const getRoleColor = (role: string) => {
     switch (role.toLowerCase()) {
       case 'admin':
@@ -130,7 +130,7 @@ export default function UsersPage() {
     }
   };
 
-  // 获取角色图标
+  // Get role icon
   const getRoleIcon = (role: string) => {
     switch (role.toLowerCase()) {
       case 'admin':
@@ -144,7 +144,7 @@ export default function UsersPage() {
     }
   };
 
-  // 获取角色显示名称
+  // Get role display name
   const getRoleDisplayName = (role: string) => {
     switch (role.toLowerCase()) {
       case 'admin':
@@ -158,13 +158,13 @@ export default function UsersPage() {
     }
   };
 
-  // 统计数据
+  // Statistics
   const totalUsers = users.length;
   const adminCount = users.filter(u => u.role === 'admin').length;
   const managerCount = users.filter(u => u.role === 'manager').length;
   const operatorCount = users.filter(u => u.role === 'operation').length;
 
-  // 表格列定义
+  // Table column definitions
   const columns: ColumnsType<UserResponseDto> = [
     {
       title: 'ID',
@@ -250,14 +250,14 @@ export default function UsersPage() {
     },
   ];
 
-  // 处理新建用户
+  // Handle create user
   const handleCreate = () => {
     setEditingUser(null);
     form.resetFields();
     setIsModalVisible(true);
   };
 
-  // 处理编辑用户
+  // Handle edit user
   const handleEdit = (user: UserResponseDto) => {
     setEditingUser(user);
     form.setFieldsValue({
@@ -268,7 +268,7 @@ export default function UsersPage() {
     setIsModalVisible(true);
   };
 
-  // 处理删除用户
+  // Handle delete user
   const handleDelete = async (userId: number) => {
     try {
       await deleteUser(userId);
@@ -281,7 +281,7 @@ export default function UsersPage() {
     }
   };
 
-  // 处理表单提交
+  // Handle form submission
   const handleSubmit = async (values: any) => {
     try {
       if (editingUser) {
@@ -312,7 +312,7 @@ export default function UsersPage() {
     <MainLayout>
       {contextHolder}
       <div style={{ padding: '24px' }}>
-        {/* 页面标题和操作按钮 */}
+        {/* Page title and action buttons */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
           <h1 style={{ margin: 0, fontSize: '24px', fontWeight: 'bold' }}>User Management</h1>
           <Space>
@@ -335,7 +335,7 @@ export default function UsersPage() {
           </Space>
         </div>
 
-        {/* 统计卡片 */}
+        {/* Statistics cards */}
         <Row gutter={16} style={{ marginBottom: '24px' }}>
           <Col span={6}>
             <Card>
@@ -383,7 +383,7 @@ export default function UsersPage() {
           </Col>
         </Row>
 
-        {/* 搜索和筛选 */}
+        {/* Search and filter */}
         <div style={{ marginBottom: '16px', display: 'flex', gap: '16px', alignItems: 'center' }}>
           <Input
             placeholder="Search by username or email"

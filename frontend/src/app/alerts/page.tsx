@@ -51,7 +51,7 @@ dayjs.extend(relativeTime);
 const { Option } = Select;
 const { TextArea } = Input;
 
-/** ============ Alert Event 类型 ============ */
+/** ============ Alert Event Types ============ */
 type AlertInstance = {
   id: string;
   ruleId: string;
@@ -59,7 +59,7 @@ type AlertInstance = {
   serverId: string;
   serverName: string;
   metric: string;
-  triggeredValue: number; // 重命名为更准确的字段名
+  triggeredValue: number; // Renamed to a more accurate field name
   threshold: number;
   severity: 'low' | 'medium' | 'high' | 'critical';
   status: 'active' | 'resolved' | 'acknowledged' | 'suppressed';
@@ -72,7 +72,7 @@ type AlertInstance = {
   projects?: string[];
 };
 
-/** ============ 通用请求函数（带 Token & 401 处理） ============ */
+/** ============ Common request helper (with token & 401 handling) ============ */
 const apiFetch = async <T,>(url: string, init?: RequestInit): Promise<T> => {
   const res = await AuthManager.fetchWithAuth<T>(`/api${url}`, {
     ...init,
@@ -85,7 +85,7 @@ const apiFetch = async <T,>(url: string, init?: RequestInit): Promise<T> => {
   return res;
 };
 
-/** ============ 工具函数 ============ */
+/** ============ Utility functions ============ */
 const mapBackendStatusToFrontend = (s: string): AlertInstance['status'] => {
   const map: Record<string, AlertInstance['status']> = {
     firing: 'active',
@@ -118,24 +118,24 @@ const metricIcon = (m: string) => {
 
 type ServerLite = { id: number; serverName: string; ipAddress: string };
 
-/** ============ 页面组件 ============ */
+/** ============ Page component ============ */
 export default function AlertsPage() {
-  // 规则与事件
+  // Rules & events
   const [rules, setRules] = useState<UiAlertRule[]>([]);
   const [events, setEvents] = useState<AlertInstance[]>([]);
   const [servers, setServers] = useState<ServerLite[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // 弹窗 & 表单
+  // Modal & form
   const [ruleModalOpen, setRuleModalOpen] = useState(false);
   const [editing, setEditing] = useState<UiAlertRule | null>(null);
   const [form] = Form.useForm<AlertRuleFormValues>();
 
-  // 过滤条件
+  // Filters
   const [filterStatus, setFilterStatus] = useState<'all' | AlertInstance['status']>('all');
   const [filterSeverity, setFilterSeverity] = useState<'all' | 'low' | 'medium' | 'high' | 'critical'>('all');
 
-  // 分页状态
+  // Pagination state
   const [eventsPagination, setEventsPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -147,31 +147,31 @@ export default function AlertsPage() {
     total: 0,
   });
 
-  // 通知通道（示例数据）
+  // Notification channels (sample data)
   const [channels] = useState([
     { id: 'channel-001', name: 'Admin Email', type: 'email', createdAt: new Date().toISOString(), enabled: true },
     { id: 'channel-002', name: 'Ops Slack', type: 'slack', createdAt: new Date().toISOString(), enabled: true },
   ]);
 
-  // 统计
+  // Stats
   const activeAlerts = events.filter((e) => e.status === 'active').length;
   const criticalAlerts = events.filter((e) => e.severity === 'critical' && e.status === 'active').length;
   const acknowledgedAlerts = events.filter((e) => e.status === 'acknowledged').length;
   const enabledRules = rules.filter((r) => r.enabled).length;
 
-  /** ===== 数据加载 ===== */
+  /** ===== Data loading ===== */
   const loadRules = async () => {
     setLoading(true);
     try {
       const list = await AlertRuleApiService.getAllAlertRules();
       setRules(list);
-      // 更新分页状态
+      // Update pagination state
       setRulesPagination(prev => ({
         ...prev,
         total: list.length,
       }));
     } catch (e: any) {
-      message.error(e.message || '加载规则失败');
+      message.error(e.message || 'Failed to load rules');
     } finally {
       setLoading(false);
     }
@@ -182,11 +182,11 @@ export default function AlertsPage() {
       const data = await apiFetch<any[]>('/alert-events');
       
       const mapped: AlertInstance[] = (data || []).map((e) => {
-        // 直接使用后端返回的 serverId 和 serverName
+        // Use serverId and serverName from backend response directly
         const serverIdStr = e.serverId != null ? String(e.serverId) : '';
         const serverName = e.serverName || (e.serverId != null ? `Server ${e.serverId}` : 'Unknown Server');
 
-        // 直接使用后端返回的 ruleId（从 eventId 推断或其他字段）
+        // Use ruleId from backend response (derived from eventId or other fields)
         const ruleIdRaw = e.ruleId ?? e.rule?.ruleId ?? e.rule?.id;
         const ruleIdStr = ruleIdRaw != null ? String(ruleIdRaw) : '';
 
@@ -198,7 +198,7 @@ export default function AlertsPage() {
           serverName,
           metric: e.metricName || 'cpu',
           triggeredValue: Number(e.triggeredValue ?? e.currentValue ?? 0),
-          // 直接使用后端返回的 threshold
+          // Use threshold from backend response directly
           threshold: Number(e.threshold ?? 0),
           severity: (String(e.severity || 'low').toLowerCase() as 'low' | 'medium' | 'high' | 'critical'),
           status: mapBackendStatusToFrontend(e.status),
@@ -209,13 +209,13 @@ export default function AlertsPage() {
         };
       });
       setEvents(mapped);
-      // 更新分页状态
+      // Update pagination state
       setEventsPagination(prev => ({
         ...prev,
         total: mapped.length,
       }));
     } catch (e: any) {
-      message.error(e.message || '加载告警事件失败');
+      message.error(e.message || 'Failed to load alert events');
     }
   };
 
@@ -224,7 +224,7 @@ export default function AlertsPage() {
       const list = await apiFetch<ServerLite[]>('/servers');
       setServers(list || []);
     } catch {
-      // 忽略服务器列表错误
+      // Ignore server list errors
     }
   };
 
@@ -236,7 +236,7 @@ export default function AlertsPage() {
         headers: { 'Content-Type': 'application/json' },
       });
       
-      // 更新本地状态
+      // Update local state
       setEvents(prevEvents => 
         prevEvents.map(event => 
           event.id === eventId 
@@ -246,16 +246,16 @@ export default function AlertsPage() {
       );
       
       setTimeout(() => {
-        message.success('告警已确认');
+        message.success('Alert acknowledged');
       }, 0);
     } catch (e: any) {
       setTimeout(() => {
-        message.error(e.message || '确认告警失败');
+        message.error(e.message || 'Failed to acknowledge alert');
       }, 0);
     }
   };
 
-  // Resolve alert event (标记为已解决，不删除，仅设置resolvedAt)
+  // Resolve alert event (mark as resolved, do not delete, only set resolvedAt)
   const resolveEvent = async (eventId: string) => {
     try {
       await apiFetch(`/alert-events/${eventId}/resolve`, {
@@ -263,7 +263,7 @@ export default function AlertsPage() {
         headers: { 'Content-Type': 'application/json' },
       });
 
-      // 更新本地状态：标记为已解决，并填充resolvedAt
+      // Update local state: mark as resolved and set resolvedAt
       setEvents((prev) =>
         prev.map((evt) =>
           evt.id === eventId
@@ -280,14 +280,14 @@ export default function AlertsPage() {
 
   useEffect(() => {
     const loadData = async () => {
-      await loadServers(); // 先加载服务器列表
+      await loadServers(); // Load servers first
       await loadRules();
-      await loadEvents(); // 然后加载事件，这样可以正确显示服务器名称
+      await loadEvents(); // Then load events to correctly show server names
     };
     loadData();
   }, []);
 
-  /** ===== 表格列定义 ===== */
+  /** ===== Table column definitions ===== */
   const eventColumns = useMemo(
     () => [
       {
@@ -333,7 +333,7 @@ export default function AlertsPage() {
 
           const triggeredValueFormatted = formatValue(record.triggeredValue, record.metric);
           const thresholdFormatted = formatValue(record.threshold, record.metric);
-          // 颜色：超阈值或处于激活态时显示红色，已确认为橙色，已解决为绿色
+          // Color: red when breached or active, orange when acknowledged, green when resolved
           const breached = record.threshold > 0 && record.triggeredValue >= record.threshold;
           const color = record.status === 'active' || breached
             ? '#f5222d'
@@ -373,10 +373,10 @@ export default function AlertsPage() {
                   Acknowledge
                 </Button>
                 <Popconfirm
-                  title="确定要标记为已解决吗？"
+                  title="Are you sure to mark as resolved?"
                   onConfirm={() => resolveEvent(record.id)}
-                  okText="确定"
-                  cancelText="取消"
+                  okText="Yes"
+                  cancelText="Cancel"
                 >
                   <Button
                     type="default"
@@ -393,10 +393,10 @@ export default function AlertsPage() {
               <>
                 <Tag color="orange">Acknowledged</Tag>
                 <Popconfirm
-                  title="确定要标记为已解决吗？"
+                  title="Are you sure to mark as resolved?"
                   onConfirm={() => resolveEvent(record.id)}
-                  okText="确定"
-                  cancelText="取消"
+                  okText="Yes"
+                  cancelText="Cancel"
                 >
                   <Button
                     type="default"
@@ -493,10 +493,10 @@ export default function AlertsPage() {
             onChange={async (checked) => {
               try {
                 await AlertRuleApiService.toggleAlertRuleStatus(r.id, checked);
-                message.success('状态已更新');
+                message.success('Status updated');
                 loadRules();
               } catch (e: any) {
-                message.error(e.message || '更新失败');
+                message.error(e.message || 'Update failed');
               }
             }}
             checkedChildren="ON"
@@ -515,7 +515,7 @@ export default function AlertsPage() {
               icon={<EditOutlined />}
               onClick={async () => {
                 try {
-                  // 对于合并显示的规则，直接使用合并后的数据，不需要重新获取
+                  // For merged rules, use merged data directly without refetching
                   setEditing(r);
                   form.setFieldsValue({
                     name: r.name,
@@ -526,31 +526,31 @@ export default function AlertsPage() {
                     severity: r.severity,
                     duration: r.duration,
                     enabled: r.enabled,
-                    hostIds: r.hostIds, // 这里包含了所有相关服务器的ID
+                    hostIds: r.hostIds, // Includes IDs of all related servers
                     notificationChannels: r.notificationChannels,
                   });
                   setRuleModalOpen(true);
                 } catch (e: any) {
-                  message.error(e.message || '获取详情失败');
+                  message.error(e.message || 'Failed to fetch details');
                 }
               }}
             />
             <Popconfirm
-              title={`确定删除该规则？这将删除所有 ${r.hostIds.length} 个服务器上的相关规则。`}
+              title={`Delete this rule? This will remove related rules on all ${r.hostIds.length} servers.`}
               onConfirm={async () => {
                 try {
-                  // 如果有相关规则ID，批量删除；否则删除单个规则
+                  // If related rule IDs exist, delete in batch; otherwise delete single rule
                   if (r.relatedRuleIds && r.relatedRuleIds.length > 1) {
                     await AlertRuleApiService.deleteAlertRulesBatch(r.relatedRuleIds);
                   } else {
-                    // 单个规则删除
+                    // Single rule deletion
                     await AlertRuleApiService.deleteAlertRule(r.id);
                   }
                   
-                  message.success('已删除');
+                  message.success('Deleted');
                   loadRules();
                 } catch (e: any) {
-                  message.error(e.message || '删除失败');
+                  message.error(e.message || 'Delete failed');
                 }
               }}
             >
@@ -565,34 +565,34 @@ export default function AlertsPage() {
     []
   );
 
-  /** ===== 过滤后的事件 ===== */
+  /** ===== Filtered events ===== */
   const filteredEvents = events.filter((e) => {
     if (filterStatus !== 'all' && e.status !== filterStatus) return false;
     if (filterSeverity !== 'all' && e.severity !== filterSeverity) return false;
     return true;
   });
 
-  /** ===== 表单提交 ===== */
+  /** ===== Form submission ===== */
   const onSubmit = async (v: AlertRuleFormValues) => {
     try {
       if (editing) {
-        // 检查是否是多服务器规则（合并显示的规则）
+        // Check if it's a multi-server rule (merged display)
         if (editing.relatedRuleIds && editing.relatedRuleIds.length > 1) {
-          // 对于多服务器规则，需要先删除所有相关规则，然后重新创建
+          // For multi-server rules, delete related rules first, then recreate
           await AlertRuleApiService.deleteAlertRulesBatch(editing.relatedRuleIds.map(id => id.toString()));
           const createdRules = await AlertRuleApiService.createAlertRule(v);
-          message.success(`成功更新 ${createdRules.length} 个服务器的告警规则`);
+          message.success(`Successfully updated alert rules for ${createdRules.length} servers`);
         } else {
-          // 单服务器规则，直接更新
+          // Single-server rule, update directly
           await AlertRuleApiService.updateAlertRule(editing.id, v);
-          message.success('更新成功');
+          message.success('Updated successfully');
         }
       } else {
         const createdRules = await AlertRuleApiService.createAlertRule(v);
         if (createdRules.length === 1) {
-          message.success('创建成功');
+          message.success('Created successfully');
         } else {
-          message.success(`成功为 ${createdRules.length} 个服务器创建告警规则`);
+          message.success(`Successfully created alert rules for ${createdRules.length} servers`);
         }
       }
       setRuleModalOpen(false);
@@ -600,11 +600,11 @@ export default function AlertsPage() {
       form.resetFields();
       loadRules();
     } catch (e: any) {
-      message.error(e.message || '保存失败');
+      message.error(e.message || 'Save failed');
     }
   };
 
-  /** ===== 渲染 ===== */
+  /** ===== Render ===== */
   return (
     <MainLayout>
       {/* Header */}
@@ -743,7 +743,7 @@ export default function AlertsPage() {
         />
       </Card>
 
-      {/* 规则编辑弹窗 */}
+      {/* Rule editor modal */}
       <Modal
         title={editing ? 'Edit Alert Rule' : 'Create Alert Rule'}
         open={ruleModalOpen}

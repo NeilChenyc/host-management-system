@@ -479,7 +479,7 @@ export default function SettingsPage() {
       const values = await form.validateFields();
       setLoading(true);
       
-      // 模拟保存配置
+      // Simulate saving configuration
       setTimeout(() => {
         setSystemConfig({ ...systemConfig, ...values });
         setLoading(false);
@@ -512,7 +512,7 @@ export default function SettingsPage() {
 
     setBackupRecords([newBackup, ...backupRecords]);
 
-    // 模拟备份过程
+    // Simulate backup process
     setTimeout(() => {
       const updatedBackup = {
         ...newBackup,
@@ -780,11 +780,11 @@ export default function SettingsPage() {
               placeholder="Module Filter"
             >
               <Select.Option value="all">All Modules</Select.Option>
-              <Select.Option value="用户管理">User Management</Select.Option>
-              <Select.Option value="设备管理">Device Management</Select.Option>
-              <Select.Option value="系统监控">System Monitoring</Select.Option>
-              <Select.Option value="备份管理">Backup Management</Select.Option>
-              <Select.Option value="系统设置">System Settings</Select.Option>
+              <Select.Option value="User Management">User Management</Select.Option>
+              <Select.Option value="Device Management">Device Management</Select.Option>
+              <Select.Option value="System Monitoring">System Monitoring</Select.Option>
+              <Select.Option value="Backup Management">Backup Management</Select.Option>
+              <Select.Option value="System Settings">System Settings</Select.Option>
             </Select>
           </Col>
           <Col xs={24} sm={12} md={8}>

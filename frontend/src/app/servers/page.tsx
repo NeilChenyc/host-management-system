@@ -50,16 +50,16 @@ export default function ServersPage() {
   
   // Message API for React 19 compatibility
   const [messageApi, contextHolder] = message.useMessage();
-  // 当前用户是否为操作员
+  // Check if current user is operator
   const currentUser = AuthManager.getUser();
   const isOperator = currentUser?.role === 'operation';
   
-  // 组件挂载时加载服务器列表
+  // Load server list on component mount
   useEffect(() => {
     loadServers(false); 
   }, []);
 
-  // 加载服务器列表
+  // Load server list
   const loadServers = async (showMessage: boolean = false, forceRefresh: boolean = false) => {
     setLoading(true);
     setError(null);
@@ -69,7 +69,7 @@ export default function ServersPage() {
       setFilteredDevices(serverList);
     } catch (error) {
       console.error('Failed to load servers:', error);
-      const errorMessage = error instanceof Error ? error.message : '加载服务器列表失败';
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load server list';
       setError(errorMessage);
       setTimeout(() => {
         messageApi.error(errorMessage);
@@ -81,7 +81,7 @@ export default function ServersPage() {
 
   // Status color mapping
   const getStatusColor = (status: string | undefined | null) => {
-    // 确保status是字符串类型且不为undefined或null
+    // Ensure status is a string and not undefined or null
     const statusValue = String(status || 'unknown').toLowerCase();
     switch (statusValue) {
       case 'online':
@@ -99,7 +99,7 @@ export default function ServersPage() {
 
   // Status text mapping
   const getStatusText = (status: string | undefined | null) => {
-    // 确保status是字符串类型且不为undefined或null
+    // Ensure status is a string and not undefined or null
     const statusValue = String(status || 'unknown').toLowerCase();
     switch (statusValue) {
       case 'online':
@@ -123,13 +123,13 @@ export default function ServersPage() {
   // View device detail handler (for modal)
   const handleViewDetail = async (device: Device) => {
     try {
-      // 获取最新的服务器详情
+      // Fetch latest server details
       const serverDetail = await ServerApiService.getServerById(device.id);
       setSelectedDevice(serverDetail);
       setDetailModalVisible(true);
     } catch (error) {
       console.error('Failed to fetch server detail:', error);
-      const errorMessage = error instanceof Error ? error.message : '获取服务器详情失败';
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch server details';
       messageApi.error(errorMessage);
     } finally {
       setLoading(false);
@@ -286,11 +286,11 @@ export default function ServersPage() {
 
   // Refresh handler
   const handleRefresh = async () => {
-    serverCache.resetMessageFlag(); // 重置消息标志
-    await loadServers(false, true); // 刷新时强制刷新，不显示加载消息
-    // 使用 setTimeout 避免在渲染过程中调用消息API
+    serverCache.resetMessageFlag(); // Reset message flag
+    await loadServers(false, true); // Force refresh without showing load message
+    // Use setTimeout to avoid calling message API during render
     setTimeout(() => {
-      messageApi.success('服务器列表已刷新');
+      messageApi.success('Server list refreshed');
     }, 0);
   };
 
@@ -314,13 +314,13 @@ export default function ServersPage() {
     try {
       await ServerApiService.deleteServer(id);
       setTimeout(() => {
-        messageApi.success('服务器删除成功');
+        messageApi.success('Server deleted successfully');
       }, 0);
-      // 重新加载服务器列表
+      // Reload server list
       await loadServers();
     } catch (error) {
       console.error('Failed to delete server:', error);
-      const errorMessage = error instanceof Error ? error.message : '删除服务器失败';
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete server';
       setTimeout(() => {
         messageApi.error(errorMessage);
       }, 0);
@@ -336,26 +336,26 @@ export default function ServersPage() {
       setLoading(true);
       
       if (editingDevice) {
-        // Edit mode - 更新服务器
+        // Edit mode - update server
         await ServerApiService.updateServer(editingDevice.id, values);
         setTimeout(() => {
-          messageApi.success('服务器更新成功');
+          messageApi.success('Server updated successfully');
         }, 0);
       } else {
-        // Add mode - 创建新服务器
+        // Add mode - create new server
         await ServerApiService.createServer(values);
         setTimeout(() => {
-          messageApi.success('服务器添加成功');
+          messageApi.success('Server added successfully');
         }, 0);
       }
       
-      // 重新加载服务器列表
+      // Reload server list
       await loadServers();
       setIsModalVisible(false);
       form.resetFields();
     } catch (error) {
       console.error('Failed to save server:', error);
-      const errorMessage = error instanceof Error ? error.message : '保存服务器失败';
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save server';
       setTimeout(() => {
         messageApi.error(errorMessage);
       }, 0);
@@ -371,13 +371,13 @@ export default function ServersPage() {
       {error && (
         <Card style={{ marginBottom: 16 }}>
           <div style={{ color: '#ff4d4f', textAlign: 'center' }}>
-            <strong>错误:</strong> {error}
+            <strong>Error:</strong> {error}
             <Button 
               type="link" 
               onClick={() => loadServers()}
               style={{ marginLeft: 8 }}
             >
-              重试
+              Retry
             </Button>
           </div>
         </Card>

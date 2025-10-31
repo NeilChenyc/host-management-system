@@ -17,11 +17,7 @@ import {
   Button,
   Space,
   Alert,
-  Tooltip,
-  Avatar,
-  List,
-  Timeline,
-  Divider
+  List
 } from 'antd';
 import {
   LineChart,
@@ -45,28 +41,20 @@ import {
 import {
   DashboardOutlined,
   DesktopOutlined as ServerOutlined,
-  DatabaseOutlined,
-  CloudOutlined,
-  WarningOutlined,
   CheckCircleOutlined,
-  ExclamationCircleOutlined,
   ReloadOutlined,
-  FullscreenOutlined,
-  SettingOutlined,
   BellOutlined,
   FireOutlined,
   ThunderboltOutlined,
-  HddOutlined,
   WifiOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import ServerApiService, { MetricData as ApiMetricData } from '../../services/serverApi';
+import ServerApiService from '../../services/serverApi';
 import { serverCache } from '@/lib/serverCache';
 
 const { Option } = Select;
-const { RangePicker } = DatePicker;
 
-// 格式化告警值的函数，复用 Alert 页面的逻辑
+// Format alert values, reusing the logic from the Alerts page
 const formatAlertValue = (value: number, metric: string) => {
   if (metric === 'cpu' || metric === 'memory' || metric === 'disk') {
     return `${value.toFixed(1)}%`;
@@ -79,7 +67,7 @@ const formatAlertValue = (value: number, metric: string) => {
   }
 };
 
-// 生成告警消息的函数
+// Generate alert message
 const generateAlertMessage = (alert: SystemAlert) => {
   if (alert.ruleName && alert.triggeredValue !== undefined && alert.threshold !== undefined && alert.metric) {
     const triggeredValueFormatted = formatAlertValue(alert.triggeredValue, alert.metric);
@@ -145,276 +133,18 @@ const MonitoringDashboard: React.FC = () => {
   const wsRef = useRef<WebSocket | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   
-  // 新增状态：服务器列表和当前选中的服务器
+  // State: server list and currently selected server
   const [servers, setServers] = useState<any[]>([]);
   const [selectedServerId, setSelectedServerId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Mock data - Extended to 10 hosts
-  const mockHosts: HostMetrics[] = [
-    {
-      id: 'host-001',
-      name: 'Production Server 1',
-      ip: '192.168.1.10',
-      status: 'online',
-      cpu: 65,
-      memory: 78,
-      disk: 45,
-      network: 23,
-      temperature: 42,
-      uptime: '15d 8h 32m',
-      lastUpdate: new Date().toISOString(),
-      services: 8,
-      alerts: 2,
-      location: 'Data Center A',
-      os: 'Ubuntu 22.04',
-      version: 'v2.1.0'
-    },
-    {
-      id: 'host-002',
-      name: 'Production Server 2',
-      ip: '192.168.1.11',
-      status: 'warning',
-      cpu: 89,
-      memory: 92,
-      disk: 78,
-      network: 45,
-      temperature: 58,
-      uptime: '12d 4h 15m',
-      lastUpdate: new Date().toISOString(),
-      services: 6,
-      alerts: 5,
-      location: 'Data Center A',
-      os: 'CentOS 8',
-      version: 'v2.0.8'
-    },
-    {
-      id: 'host-003',
-      name: 'Database Server 1',
-      ip: '192.168.1.20',
-      status: 'online',
-      cpu: 34,
-      memory: 56,
-      disk: 67,
-      network: 12,
-      temperature: 38,
-      uptime: '25d 12h 8m',
-      lastUpdate: new Date().toISOString(),
-      services: 3,
-      alerts: 0,
-      location: 'Data Center B',
-      os: 'Ubuntu 20.04',
-      version: 'v1.9.5'
-    },
-    {
-      id: 'host-004',
-      name: 'Load Balancer',
-      ip: '192.168.1.5',
-      status: 'critical',
-      cpu: 95,
-      memory: 88,
-      disk: 23,
-      network: 78,
-      temperature: 65,
-      uptime: '8d 2h 45m',
-      lastUpdate: new Date().toISOString(),
-      services: 2,
-      alerts: 8,
-      location: 'Data Center A',
-      os: 'NGINX Plus',
-      version: 'v1.21.6'
-    },
-    {
-      id: 'host-005',
-      name: 'Web Server 1',
-      ip: '192.168.1.30',
-      status: 'online',
-      cpu: 42,
-      memory: 68,
-      disk: 55,
-      network: 18,
-      temperature: 40,
-      uptime: '18d 6h 22m',
-      lastUpdate: new Date().toISOString(),
-      services: 5,
-      alerts: 1,
-      location: 'Data Center A',
-      os: 'Ubuntu 22.04',
-      version: 'v2.0.5'
-    },
-    {
-      id: 'host-006',
-      name: 'Web Server 2',
-      ip: '192.168.1.31',
-      status: 'online',
-      cpu: 38,
-      memory: 72,
-      disk: 48,
-      network: 25,
-      temperature: 39,
-      uptime: '22d 14h 18m',
-      lastUpdate: new Date().toISOString(),
-      services: 5,
-      alerts: 0,
-      location: 'Data Center A',
-      os: 'Ubuntu 22.04',
-      version: 'v2.0.5'
-    },
-    {
-      id: 'host-007',
-      name: 'Database Server 2',
-      ip: '192.168.1.21',
-      status: 'warning',
-      cpu: 76,
-      memory: 85,
-      disk: 82,
-      network: 35,
-      temperature: 52,
-      uptime: '9d 11h 45m',
-      lastUpdate: new Date().toISOString(),
-      services: 4,
-      alerts: 3,
-      location: 'Data Center B',
-      os: 'PostgreSQL 14',
-      version: 'v14.2'
-    },
-    {
-      id: 'host-008',
-      name: 'Cache Server',
-      ip: '192.168.1.40',
-      status: 'online',
-      cpu: 28,
-      memory: 45,
-      disk: 35,
-      network: 15,
-      temperature: 35,
-      uptime: '30d 2h 12m',
-      lastUpdate: new Date().toISOString(),
-      services: 2,
-      alerts: 0,
-      location: 'Data Center B',
-      os: 'Redis 7.0',
-      version: 'v7.0.8'
-    },
-    {
-      id: 'host-009',
-      name: 'API Gateway',
-      ip: '192.168.1.50',
-      status: 'online',
-      cpu: 52,
-      memory: 64,
-      disk: 38,
-      network: 42,
-      temperature: 44,
-      uptime: '7d 16h 28m',
-      lastUpdate: new Date().toISOString(),
-      services: 6,
-      alerts: 1,
-      location: 'Data Center A',
-      os: 'Kong Gateway',
-      version: 'v3.1.1'
-    },
-    {
-      id: 'host-010',
-      name: 'Monitoring Server',
-      ip: '192.168.1.60',
-      status: 'offline',
-      cpu: 0,
-      memory: 0,
-      disk: 0,
-      network: 0,
-      temperature: 25,
-      uptime: '0d 0h 0m',
-      lastUpdate: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-      services: 0,
-      alerts: 12,
-      location: 'Data Center B',
-      os: 'Prometheus',
-      version: 'v2.40.7'
-    }
-  ];
+  // Removed mock data and generators to rely on real API responses
 
-  const mockAlerts: SystemAlert[] = [
-    {
-      id: 'alert-001',
-      hostId: 'host-002',
-      hostName: 'Production Server 2',
-      type: 'cpu',
-      severity: 'high',
-      message: 'CPU usage exceeded 85% threshold',
-      timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-      status: 'active'
-    },
-    {
-      id: 'alert-002',
-      hostId: 'host-004',
-      hostName: 'Load Balancer',
-      type: 'temperature',
-      severity: 'critical',
-      message: 'Temperature reached critical level (65°C)',
-      timestamp: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
-      status: 'active'
-    },
-    {
-      id: 'alert-003',
-      hostId: 'host-001',
-      hostName: 'Production Server 1',
-      type: 'memory',
-      severity: 'medium',
-      message: 'Memory usage above 75%',
-      timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
-      status: 'acknowledged'
-    }
-  ];
-
-  // Generate mock time series data with stable values
-  const generateTimeSeriesData = (hours: number = 1): MetricData[] => {
-    const data: MetricData[] = [];
-    const now = new Date();
-    const interval = (hours * 60) / 60; // 1 minute intervals
-    
-    // Use a simple hash function to generate consistent "random" values
-    const hash = (str: string) => {
-      let hash = 0;
-      for (let i = 0; i < str.length; i++) {
-        const char = str.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash = hash & hash; // Convert to 32bit integer
-      }
-      return Math.abs(hash);
-    };
-    
-    for (let i = hours * 60; i >= 0; i -= interval) {
-      const timestamp = new Date(now.getTime() - i * 60 * 1000);
-      const timeStr = timestamp.toISOString();
-      
-      // Generate consistent values based on timestamp
-      const cpuBase = hash(timeStr + 'cpu') % 30 + 30; // 30-60 range
-      const memoryBase = hash(timeStr + 'memory') % 30 + 30; // 30-60 range
-      const diskBase = hash(timeStr + 'disk') % 30 + 30; // 30-60 range
-      const networkBase = hash(timeStr + 'network') % 30 + 30; // 30-60 range
-      const tempBase = hash(timeStr + 'temp') % 40 + 30; // 30-70 range
-      const loadBase = hash(timeStr + 'load') % 100 / 10; // 0-10 range
-      
-      data.push({
-        timestamp: timestamp.toISOString(),
-        cpu: cpuBase,
-        memory: memoryBase,
-        disk: diskBase,
-        network: networkBase,
-        temperature: tempBase,
-        loadAvg: loadBase
-      });
-    }
-    
-    return data;
-  };
-
-  // 获取服务器列表
+  // Load server list
   const loadServers = async () => {
     try {
       setIsLoading(true);
-      const serverList = await serverCache.getServers(); // 使用缓存，不显示消息
+      const serverList = await serverCache.getServers(); // Use cache; do not show messages
       setServers(serverList);
       if (serverList.length > 0 && !selectedServerId) {
         setSelectedServerId(serverList[0].id.toString());
@@ -426,7 +156,7 @@ const MonitoringDashboard: React.FC = () => {
     }
   };
 
-  // 获取服务器概览（包含最新指标和告警数）
+  // Load server overview (includes latest metrics and alert count)
   const loadServersOverview = async () => {
     try {
       const token = AuthManager.getToken();
@@ -441,7 +171,7 @@ const MonitoringDashboard: React.FC = () => {
       }
       const data = await response.json();
       
-      // 转换API数据为前端需要的格式
+      // Transform API data to frontend format
       const hostsData: HostMetrics[] = data.map((server: any) => ({
         id: `host-${server.id.toString().padStart(3, '0')}`,
         name: server.hostname,
@@ -454,22 +184,22 @@ const MonitoringDashboard: React.FC = () => {
         temperature: server.temperature || 0,
         uptime: server.uptime || '0d 0h 0m',
         lastUpdate: server.lastUpdate || new Date().toISOString(),
-        services: 0, // 暂时设为0，如果后端有数据可以添加
+        services: 0, // Temporarily set to 0; add when backend provides data
         alerts: server.alertCount || 0,
-        location: 'Data Center', // 可以后续从后端获取
+        location: 'Data Center', // Can be fetched from backend later
         os: server.operatingSystem || 'Unknown',
-        version: 'v1.0.0' // 可以后续从后端获取
+        version: 'v1.0.0' // Can be fetched from backend later
       }));
       
       setHosts(hostsData);
     } catch (error) {
       console.error('Failed to load servers overview:', error);
-      // 如果API失败，使用mock数据作为后备
-      setHosts(mockHosts);
+      // On API error, set empty overview data
+      setHosts([]);
     }
   };
 
-  // 获取服务器指标数据并转换为图表格式
+  // Load server metrics and transform into chart data
   const loadServerMetrics = async (serverId: string) => {
     if (!serverId) return;
     
@@ -477,7 +207,7 @@ const MonitoringDashboard: React.FC = () => {
       setIsLoading(true);
       const metrics = await ServerApiService.getServerMetrics(serverId);
       
-      // 将 API 数据转换为图表需要的格式
+      // Transform API metrics to the chart format
       const chartData: MetricData[] = metrics.map(metric => ({
         timestamp: metric.timestamp,
         cpu: metric.metricType === 'CPU Usage' ? metric.value : 0,
@@ -488,11 +218,11 @@ const MonitoringDashboard: React.FC = () => {
         loadAvg: metric.metricType === 'Load Average' ? metric.value : 0
       }));
 
-      // 按时间戳分组并合并数据
+      // Group by timestamp and merge values
       const groupedData = chartData.reduce((acc, item) => {
         const existing = acc.find(d => d.timestamp === item.timestamp);
         if (existing) {
-          // 使用实际值而不是最大值
+          // Use actual values, overwrite when present
           if (item.cpu > 0) existing.cpu = item.cpu;
           if (item.memory > 0) existing.memory = item.memory;
           if (item.disk > 0) existing.disk = item.disk;
@@ -505,10 +235,10 @@ const MonitoringDashboard: React.FC = () => {
         return acc;
       }, [] as MetricData[]);
 
-      // 按时间戳排序
+      // Sort by timestamp
       groupedData.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
       
-      setRealTimeData(groupedData.slice(-20)); // 只显示最近20个数据点
+      setRealTimeData(groupedData.slice(-20)); // Show only the last 20 data points
     } catch (error) {
       console.error('Failed to load server metrics:', error);
     } finally {
@@ -516,7 +246,7 @@ const MonitoringDashboard: React.FC = () => {
     }
   };
 
-  // 辅助函数：映射指标类型
+  // Helper: map metric type
   const mapMetricType = (metric: string): SystemAlert['type'] => {
     const metricMap: Record<string, SystemAlert['type']> = {
       'cpu': 'cpu',
@@ -529,7 +259,7 @@ const MonitoringDashboard: React.FC = () => {
     return metricMap[metric.toLowerCase()] || 'cpu';
   };
   
-  // 辅助函数：映射严重性
+  // Helper: map severity
   const mapSeverity = (severity: string): SystemAlert['severity'] => {
     const severityMap: Record<string, SystemAlert['severity']> = {
       'low': 'low',
@@ -541,7 +271,7 @@ const MonitoringDashboard: React.FC = () => {
     return severityMap[severity.toLowerCase()] || 'medium';
   };
   
-  // 辅助函数：映射状态
+  // Helper: map status
   const mapStatus = (status: string): SystemAlert['status'] => {
     const statusMap: Record<string, SystemAlert['status']> = {
       'active': 'active',
@@ -552,7 +282,7 @@ const MonitoringDashboard: React.FC = () => {
     return statusMap[status.toLowerCase()] || 'active';
   };
 
-  // 获取真实的告警事件数据
+  // Load alert events from API
   const loadAlerts = async () => {
     try {
       const token = AuthManager.getToken();
@@ -567,7 +297,7 @@ const MonitoringDashboard: React.FC = () => {
       }
       const data = await response.json();
       
-      // 转换API数据为前端需要的格式
+      // Transform API data to frontend format
       const alertsData: SystemAlert[] = (data || []).map((event: any) => {
         const alert: SystemAlert = {
           id: String(event.eventId ?? event.id ?? ''),
@@ -575,17 +305,17 @@ const MonitoringDashboard: React.FC = () => {
           hostName: event.serverName ?? event.server?.serverName ?? `Server ${event.serverId ?? event.server_id ?? 'Unknown'}`,
           type: mapMetricType(event.metric ?? event.targetMetric ?? 'cpu'),
           severity: mapSeverity(event.severity ?? 'medium'),
-          message: '', // 将在下面设置
+          message: '', // Will be set below
           timestamp: event.triggeredAt ?? event.createdAt ?? new Date().toISOString(),
           status: mapStatus(event.status ?? 'active'),
-          // 新增字段，用于生成更详细的告警消息
+          // Extra fields for generating a more detailed alert message
           ruleName: event.ruleName,
           triggeredValue: event.triggeredValue,
           threshold: event.threshold,
           metric: event.metric ?? event.targetMetric
         };
         
-        // 使用新的消息生成函数
+        // Generate message text using helper
         alert.message = generateAlertMessage(alert);
         
         return alert;
@@ -594,28 +324,28 @@ const MonitoringDashboard: React.FC = () => {
       setAlerts(alertsData);
     } catch (error) {
       console.error('Failed to load alerts:', error);
-      // 如果API失败，使用空数组而不是mock数据
+      // On API error, use empty alerts array
       setAlerts([]);
     }
   };
 
   useEffect(() => {
-    // 初始化时加载服务器列表和概览数据
+    // Initialize: load server list and overview
     loadServers();
-    loadServersOverview(); // 加载真实的服务器概览数据
+    loadServersOverview(); // Load real server overview data
     
-    // 加载真实的告警数据
+    // Load real alerts
     loadAlerts();
 
-    // Setup WebSocket connection (mock)
+    // Setup periodic refresh and connection state
     const connectWebSocket = () => {
-      // In a real implementation, this would connect to your WebSocket server
+      // In a real implementation, this would connect to a WebSocket server
       setIsConnected(true);
       
       // Real-time data updates
       if (autoRefresh) {
         intervalRef.current = setInterval(() => {
-          // 定期刷新服务器概览数据和告警数据（每10秒）
+          // Periodically refresh server overview and alerts (every 10 seconds)
           loadServersOverview();
           loadAlerts();
         }, 10000); // Update every 10 seconds
@@ -634,17 +364,17 @@ const MonitoringDashboard: React.FC = () => {
     };
   }, [autoRefresh]);
 
-  // 当选中服务器变化时，加载对应的指标数据
+  // Load metrics when selected server changes
   useEffect(() => {
     if (selectedServerId) {
       loadServerMetrics(selectedServerId);
     }
   }, [selectedServerId]);
 
-  // 自动刷新图表数据
+  // Auto-refresh metrics
   useEffect(() => {
     if (autoRefresh && selectedServerId) {
-      // 设置定时器，每5秒刷新一次
+      // Set interval to refresh every 5 seconds
       const refreshInterval = setInterval(() => {
         loadServerMetrics(selectedServerId);
       }, 5000);
@@ -949,13 +679,13 @@ const MonitoringDashboard: React.FC = () => {
                     icon={autoRefresh ? <ReloadOutlined spin /> : <ReloadOutlined />}
                     size="small"
                   >
-                    {autoRefresh ? '自动刷新中' : '开启自动刷新'}
+                    {autoRefresh ? 'Auto Refreshing' : 'Enable Auto Refresh'}
                   </Button>
                   <Select
                     value={selectedServerId}
                     onChange={setSelectedServerId}
                     style={{ width: 200 }}
-                    placeholder="选择服务器"
+                    placeholder="Select Server"
                     loading={isLoading}
                   >
                     {servers.map(server => (
@@ -989,7 +719,7 @@ const MonitoringDashboard: React.FC = () => {
                   <RechartsTooltip 
                     labelFormatter={(value: string) => dayjs(value).format('HH:mm:ss')}
                     formatter={(value: number, name: string) => {
-                      // 根据指标类型决定显示格式
+                      // Format display based on metric type
                       let formattedValue = '';
                       
                       switch (name.toLowerCase()) {
@@ -999,7 +729,7 @@ const MonitoringDashboard: React.FC = () => {
                           formattedValue = `${value.toFixed(1)}%`;
                           break;
                         case 'network':
-                          formattedValue = `${(value * 10).toFixed(1)} MB/s`; // 恢复原始网络流量值
+                          formattedValue = `${(value * 10).toFixed(1)} MB/s`; // Restore original network traffic value
                           break;
                         case 'temperature':
                           formattedValue = `${value.toFixed(2)}°C`;

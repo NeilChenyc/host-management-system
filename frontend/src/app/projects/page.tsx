@@ -43,7 +43,7 @@ import { serverCache } from '@/lib/serverCache';
 const { Search } = Input;
 const { Option } = Select;
 
-// 替换 Project 类型为后端结构映射
+// Map Project type to backend structure
 interface Project {
   id: string;
   projectName: string;
@@ -69,7 +69,7 @@ export default function ProjectsPage() {
   // Message API for React 19 compatibility
   const [messageApi, contextHolder] = message.useMessage();
 
-  // 项目成员查看弹窗状态
+  // Project members modal state
   const [membersModalVisible, setMembersModalVisible] = useState(false);
   const [membersLoading, setMembersLoading] = useState(false);
   const [projectMembers, setProjectMembers] = useState<UserResponseDto[]>([]);
@@ -80,19 +80,19 @@ export default function ProjectsPage() {
   const [addMembersLoading, setAddMembersLoading] = useState(false);
   const [removeMemberLoadingId, setRemoveMemberLoadingId] = useState<number | null>(null);
 
-  // 角色权限控制：operator 隐藏“新建项目”按钮
+  // Role-based controls: hide "New Project" for operator
   const currentUser = AuthManager.getUser();
   const canCreateProject = !!currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager');
-  // 管理权限：admin/manager 可编辑、删除项目和管理成员
+  // Manage permission: admin/manager can edit, delete, and manage members
   const canManageProject = canCreateProject;
 
-  // 组件挂载时加载数据
+  // Load data on mount
   useEffect(() => {
-    loadProjects(false); // 初始加载时不显示消息
+    loadProjects(false); // Do not show message on initial load
     loadServers();
   }, []);
 
-  // 加载项目列表
+  // Load project list
   const loadProjects = async (showMessage: boolean = false) => {
     setLoading(true);
     setError(null);
@@ -101,11 +101,11 @@ export default function ProjectsPage() {
       setProjects(projectList);
       setFilteredProjects(projectList);
       if (showMessage) {
-        messageApi.success(`成功加载 ${projectList.length} 个项目`);
+        messageApi.success(`Loaded ${projectList.length} projects successfully`);
       }
     } catch (error) {
       console.error('Failed to load projects:', error);
-      const errorMessage = error instanceof Error ? error.message : '加载项目列表失败';
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load project list';
       setError(errorMessage);
       messageApi.error(errorMessage);
     } finally {
@@ -113,7 +113,7 @@ export default function ProjectsPage() {
     }
   };
 
-  // 加载服务器列表
+  // Load server list
   const loadServers = async () => {
     try {
       const serverList = await serverCache.getServers();
@@ -123,7 +123,7 @@ export default function ProjectsPage() {
     }
   };
 
-  // 状态颜色映射
+  // Status color mapping
   const getStatusColor = (status: ProjectStatus) => {
     switch (status) {
       case 'ACTIVE':
@@ -141,7 +141,7 @@ export default function ProjectsPage() {
     }
   };
 
-  // 状态文本映射
+  // Status text mapping
   const getStatusText = (status: ProjectStatus) => {
     switch (status) {
       case 'ACTIVE':
@@ -159,7 +159,7 @@ export default function ProjectsPage() {
     }
   };
 
-  // 查看项目成员
+  // View project members
   const handleViewMembers = async (project: Project) => {
     setMembersModalVisible(true);
     setCurrentProjectName(project.projectName);
@@ -178,19 +178,19 @@ export default function ProjectsPage() {
         })
       );
       setProjectMembers(details);
-      // 加载所有用户用于添加成员选择
+      // Load all users for add-member selection
       const users = await getAllUsers();
       setAllUsers(users);
     } catch (error) {
       console.error('Failed to load project members:', error);
-      const errorMessage = error instanceof Error ? error.message : '加载项目成员失败';
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load project members';
       messageApi.error(errorMessage);
     } finally {
       setMembersLoading(false);
     }
   };
 
-  // 表格列定义
+  // Table columns definition
   const columns: ColumnsType<Project> = [
     {
       title: 'Project Name',
@@ -229,7 +229,7 @@ export default function ProjectsPage() {
           return <span style={{ color: '#999' }}>No servers</span>;
         }
         
-        // 找出对应的服务器名称
+        // Resolve server names
         const serverNames = serverIds
           .map(id => {
             const server = servers.find(s => String(s.id) === String(id));
@@ -307,7 +307,7 @@ export default function ProjectsPage() {
     },
   ];
 
-  // 过滤项目
+  // Filter projects
   const filterProjects = (search: string, status: string) => {
     let filtered = projects;
 
@@ -324,32 +324,32 @@ export default function ProjectsPage() {
     setFilteredProjects(filtered);
   };
 
-  // 搜索处理
+  // Search handler
   const handleSearch = (value: string) => {
     setSearchText(value);
     filterProjects(value, statusFilter);
   };
 
-  // 状态过滤处理
+  // Status filter handler
   const handleStatusFilter = (value: string) => {
     setStatusFilter(value);
     filterProjects(searchText, value);
   };
 
-  // 刷新处理
+  // Refresh handler
   const handleRefresh = async () => {
-    await loadProjects(false); // 不显示加载消息，统一显示刷新消息
-    messageApi.success('项目列表已刷新');
+    await loadProjects(false); // Do not show load message; show refresh message
+    messageApi.success('Project list refreshed');
   };
 
-  // 添加项目处理
+  // Add project handler
   const handleAdd = () => {
     setEditingProject(null);
     form.resetFields();
     setIsModalVisible(true);
   };
 
-  // 编辑项目处理
+  // Edit project handler
   const handleEdit = (project: Project) => {
     setEditingProject(project);
     form.setFieldsValue({
@@ -359,23 +359,23 @@ export default function ProjectsPage() {
     setIsModalVisible(true);
   };
 
-  // 删除项目处理
+  // Delete project handler
   const handleDelete = async (id: string) => {
     setLoading(true);
     try {
       await ProjectApiService.deleteProject(id);
-      messageApi.success('项目删除成功');
+      messageApi.success('Project deleted successfully');
       await loadProjects();
     } catch (error) {
       console.error('Failed to delete project:', error);
-      const errorMessage = error instanceof Error ? error.message : '删除项目失败';
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete project';
       messageApi.error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  // 保存项目
+  // Save project
   const handleSave = async () => {
     try {
       const values = await form.validateFields();
@@ -392,13 +392,13 @@ export default function ProjectsPage() {
         if (selectedStatus && selectedStatus !== editingProject.status) {
           await ProjectApiService.updateProjectStatus(editingProject.id, selectedStatus);
         }
-        messageApi.success('项目更新成功');
+        messageApi.success('Project updated successfully');
       } else {
         const created = await ProjectApiService.createProject(projectUpdate);
         if (selectedStatus && selectedStatus !== created.status) {
           await ProjectApiService.updateProjectStatus(created.id, selectedStatus);
         }
-        messageApi.success('项目添加成功');
+        messageApi.success('Project created successfully');
       }
 
       await loadProjects();
@@ -406,14 +406,14 @@ export default function ProjectsPage() {
       form.resetFields();
     } catch (error) {
       console.error('Failed to save project:', error);
-      const errorMessage = error instanceof Error ? error.message : '保存项目失败';
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save project';
       messageApi.error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  // 计算统计信息
+  // Compute statistics
   const getStatistics = () => {
     const total = filteredProjects.length;
     const active = filteredProjects.filter(p => p.status === 'ACTIVE').length;
@@ -425,16 +425,16 @@ export default function ProjectsPage() {
     return { total, active, paused, planned, completed, cancelled };
   };
 
-  // 添加项目成员
+  // Add project members
   const handleAddMembers = async () => {
     if (!currentProjectId || addSelectedUserIds.length === 0) {
-      messageApi.warning('请选择要添加的成员');
+      messageApi.warning('Please select members to add');
       return;
     }
     setAddMembersLoading(true);
     try {
       await ProjectApiService.addProjectMembers(currentProjectId, addSelectedUserIds);
-      messageApi.success('成员添加成功');
+      messageApi.success('Members added successfully');
       const memberIds = await ProjectApiService.getProjectMembers(currentProjectId);
       const details: UserResponseDto[] = await Promise.all(
         memberIds.map(async (uid) => {
@@ -449,23 +449,23 @@ export default function ProjectsPage() {
       setProjectMembers(details);
       setAddSelectedUserIds([]);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : '添加成员失败';
+      const errorMessage = error instanceof Error ? error.message : 'Failed to add members';
       messageApi.error(errorMessage);
     } finally {
       setAddMembersLoading(false);
     }
   };
 
-  // 移除项目成员
+  // Remove project member
   const handleRemoveMember = async (userId: number) => {
     if (!currentProjectId) return;
     setRemoveMemberLoadingId(userId);
     try {
       await ProjectApiService.removeProjectMembers(currentProjectId, [userId]);
-      messageApi.success('成员已移除');
+      messageApi.success('Member removed');
       setProjectMembers((prev) => prev.filter((m) => m.id !== userId));
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : '移除成员失败';
+      const errorMessage = error instanceof Error ? error.message : 'Failed to remove member';
       messageApi.error(errorMessage);
     } finally {
       setRemoveMemberLoadingId(null);
@@ -481,13 +481,13 @@ export default function ProjectsPage() {
       {error && (
         <Card style={{ marginBottom: 16 }}>
           <div style={{ color: '#ff4d4f', textAlign: 'center' }}>
-            <strong>错误:</strong> {error}
+            <strong>Error:</strong> {error}
             <Button 
               type="link" 
               onClick={() => loadProjects()}
               style={{ marginLeft: 8 }}
             >
-              重试
+              Retry
             </Button>
           </div>
         </Card>
@@ -676,7 +676,7 @@ export default function ProjectsPage() {
             <Select
               mode="multiple"
               style={{ width: '100%' }}
-              placeholder="选择要添加的成员"
+              placeholder="Select members to add"
               value={addSelectedUserIds.map(String)}
               onChange={(vals) => setAddSelectedUserIds(vals.map((v) => Number(v)))}
               options={allUsers
@@ -684,7 +684,7 @@ export default function ProjectsPage() {
                 .map(u => ({ label: u.username, value: String(u.id) }))}
             />
             <Button type="primary" style={{ marginTop: 12 }} onClick={handleAddMembers} loading={addMembersLoading}>
-              添加成员
+              Add Members
             </Button>
           </div>
         )}
@@ -696,11 +696,11 @@ export default function ProjectsPage() {
               actions={canManageProject ? [
                 <Popconfirm
                   key={`remove-${m.id}`}
-                  title="移除成员"
-                  description={`确认移除 ${m.username} ?`}
+                  title="Remove Member"
+                  description={`Confirm removing ${m.username}?`}
                   onConfirm={() => handleRemoveMember(m.id)}
                 >
-                  <Button danger loading={removeMemberLoadingId === m.id}>移除</Button>
+                  <Button danger loading={removeMemberLoadingId === m.id}>Remove</Button>
                 </Popconfirm>
               ] : []}
             >
@@ -713,7 +713,7 @@ export default function ProjectsPage() {
             </List.Item>
           )}
           locale={{
-            emptyText: '暂无成员或无法获取成员列表',
+            emptyText: 'No members or unable to fetch member list',
           }}
         />
       </Modal>
