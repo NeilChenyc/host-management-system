@@ -36,12 +36,7 @@ public class AlertRuleServiceImpl implements AlertRuleService {
             // 清除ID以确保创建新记录
             alertRule.setRuleId(null);
             
-            // 检查规则名称唯一性
-            if (alertRuleRepository.existsByRuleName(alertRule.getRuleName())) {
-                throw new IllegalArgumentException("Alert rule with name '" + alertRule.getRuleName() + "' already exists");
-            }
-            
-            // 保存规则
+            // 保存规则 - 移除全局名称唯一性检查，允许同一规则名称在不同服务器上存在
             AlertRule createdRule = alertRuleRepository.save(alertRule);
             createdRules.add(createdRule);
         }
@@ -52,9 +47,7 @@ public class AlertRuleServiceImpl implements AlertRuleService {
     @Override
     public AlertRule createAlertRule(AlertRule alertRule) {
         alertRule.setRuleId(null);
-        if (alertRuleRepository.existsByRuleName(alertRule.getRuleName())) {
-            throw new IllegalArgumentException("Alert rule with name '" + alertRule.getRuleName() + "' already exists");
-        }
+        // 移除全局名称唯一性检查，允许同一规则名称在不同服务器上存在
         return alertRuleRepository.save(alertRule);
     }
 
@@ -99,6 +92,19 @@ public class AlertRuleServiceImpl implements AlertRuleService {
         
         // Then delete the alert rule
         alertRuleRepository.delete(existingRule);
+    }
+
+    @Override
+    @Transactional
+    public void deleteAlertRulesBatch(List<Long> ruleIds) {
+        for (Long ruleId : ruleIds) {
+            try {
+                deleteAlertRule(ruleId);
+            } catch (IllegalArgumentException e) {
+                // Log the error but continue with other deletions
+                System.err.println("Failed to delete alert rule with ID " + ruleId + ": " + e.getMessage());
+            }
+        }
     }
 
     @Override

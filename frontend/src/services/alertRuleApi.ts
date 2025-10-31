@@ -46,6 +46,7 @@ export interface UiAlertRule {
   createdBy: string;
   triggerCount: number;
   lastTriggered?: string;
+  relatedRuleIds?: string[]; // 用于跟踪合并显示的相关规则ID
 }
 
 /* ===================== 表单入参类型 ===================== */
@@ -159,8 +160,14 @@ const toUiRule = (dto: AlertRuleDto): UiAlertRule => ({
   lastTriggered: undefined,
 });
 
-const toCreateDto = (v: AlertRuleFormValues): Partial<AlertRuleDto> => {
-  const dto: Partial<AlertRuleDto> = {
+const toCreateDto = (v: AlertRuleFormValues): Partial<AlertRuleDto>[] => {
+  // 如果没有选择服务器，抛出错误
+  if (!v.hostIds || v.hostIds.length === 0) {
+    throw new Error('必须选择至少一个目标服务器');
+  }
+  
+  // 为每个选中的服务器创建一个告警规则
+  return v.hostIds.map(hostId => ({
     ruleName: v.name,
     description: v.description,
     targetMetric: metricUiToBackend(v.metric),
@@ -169,20 +176,29 @@ const toCreateDto = (v: AlertRuleFormValues): Partial<AlertRuleDto> => {
     duration: v.duration,
     severity: severityUiToBackend(v.severity),
     enabled: v.enabled,
-  };
-  
-  // serverId是必需的，使用用户选择的第一个服务器
-  if (v.hostIds && v.hostIds.length > 0) {
-    dto.serverId = parseInt(v.hostIds[0]);
-  } else {
-    // 如果没有选择服务器，抛出错误或使用默认值
+    serverId: parseInt(hostId),
+  }));
+};
+
+const toUpdateDto = (v: AlertRuleFormValues): Partial<AlertRuleDto> => {
+  // 更新时必须选择至少一个服务器
+  if (!v.hostIds || v.hostIds.length === 0) {
     throw new Error('必须选择至少一个目标服务器');
   }
   
-  return dto;
+  // 对于单服务器更新，使用第一个服务器ID
+  return {
+    ruleName: v.name,
+    description: v.description,
+    targetMetric: metricUiToBackend(v.metric),
+    comparator: comparatorUiToBackend(v.condition),
+    threshold: v.threshold,
+    duration: v.duration,
+    severity: severityUiToBackend(v.severity),
+    enabled: v.enabled,
+    serverId: parseInt(v.hostIds[0]),
+  };
 };
-
-const toUpdateDto = (v: AlertRuleFormValues): Partial<AlertRuleDto> => toCreateDto(v);
 
 /* ===================== API ===================== */
 export class AlertRuleApiService {
@@ -190,7 +206,29 @@ export class AlertRuleApiService {
   static async getAllAlertRules(): Promise<UiAlertRule[]> {
     try {
       const list = await api<AlertRuleDto[]>('/alert-rules');
-      return (list || []).map(toUiRule);
+      const uiRules = (list || []).map(toUiRule);
+      
+      // 将相同规则名称、配置的规则合并显示
+      const mergedRules = new Map<string, UiAlertRule>();
+      
+      for (const rule of uiRules) {
+        const key = `${rule.name}-${rule.metric}-${rule.condition}-${rule.threshold}-${rule.severity}-${rule.duration}`;
+        
+        if (mergedRules.has(key)) {
+          // 合并 hostIds 和 ruleIds
+          const existingRule = mergedRules.get(key)!;
+          existingRule.hostIds = [...existingRule.hostIds, ...rule.hostIds];
+          // 保存所有相关的规则ID，用于删除
+          if (!existingRule.relatedRuleIds) {
+            existingRule.relatedRuleIds = [existingRule.id];
+          }
+          existingRule.relatedRuleIds.push(rule.id);
+        } else {
+          mergedRules.set(key, { ...rule, relatedRuleIds: [rule.id] });
+        }
+      }
+      
+      return Array.from(mergedRules.values());
     } catch (e) {
       return handleApiError(e, '获取告警规则列表');
     }
@@ -207,14 +245,25 @@ export class AlertRuleApiService {
   }
 
   /** 创建 */
-  static async createAlertRule(values: AlertRuleFormValues): Promise<UiAlertRule> {
+  static async createAlertRule(values: AlertRuleFormValues): Promise<UiAlertRule[]> {
     try {
-      const payload = toCreateDto(values);
-      const dto = await api<AlertRuleDto>('/alert-rules', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      });
-      return toUiRule(dto);
+      const payloads = toCreateDto(values);
+      
+      if (payloads.length === 1) {
+        // 单个服务器，使用单个创建 API
+        const dto = await api<AlertRuleDto>('/alert-rules', {
+          method: 'POST',
+          body: JSON.stringify(payloads[0]),
+        });
+        return [toUiRule(dto)];
+      } else {
+        // 多个服务器，使用批量创建 API
+        const dtos = await api<AlertRuleDto[]>('/alert-rules/batch', {
+          method: 'POST',
+          body: JSON.stringify(payloads),
+        });
+        return dtos.map(toUiRule);
+      }
     } catch (e) {
       return handleApiError(e, '创建告警规则');
     }
@@ -237,9 +286,24 @@ export class AlertRuleApiService {
   /** 删除 */
   static async deleteAlertRule(id: string): Promise<void> {
     try {
-      await api<void>(`/alert-rules/${id}`, { method: 'DELETE' });
+      await api(`/alert-rules/${id}`, { method: 'DELETE' });
     } catch (e) {
-      handleApiError(e, '删除告警规则');
+      return handleApiError(e, '删除告警规则');
+    }
+  }
+
+  /** 批量删除 */
+  static async deleteAlertRulesBatch(ids: string[]): Promise<void> {
+    try {
+      // 将字符串ID转换为数字ID发送给后端
+      const numericIds = ids.map(id => parseInt(id, 10));
+      await api('/alert-rules/batch', { 
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(numericIds)
+      });
+    } catch (e) {
+      return handleApiError(e, '批量删除告警规则');
     }
   }
 

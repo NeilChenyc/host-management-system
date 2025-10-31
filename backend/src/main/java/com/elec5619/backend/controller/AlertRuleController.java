@@ -277,6 +277,40 @@ public class AlertRuleController {
     }
 
     /**
+     * Delete multiple alert rules by their IDs
+     * @param ruleIds List of alert rule IDs to delete
+     * @param userId User ID from JWT token
+     * @return Empty response with status 204
+     */
+    @DeleteMapping("/batch")
+    @Operation(
+        summary = "Delete Multiple Alert Rules",
+        description = "Delete multiple alert rules by their IDs"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "204",
+            description = "Alert rules deleted successfully",
+            content = @Content
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Invalid request body",
+            content = @Content
+        ),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - insufficient permissions")
+    })
+    public ResponseEntity<Void> deleteAlertRulesBatch(
+            @RequestBody List<Long> ruleIds,
+            @RequestAttribute("userId") Long userId) {
+        // 只有Admin和Manager可以删除告警规则
+        permissionChecker.requirePermission(userId, PermissionConstants.ALERT_MANAGE_ALL);
+        alertRuleService.deleteAlertRulesBatch(ruleIds);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
      * Get alert rules by enabled status
      * @param enabled Enabled status to filter by
      * @return List of alert rules with the specified enabled status

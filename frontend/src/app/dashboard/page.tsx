@@ -66,6 +66,29 @@ import { serverCache } from '@/lib/serverCache';
 const { Option } = Select;
 const { RangePicker } = DatePicker;
 
+// 格式化告警值的函数，复用 Alert 页面的逻辑
+const formatAlertValue = (value: number, metric: string) => {
+  if (metric === 'cpu' || metric === 'memory' || metric === 'disk') {
+    return `${value.toFixed(1)}%`;
+  } else if (metric === 'temperature') {
+    return `${value.toFixed(1)}°C`;
+  } else if (metric === 'network_in' || metric === 'network_out') {
+    return `${(value / 1024 / 1024).toFixed(2)} MB/s`;
+  } else {
+    return value.toFixed(2);
+  }
+};
+
+// 生成告警消息的函数
+const generateAlertMessage = (alert: SystemAlert) => {
+  if (alert.ruleName && alert.triggeredValue !== undefined && alert.threshold !== undefined && alert.metric) {
+    const triggeredValueFormatted = formatAlertValue(alert.triggeredValue, alert.metric);
+    const thresholdFormatted = formatAlertValue(alert.threshold, alert.metric);
+    return `${alert.ruleName}: ${triggeredValueFormatted} / ${thresholdFormatted}`;
+  }
+  return alert.message || `${alert.type} alert triggered`;
+};
+
 interface MetricData {
   timestamp: string;
   cpu: number;
@@ -104,6 +127,10 @@ interface SystemAlert {
   message: string;
   timestamp: string;
   status: 'active' | 'resolved' | 'acknowledged';
+  ruleName?: string;
+  triggeredValue?: number;
+  threshold?: number;
+  metric?: string;
 }
 
 const MonitoringDashboard: React.FC = () => {
@@ -541,16 +568,28 @@ const MonitoringDashboard: React.FC = () => {
       const data = await response.json();
       
       // 转换API数据为前端需要的格式
-      const alertsData: SystemAlert[] = (data || []).map((event: any) => ({
-        id: String(event.eventId ?? event.id ?? ''),
-        hostId: String(event.serverId ?? event.server_id ?? event.hostId ?? ''),
-        hostName: event.serverName ?? event.server?.serverName ?? `Server ${event.serverId ?? event.server_id ?? 'Unknown'}`,
-        type: mapMetricType(event.metric ?? event.targetMetric ?? 'cpu'),
-        severity: mapSeverity(event.severity ?? 'medium'),
-        message: event.message ?? `${event.metric ?? 'Metric'} alert triggered`,
-        timestamp: event.triggeredAt ?? event.createdAt ?? new Date().toISOString(),
-        status: mapStatus(event.status ?? 'active')
-      }));
+      const alertsData: SystemAlert[] = (data || []).map((event: any) => {
+        const alert: SystemAlert = {
+          id: String(event.eventId ?? event.id ?? ''),
+          hostId: String(event.serverId ?? event.server_id ?? event.hostId ?? ''),
+          hostName: event.serverName ?? event.server?.serverName ?? `Server ${event.serverId ?? event.server_id ?? 'Unknown'}`,
+          type: mapMetricType(event.metric ?? event.targetMetric ?? 'cpu'),
+          severity: mapSeverity(event.severity ?? 'medium'),
+          message: '', // 将在下面设置
+          timestamp: event.triggeredAt ?? event.createdAt ?? new Date().toISOString(),
+          status: mapStatus(event.status ?? 'active'),
+          // 新增字段，用于生成更详细的告警消息
+          ruleName: event.ruleName,
+          triggeredValue: event.triggeredValue,
+          threshold: event.threshold,
+          metric: event.metric ?? event.targetMetric
+        };
+        
+        // 使用新的消息生成函数
+        alert.message = generateAlertMessage(alert);
+        
+        return alert;
+      });
       
       setAlerts(alertsData);
     } catch (error) {
@@ -853,11 +892,6 @@ const MonitoringDashboard: React.FC = () => {
                 valueStyle={{ color: activeAlerts > 0 ? '#cf1322' : '#3f8600' }}
                 suffix={activeAlerts === 0 ? 'No alerts' : undefined}
             />
-            {activeAlerts === 0 && (
-              <div style={{ marginTop: 8, fontSize: '12px', color: '#52c41a' }}>
-                All systems normal
-              </div>
-            )}
           </Card>
         </Col>
           <Col span={6}>

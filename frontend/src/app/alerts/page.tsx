@@ -135,6 +135,18 @@ export default function AlertsPage() {
   const [filterStatus, setFilterStatus] = useState<'all' | AlertInstance['status']>('all');
   const [filterSeverity, setFilterSeverity] = useState<'all' | 'low' | 'medium' | 'high' | 'critical'>('all');
 
+  // 分页状态
+  const [eventsPagination, setEventsPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+  });
+  const [rulesPagination, setRulesPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+  });
+
   // 通知通道（示例数据）
   const [channels] = useState([
     { id: 'channel-001', name: 'Admin Email', type: 'email', createdAt: new Date().toISOString(), enabled: true },
@@ -153,6 +165,11 @@ export default function AlertsPage() {
     try {
       const list = await AlertRuleApiService.getAllAlertRules();
       setRules(list);
+      // 更新分页状态
+      setRulesPagination(prev => ({
+        ...prev,
+        total: list.length,
+      }));
     } catch (e: any) {
       message.error(e.message || '加载规则失败');
     } finally {
@@ -192,6 +209,11 @@ export default function AlertsPage() {
         };
       });
       setEvents(mapped);
+      // 更新分页状态
+      setEventsPagination(prev => ({
+        ...prev,
+        total: mapped.length,
+      }));
     } catch (e: any) {
       message.error(e.message || '加载告警事件失败');
     }
@@ -431,6 +453,38 @@ export default function AlertsPage() {
         width: 120,
       },
       {
+        title: 'Target Servers',
+        dataIndex: 'hostIds',
+        render: (hostIds: string[], r: UiAlertRule) => {
+          const serverNames = hostIds.map(hostId => {
+            const server = servers.find(s => s.id.toString() === hostId);
+            return server ? server.serverName : `Server ${hostId}`;
+          });
+          
+          if (serverNames.length <= 2) {
+            return (
+              <div>
+                {serverNames.map((name, index) => (
+                  <Tag key={index} color="blue" style={{ marginBottom: 4 }}>
+                    {name}
+                  </Tag>
+                ))}
+              </div>
+            );
+          } else {
+            return (
+              <Tooltip title={serverNames.join(', ')}>
+                <div>
+                  <Tag color="blue">{serverNames[0]}</Tag>
+                  <Tag color="blue">+{serverNames.length - 1} more</Tag>
+                </div>
+              </Tooltip>
+            );
+          }
+        },
+        width: 200,
+      },
+      {
         title: 'Enabled',
         dataIndex: 'enabled',
         render: (v: boolean, r: UiAlertRule) => (
@@ -461,19 +515,19 @@ export default function AlertsPage() {
               icon={<EditOutlined />}
               onClick={async () => {
                 try {
-                  const full = await AlertRuleApiService.getAlertRuleById(r.id);
-                  setEditing(full);
+                  // 对于合并显示的规则，直接使用合并后的数据，不需要重新获取
+                  setEditing(r);
                   form.setFieldsValue({
-                    name: full.name,
-                    description: full.description,
-                    metric: full.metric,
-                    condition: full.condition,
-                    threshold: full.threshold,
-                    severity: full.severity,
-                    duration: full.duration,
-                    enabled: full.enabled,
-                    hostIds: full.hostIds,
-                    notificationChannels: full.notificationChannels,
+                    name: r.name,
+                    description: r.description,
+                    metric: r.metric,
+                    condition: r.condition,
+                    threshold: r.threshold,
+                    severity: r.severity,
+                    duration: r.duration,
+                    enabled: r.enabled,
+                    hostIds: r.hostIds, // 这里包含了所有相关服务器的ID
+                    notificationChannels: r.notificationChannels,
                   });
                   setRuleModalOpen(true);
                 } catch (e: any) {
@@ -482,10 +536,17 @@ export default function AlertsPage() {
               }}
             />
             <Popconfirm
-              title="确定删除该规则？"
+              title={`确定删除该规则？这将删除所有 ${r.hostIds.length} 个服务器上的相关规则。`}
               onConfirm={async () => {
                 try {
-                  await AlertRuleApiService.deleteAlertRule(r.id);
+                  // 如果有相关规则ID，批量删除；否则删除单个规则
+                  if (r.relatedRuleIds && r.relatedRuleIds.length > 1) {
+                    await AlertRuleApiService.deleteAlertRulesBatch(r.relatedRuleIds);
+                  } else {
+                    // 单个规则删除
+                    await AlertRuleApiService.deleteAlertRule(r.id);
+                  }
+                  
                   message.success('已删除');
                   loadRules();
                 } catch (e: any) {
@@ -515,11 +576,24 @@ export default function AlertsPage() {
   const onSubmit = async (v: AlertRuleFormValues) => {
     try {
       if (editing) {
-        await AlertRuleApiService.updateAlertRule(editing.id, v);
-        message.success('更新成功');
+        // 检查是否是多服务器规则（合并显示的规则）
+        if (editing.relatedRuleIds && editing.relatedRuleIds.length > 1) {
+          // 对于多服务器规则，需要先删除所有相关规则，然后重新创建
+          await AlertRuleApiService.deleteAlertRulesBatch(editing.relatedRuleIds.map(id => id.toString()));
+          const createdRules = await AlertRuleApiService.createAlertRule(v);
+          message.success(`成功更新 ${createdRules.length} 个服务器的告警规则`);
+        } else {
+          // 单服务器规则，直接更新
+          await AlertRuleApiService.updateAlertRule(editing.id, v);
+          message.success('更新成功');
+        }
       } else {
-        await AlertRuleApiService.createAlertRule(v);
-        message.success('创建成功');
+        const createdRules = await AlertRuleApiService.createAlertRule(v);
+        if (createdRules.length === 1) {
+          message.success('创建成功');
+        } else {
+          message.success(`成功为 ${createdRules.length} 个服务器创建告警规则`);
+        }
       }
       setRuleModalOpen(false);
       setEditing(null);
@@ -623,7 +697,22 @@ export default function AlertsPage() {
           rowKey="id"
           dataSource={filteredEvents}
           columns={eventColumns as any}
-          pagination={{ pageSize: 10 }}
+          pagination={{
+            current: eventsPagination.current,
+            pageSize: eventsPagination.pageSize,
+            total: filteredEvents.length,
+            showSizeChanger: true,
+            showQuickJumper: true,
+            showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
+            pageSizeOptions: ['10', '20', '50', '100'],
+            onChange: (page, pageSize) => {
+              setEventsPagination(prev => ({
+                ...prev,
+                current: page,
+                pageSize: pageSize || prev.pageSize,
+              }));
+            },
+          }}
         />
       </Card>
 
@@ -634,7 +723,22 @@ export default function AlertsPage() {
           loading={loading}
           dataSource={rules}
           columns={ruleColumns as any}
-          pagination={{ pageSize: 10 }}
+          pagination={{
+            current: rulesPagination.current,
+            pageSize: rulesPagination.pageSize,
+            total: rules.length,
+            showSizeChanger: true,
+            showQuickJumper: true,
+            showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
+            pageSizeOptions: ['10', '20', '50', '100'],
+            onChange: (page, pageSize) => {
+              setRulesPagination(prev => ({
+                ...prev,
+                current: page,
+                pageSize: pageSize || prev.pageSize,
+              }));
+            },
+          }}
           scroll={{ x: 980 }}
         />
       </Card>
