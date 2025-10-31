@@ -87,6 +87,11 @@ class AlertRuleServiceTest {
             public List<AlertRule> createAlertRulesBatch(List<AlertRule> alertRules) {
                 return null; // Not implemented for this test
             }
+
+            @Override
+            public void deleteAlertRulesBatch(List<Long> ruleIds) {
+                // Not implemented for this test
+            }
         };
 
         testAlertRule = new AlertRule();
