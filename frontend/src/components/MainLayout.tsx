@@ -243,17 +243,36 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     }
   };
 
-  const selectedKeys = [pathname];
+  // Determine selected menu key based on pathname
+  // If pathname is /servers/[id], select /servers
+  const getSelectedKey = () => {
+    if (pathname?.startsWith('/servers/') && pathname !== '/servers') {
+      return '/servers';
+    }
+    return pathname || '/dashboard';
+  };
+
+  const selectedKeys = [getSelectedKey()];
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Sider 
         trigger={null} 
         collapsible 
-        collapsed={collapsed} 
+        collapsed={collapsed}
+        width={200}
+        collapsedWidth={80}
         style={{ 
           background: getSidebarBackgroundByRole(user?.role),
-          boxShadow: '2px 0 8px rgba(0, 0, 0, 0.15)'
+          boxShadow: '2px 0 8px rgba(0, 0, 0, 0.15)',
+          position: 'fixed',
+          left: 0,
+          top: 0,
+          bottom: 0,
+          height: '100vh',
+          overflow: 'auto',
+          overflowX: 'hidden',
+          zIndex: 100
         }}
       >
         <div
@@ -337,7 +356,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         />
       </Sider>
 
-      <Layout>
+      <Layout style={{ marginLeft: collapsed ? 80 : 200, transition: 'margin-left 0.2s' }}>
         <Header
           style={{
             padding: '0 24px',
@@ -346,6 +365,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             alignItems: 'center',
             justifyContent: 'space-between',
             borderBottom: '1px solid #f0f0f0',
+            position: 'sticky',
+            top: 0,
+            zIndex: 99
           }}
         >
           <Button

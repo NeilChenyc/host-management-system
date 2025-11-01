@@ -81,7 +81,12 @@ const ServerDetailPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('latest');
   const [autoRefresh, setAutoRefresh] = useState(true);
-  const [selectedDateRange, setSelectedDateRange] = useState<[string, string] | null>(null);
+  // Default to last 24 hours - use useState initializer to calculate once
+  const [selectedDateRange, setSelectedDateRange] = useState<[Dayjs, Dayjs]>(() => [
+    dayjs().subtract(24, 'hour'),
+    dayjs()
+  ]);
+  const [historicalChartData, setHistoricalChartData] = useState<ChartMetricData[]>([]);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const loadServerDetails = useCallback(async () => {
@@ -168,6 +173,13 @@ const ServerDetailPage: React.FC = () => {
     }
   }, [serverId, loadServerDetails, loadChartData, loadLatestMetrics]);
 
+  // Auto-load historical data with default date range when switching to range tab
+  useEffect(() => {
+    if (activeTab === 'range' && historicalChartData.length === 0) {
+      loadMetricsRange(selectedDateRange[0], selectedDateRange[1]);
+    }
+  }, [activeTab, serverId]);
+
   // Auto refresh chart data
   useEffect(() => {
     if (autoRefresh && serverId) {
@@ -206,27 +218,46 @@ const ServerDetailPage: React.FC = () => {
     }
   };
 
-  const loadMetricsRange = async (startTime?: string, endTime?: string) => {
-    if (!startTime || !endTime) {
-      messageApi.warning('Please select a time range first');
-      return;
-    }
+  const loadMetricsRange = async (startTime?: string | Dayjs, endTime?: string | Dayjs) => {
+    // Use selectedDateRange if parameters are not provided
+    const start = startTime ? (typeof startTime === 'string' ? startTime : startTime.toISOString()) : 
+                   selectedDateRange[0].toISOString();
+    const end = endTime ? (typeof endTime === 'string' ? endTime : endTime.toISOString()) : 
+                 selectedDateRange[1].toISOString();
     
     try {
       setLoading(true);
-      const range = await ServerApiService.getServerMetrics(serverId, 1000);
-      // Ensure range is in array format
-      setMetricsRange(Array.isArray(range) ? range : []);
+      const range = await ServerApiService.getServerMetricsRange(serverId, start, end);
+      
       if (Array.isArray(range) && range.length > 0) {
-        messageApi.success(`Successfully loaded historical data for ${range.length} metrics`);
+        // Convert API response to chart format
+        const chartData: ChartMetricData[] = range.map(item => ({
+          timestamp: item.collectedAt,
+          cpu: item.cpuUsage || 0,
+          memory: item.memoryUsage || 0,
+          disk: item.diskUsage || 0,
+          networkIn: item.networkIn || 0,
+          networkOut: item.networkOut || 0,
+          temperature: item.temperature || 0,
+          loadAvg: item.loadAvg || 0
+        }));
+
+        // Sort by timestamp
+        chartData.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        
+        setHistoricalChartData(chartData);
+        setMetricsRange(range as any); // Store original data for reference
+        messageApi.success(`Successfully loaded ${range.length} historical data points`);
       } else {
+        setHistoricalChartData([]);
+        setMetricsRange([]);
         messageApi.info('No data found in the specified time range');
       }
     } catch (error) {
       console.error('Failed to load metrics range:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to load metrics range data';
       messageApi.error(errorMessage);
-      // Ensure empty array in case of error
+      setHistoricalChartData([]);
       setMetricsRange([]);
     } finally {
       setLoading(false);
@@ -249,18 +280,22 @@ const ServerDetailPage: React.FC = () => {
       loadLatestMetrics();
     } else if (key === 'summary' && metricsSummary.length === 0) {
       loadMetricsSummary();
-    } else if (key === 'range' && metricsRange.length === 0) {
-      loadMetricsRange();
+    } else if (key === 'range') {
+      // Auto load with default date range if no data loaded yet
+      if (historicalChartData.length === 0 && selectedDateRange) {
+        loadMetricsRange(selectedDateRange[0], selectedDateRange[1]);
+      }
     }
   };
 
-  const handleRangeChange = (dates: any, dateStrings: [string, string]) => {
+  const handleRangeChange = (dates: [Dayjs, Dayjs] | null) => {
     if (dates && dates.length === 2) {
-      setSelectedDateRange(dateStrings);
+      setSelectedDateRange([dates[0], dates[1]]);
       // Auto load data
-      loadMetricsRange(dateStrings[0], dateStrings[1]);
+      loadMetricsRange(dates[0], dates[1]);
     } else {
-      setSelectedDateRange(null);
+      // Reset to default if cleared (last 24 hours)
+      setSelectedDateRange([dayjs().subtract(24, 'hour'), dayjs()]);
     }
   };
 
@@ -783,17 +818,16 @@ const ServerDetailPage: React.FC = () => {
                     <Space>
                       <RangePicker
                         showTime
+                        value={selectedDateRange}
                         onChange={handleRangeChange}
                         placeholder={['Start Time', 'End Time']}
+                        format="YYYY-MM-DD HH:mm:ss"
+                        defaultValue={[dayjs().subtract(24, 'hour'), dayjs()]}
                       />
                       <Button
                         type="primary"
                         onClick={() => {
-                          if (selectedDateRange) {
-                            loadMetricsRange(selectedDateRange[0], selectedDateRange[1]);
-                          } else {
-                            messageApi.warning('Please select a time range first');
-                          }
+                          loadMetricsRange(selectedDateRange[0], selectedDateRange[1]);
                         }}
                         loading={loading}
                       >
@@ -801,19 +835,84 @@ const ServerDetailPage: React.FC = () => {
                       </Button>
                     </Space>
                   </div>
-                  {metricsRange.length > 0 ? (
-                    <div>
-                      <Alert
-                        message="Historical Data Loaded"
-                        description={`Found ${metricsRange.length} metric records`}
-                        type="success"
-                        style={{ marginBottom: 16 }}
-                      />
-                      {/* TODO: Implement proper historical data visualization */}
-                    </div>
+                  {historicalChartData.length > 0 ? (
+                    <Row gutter={16}>
+                      {/* System Metrics Chart */}
+                      <Col span={12}>
+                        <Card title="System Metrics">
+                          <ResponsiveContainer width="100%" height={300}>
+                            <LineChart 
+                              data={historicalChartData}
+                              margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                            >
+                              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                              <XAxis 
+                                dataKey="timestamp" 
+                                tickFormatter={(value: string) => dayjs(value).format('MM/DD HH:mm')}
+                                stroke="#666"
+                                fontSize={12}
+                              />
+                              <YAxis 
+                                domain={[0, 100]} 
+                                stroke="#666"
+                                fontSize={12}
+                                tickFormatter={(value) => `${value.toFixed(1)}%`}
+                              />
+                              <RechartsTooltip 
+                                labelFormatter={(value: string) => dayjs(value).format('YYYY-MM-DD HH:mm:ss')}
+                                formatter={(value: number, name: string) => {
+                                  const formattedValue = name.toLowerCase().includes('temperature') 
+                                    ? `${value.toFixed(1)}°C` 
+                                    : `${value.toFixed(1)}%`;
+                                  return [formattedValue, name];
+                                }}
+                              />
+                              <Legend />
+                              <Line type="monotone" dataKey="cpu" stroke="#1890ff" strokeWidth={2} name="CPU Usage (%)" />
+                              <Line type="monotone" dataKey="memory" stroke="#52c41a" strokeWidth={2} name="Memory Usage (%)" />
+                              <Line type="monotone" dataKey="disk" stroke="#faad14" strokeWidth={2} name="Disk Usage (%)" />
+                              <Line type="monotone" dataKey="temperature" stroke="#ff4d4f" strokeWidth={2} name="Temperature (°C)" />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </Card>
+                      </Col>
+
+                      {/* Network Metrics Chart */}
+                      <Col span={12}>
+                        <Card title="Network Traffic">
+                          <ResponsiveContainer width="100%" height={300}>
+                            <LineChart 
+                              data={historicalChartData}
+                              margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                            >
+                              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                              <XAxis 
+                                dataKey="timestamp" 
+                                tickFormatter={(value: string) => dayjs(value).format('MM/DD HH:mm')}
+                                stroke="#666"
+                                fontSize={12}
+                              />
+                              <YAxis 
+                                stroke="#666"
+                                fontSize={12}
+                              />
+                              <RechartsTooltip 
+                                labelFormatter={(value: string) => dayjs(value).format('YYYY-MM-DD HH:mm:ss')}
+                                formatter={(value: number) => `${value.toFixed(2)} MB/s`}
+                              />
+                              <Legend />
+                              <Line type="monotone" dataKey="networkIn" stroke="#722ed1" strokeWidth={2} name="Network In (MB/s)" />
+                              <Line type="monotone" dataKey="networkOut" stroke="#13c2c2" strokeWidth={2} name="Network Out (MB/s)" />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </Card>
+                      </Col>
+                    </Row>
                   ) : (
                     <div style={{ textAlign: 'center', padding: '50px' }}>
-                      <Text type="secondary">Please select a time range to query historical data</Text>
+                      <Text type="secondary">
+                        {loading ? 'Loading historical data...' : 'No historical data found for the selected time range'}
+                      </Text>
                     </div>
                   )}
                 </>

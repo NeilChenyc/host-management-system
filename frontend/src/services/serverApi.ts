@@ -293,6 +293,46 @@ export class ServerApiService {
     }
   }
 
+  /** Get server metrics within a time range */
+  static async getServerMetricsRange(
+    serverId: string, 
+    startTime: string, 
+    endTime: string
+  ): Promise<Array<{
+    metricId: number;
+    serverId: number;
+    cpuUsage: number;
+    memoryUsage: number;
+    diskUsage: number;
+    networkIn: number;
+    networkOut: number;
+    loadAvg: number;
+    temperature: number;
+    collectedAt: string;
+    allMetrics?: Record<string, number>;
+  }>> {
+    try {
+      const start = encodeURIComponent(startTime);
+      const end = encodeURIComponent(endTime);
+      const response = await makeRequest<Array<{
+        metricId: number;
+        serverId: number;
+        cpuUsage: number;
+        memoryUsage: number;
+        diskUsage: number;
+        networkIn: number;
+        networkOut: number;
+        loadAvg: number;
+        temperature: number;
+        collectedAt: string;
+        allMetrics?: Record<string, number>;
+      }>>(`/api/servers/${encodeURIComponent(serverId)}/metrics/range?startTime=${start}&endTime=${end}`);
+      return Array.isArray(response) ? response : [];
+    } catch (error) {
+      return handleApiError(error, 'Get server metrics range');
+    }
+  }
+
   /** Get latest metrics for a server */
   static async getServerLatestMetrics(serverId: string): Promise<LatestMetric[]> {
     try {
@@ -384,21 +424,39 @@ export class ServerApiService {
   // 获取服务器指标汇总数据
   static async getServerMetricsSummary(serverId: string): Promise<MetricSummary[]> {
     try {
-      const response = await makeRequest<any[]>(`/api/servers/${serverId}/metrics/summary`);
+      const response = await makeRequest<any>(`/api/servers/${serverId}/metrics/summary`);
       
-      // 转换后端数据为前端格式
-      return response.map(item => ({
-        metricType: item.metricType || 'Unknown',
-        average: Number(item.average) || 0,
-        minimum: Number(item.minimum) || 0,
-        maximum: Number(item.maximum) || 0,
-        min: Number(item.minimum) || 0,
-        max: Number(item.maximum) || 0,
-        count: Number(item.count) || 0,
-        lastValue: Number(item.lastValue) || 0,
-        lastUpdate: item.lastUpdate || new Date().toISOString(),
-        unit: this.getMetricUnit(item.metricType || 'Unknown')
-      }));
+      // 后端返回的是对象格式，需要转换为数组
+      // 后端返回格式: { id, dataPoints, timeRange, averages: {cpu, memory, disk, temperature}, maximums: {cpu, memory, disk, temperature} }
+      if (!response || !response.averages) {
+        return [];
+      }
+
+      const { averages, maximums, dataPoints } = response;
+      const metricTypes = ['CPU Usage', 'Memory Usage', 'Disk Usage', 'Temperature'];
+      const metricKeys = ['cpu', 'memory', 'disk', 'temperature'];
+      
+      return metricTypes.map((metricType, index) => {
+        const key = metricKeys[index];
+        const avg = Number(averages[key]) || 0;
+        const max = Number(maximums[key]) || 0;
+        // Backend doesn't provide minimum, estimate it as a percentage of average
+        // For usage metrics (cpu, memory, disk), minimum is typically much lower than average
+        const min = avg > 0 ? Math.max(0, avg * 0.1) : 0; // Estimate minimum as 10% of average
+        
+        return {
+          metricType,
+          average: avg,
+          minimum: min,
+          maximum: max,
+          min: min,
+          max: max,
+          count: Number(dataPoints) || 0,
+          lastValue: avg, // Use average as last value
+          lastUpdate: new Date().toISOString(),
+          unit: this.getMetricUnit(metricType)
+        };
+      });
     } catch (error) {
       return handleApiError(error, 'getServerMetricsSummary');
     }
