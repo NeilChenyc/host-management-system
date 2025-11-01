@@ -48,7 +48,7 @@ public class AlertRuleInitializer implements CommandLineRunner {
         cpuAlert.setComparator(">=");
         cpuAlert.setThreshold(80.0);
         cpuAlert.setDuration(60); // 1 minute
-        cpuAlert.setSeverity("WARNING");
+        cpuAlert.setSeverity("high");
         cpuAlert.setEnabled(true);
         cpuAlert.setScopeLevel("SERVER");
         cpuAlert.setServerId(1L);
@@ -62,7 +62,7 @@ public class AlertRuleInitializer implements CommandLineRunner {
         criticalCpuAlert.setComparator(">=");
         criticalCpuAlert.setThreshold(95.0);
         criticalCpuAlert.setDuration(30); // 30 seconds
-        criticalCpuAlert.setSeverity("CRITICAL");
+        criticalCpuAlert.setSeverity("critical");
         criticalCpuAlert.setEnabled(true);
         criticalCpuAlert.setScopeLevel("SERVER");
         criticalCpuAlert.setServerId(1L);
@@ -76,7 +76,7 @@ public class AlertRuleInitializer implements CommandLineRunner {
         memoryAlert.setComparator(">=");
         memoryAlert.setThreshold(85.0);
         memoryAlert.setDuration(120); // 2 minutes
-        memoryAlert.setSeverity("WARNING");
+        memoryAlert.setSeverity("high");
         memoryAlert.setEnabled(true);
         memoryAlert.setScopeLevel("SERVER");
         memoryAlert.setServerId(1L);
@@ -90,7 +90,7 @@ public class AlertRuleInitializer implements CommandLineRunner {
         diskAlert.setComparator(">=");
         diskAlert.setThreshold(90.0);
         diskAlert.setDuration(300); // 5 minutes
-        diskAlert.setSeverity("CRITICAL");
+        diskAlert.setSeverity("critical");
         diskAlert.setEnabled(true);
         diskAlert.setScopeLevel("SERVER");
         diskAlert.setServerId(1L);
@@ -104,7 +104,7 @@ public class AlertRuleInitializer implements CommandLineRunner {
         temperatureAlert.setComparator(">=");
         temperatureAlert.setThreshold(80.0);
         temperatureAlert.setDuration(180); // 3 minutes
-        temperatureAlert.setSeverity("WARNING");
+        temperatureAlert.setSeverity("high");
         temperatureAlert.setEnabled(true);
         temperatureAlert.setScopeLevel("SERVER");
         temperatureAlert.setServerId(1L);
