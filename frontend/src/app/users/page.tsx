@@ -399,9 +399,9 @@ export default function UsersPage() {
             style={{ width: 150 }}
             allowClear
           >
-            <Option value="ADMIN">Administrator</Option>
-            <Option value="MANAGER">Manager</Option>
-            <Option value="USER">Operator</Option>
+            <Option value="admin">Administrator</Option>
+            <Option value="manager">Manager</Option>
+            <Option value="operation">Operator</Option>
           </Select>
         </div>
 
@@ -480,9 +480,9 @@ export default function UsersPage() {
               rules={[{ required: true, message: 'Please select role' }]}
             >
               <Select placeholder="Select user role">
-                <Option value="ADMIN">Administrator</Option>
-                <Option value="MANAGER">Manager</Option>
-                <Option value="USER">Operator</Option>
+                <Option value="admin">Administrator</Option>
+                <Option value="manager">Manager</Option>
+                <Option value="operator">Operator</Option>
               </Select>
             </Form.Item>
 
