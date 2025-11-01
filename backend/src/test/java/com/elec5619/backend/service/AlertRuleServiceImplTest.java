@@ -39,8 +39,7 @@ class AlertRuleServiceImplTest {
     }
 
     @Test
-    void createAlertRule_success_and_uniqueCheck() {
-        when(alertRuleRepository.existsByRuleName("cpu_high")).thenReturn(false);
+    void createAlertRule_success() {
         when(alertRuleRepository.save(any(AlertRule.class))).thenAnswer(inv -> inv.getArgument(0));
         AlertRule created = service.createAlertRule(rule);
         assertNull(created.getRuleId());
@@ -48,25 +47,17 @@ class AlertRuleServiceImplTest {
     }
 
     @Test
-    void createAlertRule_duplicate_throws() {
-        when(alertRuleRepository.existsByRuleName("cpu_high")).thenReturn(true);
-        assertThrows(IllegalArgumentException.class, () -> service.createAlertRule(rule));
-        verify(alertRuleRepository, never()).save(any());
-    }
-
-    @Test
-    void batchCreate_mixesUnique_okAndThrow() {
+    void batchCreate_success() {
         List<AlertRule> list = new ArrayList<>();
         AlertRule a = new AlertRule(); a.setRuleName("a");
         AlertRule b = new AlertRule(); b.setRuleName("b");
         list.add(a); list.add(b);
 
-        when(alertRuleRepository.existsByRuleName("a")).thenReturn(false);
-        when(alertRuleRepository.existsByRuleName("b")).thenReturn(true);
         when(alertRuleRepository.save(any(AlertRule.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        assertThrows(IllegalArgumentException.class, () -> service.createAlertRulesBatch(list));
-        verify(alertRuleRepository, atLeastOnce()).save(any()); // first one saved before exception
+        List<AlertRule> created = service.createAlertRulesBatch(list);
+        assertEquals(2, created.size());
+        verify(alertRuleRepository, times(2)).save(any(AlertRule.class));
     }
 
     @Test
