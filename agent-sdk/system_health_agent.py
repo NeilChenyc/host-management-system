@@ -67,35 +67,6 @@ def get_machine_identifier():
         return str(uuid.uuid4())[:16]
 
 
-def get_server_id_file_path():
-    """Get the path to store server ID locally."""
-    # Store in the same directory as the script
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    return os.path.join(script_dir, '.server_id')
-
-
-def load_stored_server_id():
-    """Load server ID from local file if it exists."""
-    server_id_file = get_server_id_file_path()
-    if os.path.exists(server_id_file):
-        try:
-            with open(server_id_file, 'r') as f:
-                return int(f.read().strip())
-        except (ValueError, IOError):
-            pass
-    return None
-
-
-def store_server_id(server_id: int):
-    """Store server ID to local file."""
-    server_id_file = get_server_id_file_path()
-    try:
-        with open(server_id_file, 'w') as f:
-            f.write(str(server_id))
-    except IOError as e:
-        logging.warning(f"Failed to store server ID: {e}")
-
-
 def get_system_info():
     """Get system information for server registration."""
     try:
@@ -177,37 +148,10 @@ def register_server(conn, machine_id: str, system_info: dict, logger) -> int:
 
 def resolve_server_id(conn, cfg, logger) -> int:
     """
-    Resolve server ID with automatic registration and binding to local machine.
-    Priority:
-    1. Check config file for explicit server_id
-    2. Check local stored server_id file
-    3. Auto-register new server and bind to this machine
+    Resolve server ID by checking database directly.
+    Always check database for existing server based on machine identifier,
+    if not found, register new server.
     """
-    # Method 1: Check config file for explicit server_id
-    server_identification = cfg.get('server_identification', {})
-    if server_identification:
-        sid = server_identification.get('server_id')
-        if sid:
-            logger.info(f"Using server_id from config: {sid}")
-            # Store this ID locally for future use
-            store_server_id(int(sid))
-            return int(sid)
-
-    # Method 2: Check local stored server_id
-    stored_id = load_stored_server_id()
-    if stored_id:
-        # Verify this server still exists in database
-        with conn.cursor() as cur:
-            cur.execute("SELECT id FROM servers WHERE id = %s", (stored_id,))
-            if cur.fetchone():
-                logger.info(f"Using stored server_id: {stored_id}")
-                return stored_id
-            else:
-                logger.warning(f"Stored server_id {stored_id} not found in database, will re-register")
-
-    # Method 3: Auto-register new server
-    logger.info("No valid server_id found, registering new server...")
-    
     # Generate machine identifier
     machine_id = get_machine_identifier()
     logger.info(f"Generated machine identifier: {machine_id}")
@@ -216,11 +160,8 @@ def resolve_server_id(conn, cfg, logger) -> int:
     system_info = get_system_info()
     logger.info(f"System info: {system_info}")
     
-    # Register server in database
+    # Register server in database (will return existing ID if found, or create new one)
     server_id = register_server(conn, machine_id, system_info, logger)
-    
-    # Store server_id locally for future use
-    store_server_id(server_id)
     
     return server_id
 
