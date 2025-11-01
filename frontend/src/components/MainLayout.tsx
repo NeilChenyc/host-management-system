@@ -22,6 +22,7 @@ import {
 import type { MenuProps } from 'antd';
 import { AuthManager } from '@/lib/auth';
 import { getLogoGradientByRole, getPrimaryColorByRole, getSidebarBackgroundByRole } from '@/lib/theme';
+import { SettingsManager, SETTINGS_STORAGE_KEY } from '@/lib/settings';
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
@@ -55,11 +56,13 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const [collapsed, setCollapsed] = React.useState(false);
   const [ready, setReady] = React.useState(false);
   const [user, setUser] = React.useState<any>(null);
+  const [isManualControl, setIsManualControl] = React.useState(false); // Track if user manually controls sidebar
   
   // Alert notification states
   const [activeAlerts, setActiveAlerts] = useState<AlertNotification[]>([]);
   const [alertsLoading, setAlertsLoading] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
+  const [previousAlertIds, setPreviousAlertIds] = useState<Set<string>>(new Set());
 
   // User authentication and data loading
   useEffect(() => {
@@ -71,8 +74,109 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       setReady(true);
       // Load initial alerts
       loadActiveAlerts();
+      
+      // Refresh alerts periodically (every 10 seconds)
+      const alertInterval = setInterval(() => {
+        loadActiveAlerts();
+      }, 10000);
+      
+      return () => {
+        clearInterval(alertInterval);
+      };
     }
   }, [router]);
+
+  // Auto-collapse sidebar based on user preference - only initialize on mount
+  useEffect(() => {
+    const prefs = SettingsManager.getPreferences();
+    if (prefs.sidebarAutoCollapse) {
+      // When auto-collapse is enabled, default to collapsed state
+      setCollapsed(true);
+    }
+  }, []); // Only run once on mount
+
+  // Listen for preference changes (cross-tab and same-tab)
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === SETTINGS_STORAGE_KEY) {
+        const prefs = SettingsManager.getPreferences();
+        if (!prefs.sidebarAutoCollapse) {
+          // If disabled, reset manual control flag
+          setIsManualControl(false);
+        } else {
+          // If enabled, immediately collapse the sidebar (unless manually controlled)
+          if (!isManualControl) {
+            setCollapsed(true);
+          }
+          // Reset manual control when enabling (to allow hover behavior)
+          setIsManualControl(false);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Listen for custom preference update events (same-tab)
+    const handlePreferencesUpdate = () => {
+      const prefs = SettingsManager.getPreferences();
+      if (!prefs.sidebarAutoCollapse) {
+        // If disabled, reset manual control flag
+        setIsManualControl(false);
+      } else {
+        // If enabled, immediately collapse the sidebar (unless manually controlled)
+        if (!isManualControl) {
+          setCollapsed(true);
+        }
+        // Reset manual control when enabling (to allow hover behavior)
+        setIsManualControl(false);
+      }
+    };
+
+    window.addEventListener('preferencesUpdated', handlePreferencesUpdate);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('preferencesUpdated', handlePreferencesUpdate);
+    };
+  }, [isManualControl, collapsed]);
+
+  // Handle hover for auto-collapse sidebar
+  const handleSidebarMouseEnter = () => {
+    if (isManualControl) return; // Don't interfere if user manually controls
+    
+    const prefs = SettingsManager.getPreferences();
+    if (prefs.sidebarAutoCollapse) {
+      setCollapsed(false);
+    }
+  };
+
+  const handleSidebarMouseLeave = () => {
+    if (isManualControl) return; // Don't interfere if user manually controls
+    
+    const prefs = SettingsManager.getPreferences();
+    if (prefs.sidebarAutoCollapse) {
+      setCollapsed(true);
+    }
+  };
+
+  // Handle manual toggle (when user clicks the collapse button)
+  const handleManualToggle = () => {
+    setIsManualControl(true);
+    setCollapsed(!collapsed);
+  };
+
+  // Format alert value based on metric type
+  const formatAlertValue = (value: number, metric: string) => {
+    if (metric === 'cpu' || metric === 'memory' || metric === 'disk') {
+      return `${value.toFixed(1)}%`;
+    } else if (metric === 'temperature') {
+      return `${value.toFixed(1)}°C`;
+    } else if (metric === 'network_in' || metric === 'network_out') {
+      return `${(value / 1024 / 1024).toFixed(2)} MB/s`;
+    } else {
+      return value.toFixed(2);
+    }
+  };
 
   // Load active alerts
   const loadActiveAlerts = async () => {
@@ -94,8 +198,34 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           triggeredAt: e.startedAt || new Date().toISOString(),
         }));
       
+      // Check for new alerts and trigger notifications
+      const currentAlertIds = new Set(activeAlertsData.map(a => a.id));
+      const newAlerts = activeAlertsData.filter(alert => !previousAlertIds.has(alert.id));
+      
+      // Trigger notifications for new alerts
+      if (newAlerts.length > 0) {
+        newAlerts.forEach(alert => {
+          const severityEmoji = {
+            low: 'ℹ️',
+            medium: '⚠️',
+            high: '🔴',
+            critical: '🚨',
+          }[alert.severity] || '⚠️';
+          
+          SettingsManager.showNotification(
+            `${severityEmoji} Alert: ${alert.ruleName}`,
+            {
+              body: `${alert.serverName}: ${alert.metric} = ${formatAlertValue(alert.triggeredValue, alert.metric)} (threshold: ${formatAlertValue(alert.threshold, alert.metric)})`,
+              tag: `alert-${alert.id}`,
+              requireInteraction: alert.severity === 'critical' || alert.severity === 'high',
+            }
+          );
+        });
+      }
+      
       setActiveAlerts(activeAlertsData);
       setNotificationCount(activeAlertsData.length);
+      setPreviousAlertIds(currentAlertIds);
     } catch (error) {
       console.error('Failed to load active alerts:', error);
     } finally {
@@ -106,19 +236,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   // Clear all notifications
   const clearNotifications = () => {
     setNotificationCount(0);
-  };
-
-  // Format alert value based on metric type
-  const formatAlertValue = (value: number, metric: string) => {
-    if (metric === 'cpu' || metric === 'memory' || metric === 'disk') {
-      return `${value.toFixed(1)}%`;
-    } else if (metric === 'temperature') {
-      return `${value.toFixed(1)}°C`;
-    } else if (metric === 'network_in' || metric === 'network_out') {
-      return `${(value / 1024 / 1024).toFixed(2)} MB/s`;
-    } else {
-      return value.toFixed(2);
-    }
   };
 
   // Get severity color
@@ -262,6 +379,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         collapsed={collapsed}
         width={200}
         collapsedWidth={80}
+        onMouseEnter={handleSidebarMouseEnter}
+        onMouseLeave={handleSidebarMouseLeave}
         style={{ 
           background: getSidebarBackgroundByRole(user?.role),
           boxShadow: '2px 0 8px rgba(0, 0, 0, 0.15)',
@@ -272,7 +391,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           height: '100vh',
           overflow: 'auto',
           overflowX: 'hidden',
-          zIndex: 100
+          zIndex: 100,
+          transition: 'all 0.2s ease',
         }}
       >
         <div
@@ -373,7 +493,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           <Button
             type="text"
             icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-            onClick={() => setCollapsed(!collapsed)}
+            onClick={handleManualToggle}
             style={{ fontSize: '16px', width: 64, height: 64 }}
           />
 

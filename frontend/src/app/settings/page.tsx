@@ -1,899 +1,581 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/MainLayout';
 import {
   Card,
-  Form,
-  Input,
-  Select,
   Switch,
   Button,
   Space,
   message,
-  Tabs,
-  Table,
-  Tag,
-  DatePicker,
+  Divider,
   Row,
   Col,
-  Divider,
-  Modal,
-  Progress,
-  Alert,
-  Tooltip,
-  InputNumber,
-  Upload,
-  List,
   Typography,
+  Select,
+  Modal,
+  Avatar,
+  Tag,
+  Descriptions,
+  Alert,
+  Radio,
+  Tooltip,
 } from 'antd';
 import {
   SaveOutlined,
-  ReloadOutlined,
-  DownloadOutlined,
-  UploadOutlined,
-  DeleteOutlined,
-  SearchOutlined,
+  LogoutOutlined,
+  ClearOutlined,
+  UserOutlined,
   SettingOutlined,
-  FileTextOutlined,
+  BellOutlined,
+  EyeOutlined,
   DatabaseOutlined,
-  CloudUploadOutlined,
-  ExclamationCircleOutlined,
-  CheckCircleOutlined,
-  CloseCircleOutlined,
+  ReloadOutlined,
   InfoCircleOutlined,
 } from '@ant-design/icons';
-import type { ColumnsType } from 'antd/es/table';
-import type { RangePickerProps } from 'antd/es/date-picker';
-import dayjs from 'dayjs';
+import { AuthManager } from '@/lib/auth';
+import { SettingsManager, defaultPreferences, type UserPreferences } from '@/lib/settings';
+import { useRouter } from 'next/navigation';
 
-// NOTE: Tabs.TabPane is deprecated; use items prop instead
-const { Search } = Input;
-const { TextArea } = Input;
-const { RangePicker } = DatePicker;
-const { Text, Title } = Typography;
-const { Dragger } = Upload;
-
-// System configuration interface
-interface SystemConfig {
-  siteName: string;
-  siteDescription: string;
-  adminEmail: string;
-  maxLoginAttempts: number;
-  sessionTimeout: number;
-  enableRegistration: boolean;
-  enableEmailNotification: boolean;
-  enableSMSNotification: boolean;
-  backupInterval: number;
-  logRetentionDays: number;
-  maxFileSize: number;
-  allowedFileTypes: string[];
-  maintenanceMode: boolean;
-  debugMode: boolean;
-}
-
-// System log interface
-interface SystemLog {
-  id: string;
-  timestamp: string;
-  level: 'info' | 'warn' | 'error' | 'debug';
-  module: string;
-  message: string;
-  userId?: string;
-  ip?: string;
-  userAgent?: string;
-}
-
-// Backup record interface
-interface BackupRecord {
-  id: string;
-  filename: string;
-  size: string;
-  createTime: string;
-  type: 'manual' | 'auto';
-  status: 'success' | 'failed' | 'in_progress';
-  description?: string;
-}
-
-// Mock system configuration data
-const mockSystemConfig: SystemConfig = {
-  siteName: 'Host Management System',
-  siteDescription: 'Enterprise Host Device Management Platform',
-  adminEmail: 'admin@example.com',
-  maxLoginAttempts: 5,
-  sessionTimeout: 30,
-  enableRegistration: false,
-  enableEmailNotification: true,
-  enableSMSNotification: false,
-  backupInterval: 24,
-  logRetentionDays: 30,
-  maxFileSize: 10,
-  allowedFileTypes: ['jpg', 'png', 'pdf', 'doc', 'docx', 'xls', 'xlsx'],
-  maintenanceMode: false,
-  debugMode: false,
-};
-
-// Mock system log data
-const mockSystemLogs: SystemLog[] = [
-  {
-    id: '1',
-    timestamp: '2024-01-15 10:30:15',
-    level: 'info',
-    module: 'User Management',
-    message: 'User admin login successful',
-    userId: 'admin',
-    ip: '192.168.1.100',
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-  },
-  {
-    id: '2',
-    timestamp: '2024-01-15 10:25:30',
-    level: 'warn',
-    module: 'Device Management',
-    message: 'Device SERVER-001 CPU usage exceeds 80%',
-    ip: '192.168.1.101',
-  },
-  {
-    id: '3',
-    timestamp: '2024-01-15 10:20:45',
-    level: 'error',
-    module: 'System Monitoring',
-    message: 'Database connection failed, attempting to reconnect',
-    ip: '192.168.1.102',
-  },
-  {
-    id: '4',
-    timestamp: '2024-01-15 10:15:20',
-    level: 'info',
-    module: 'Backup Management',
-    message: 'Automatic backup task executed successfully',
-  },
-  {
-    id: '5',
-    timestamp: '2024-01-15 10:10:10',
-    level: 'debug',
-    module: 'System Settings',
-    message: 'System configuration updated: session timeout changed to 30 minutes',
-    userId: 'admin',
-    ip: '192.168.1.100',
-  },
-];
-
-// Mock backup record data
-const mockBackupRecords: BackupRecord[] = [
-  {
-    id: '1',
-    filename: 'system_backup_20240115_103000.zip',
-    size: '125.6 MB',
-    createTime: '2024-01-15 10:30:00',
-    type: 'auto',
-    status: 'success',
-    description: 'Scheduled automatic backup',
-  },
-  {
-    id: '2',
-    filename: 'system_backup_20240114_150000.zip',
-    size: '118.3 MB',
-    createTime: '2024-01-14 15:00:00',
-    type: 'manual',
-    status: 'success',
-    description: 'Manual backup',
-  },
-  {
-    id: '3',
-    filename: 'system_backup_20240113_103000.zip',
-    size: '0 MB',
-    createTime: '2024-01-13 10:30:00',
-    type: 'auto',
-    status: 'failed',
-    description: 'Backup failed: insufficient disk space',
-  },
-  {
-    id: '4',
-    filename: 'system_backup_20240112_103000.zip',
-    size: '112.8 MB',
-    createTime: '2024-01-12 10:30:00',
-    type: 'auto',
-    status: 'success',
-    description: 'Scheduled automatic backup',
-  },
-];
+const { Title, Text } = Typography;
 
 export default function SettingsPage() {
-  const [systemConfig, setSystemConfig] = useState<SystemConfig>(mockSystemConfig);
-  const [logs, setLogs] = useState<SystemLog[]>(mockSystemLogs);
-  const [filteredLogs, setFilteredLogs] = useState<SystemLog[]>(mockSystemLogs);
-  const [backupRecords, setBackupRecords] = useState<BackupRecord[]>(mockBackupRecords);
-  const [loading, setLoading] = useState(false);
-  const [backupLoading, setBackupLoading] = useState(false);
-  const [restoreLoading, setRestoreLoading] = useState(false);
-  const [logLevel, setLogLevel] = useState<string>('all');
-  const [logModule, setLogModule] = useState<string>('all');
-  const [logDateRange, setLogDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(null);
-  const [form] = Form.useForm();
+  const router = useRouter();
+  const [user, setUser] = useState<any>(null);
+  const [preferences, setPreferences] = useState<UserPreferences>(SettingsManager.getPreferences());
+  const [storageSize, setStorageSize] = useState<string>('0 KB');
+  const [notificationPermission, setNotificationPermission] = useState<string>('default');
 
-  // Log level color mapping
-  const logLevelColors = {
-    info: 'blue',
-    warn: 'orange',
-    error: 'red',
-    debug: 'green',
-  };
-
-  // Log level text mapping
-  const logLevelTexts = {
-    info: 'Info',
-    warn: 'Warning',
-    error: 'Error',
-    debug: 'Debug',
-  };
-
-  // Backup status color mapping
-  const backupStatusColors = {
-    success: 'green',
-    failed: 'red',
-    in_progress: 'blue',
-  };
-
-  // Backup status text mapping
-  const backupStatusTexts = {
-    success: 'Success',
-    failed: 'Failed',
-    in_progress: 'In Progress',
-  };
-
-  // System log table column definitions
-  const logColumns: ColumnsType<SystemLog> = [
-    {
-      title: 'Time',
-      dataIndex: 'timestamp',
-      key: 'timestamp',
-      width: 150,
-      sorter: (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
-    },
-    {
-      title: 'Level',
-      dataIndex: 'level',
-      key: 'level',
-      width: 80,
-      render: (level: keyof typeof logLevelColors) => (
-        <Tag color={logLevelColors[level]}>
-          {logLevelTexts[level]}
-        </Tag>
-      ),
-      filters: [
-        { text: 'Info', value: 'info' },
-        { text: 'Warning', value: 'warn' },
-        { text: 'Error', value: 'error' },
-        { text: 'Debug', value: 'debug' },
-      ],
-      onFilter: (value, record) => record.level === value,
-    },
-    {
-      title: 'Module',
-      dataIndex: 'module',
-      key: 'module',
-      width: 120,
-      filters: [
-        { text: 'User Management', value: 'User Management' },
-        { text: 'Device Management', value: 'Device Management' },
-        { text: 'System Monitoring', value: 'System Monitoring' },
-        { text: 'Backup Management', value: 'Backup Management' },
-        { text: 'System Settings', value: 'System Settings' },
-      ],
-      onFilter: (value, record) => record.module === value,
-    },
-    {
-      title: 'Message',
-      dataIndex: 'message',
-      key: 'message',
-      ellipsis: {
-        showTitle: false,
-      },
-      render: (message: string) => (
-        <Tooltip placement="topLeft" title={message}>
-          {message}
-        </Tooltip>
-      ),
-    },
-    {
-      title: 'User',
-      dataIndex: 'userId',
-      key: 'userId',
-      width: 100,
-      render: (userId: string) => userId || '-',
-    },
-    {
-      title: 'IP Address',
-      dataIndex: 'ip',
-      key: 'ip',
-      width: 120,
-      render: (ip: string) => ip || '-',
-    },
-  ];
-
-  // Backup record table column definitions
-  const backupColumns: ColumnsType<BackupRecord> = [
-    {
-      title: 'Filename',
-      dataIndex: 'filename',
-      key: 'filename',
-      ellipsis: {
-        showTitle: false,
-      },
-      render: (filename: string) => (
-        <Tooltip placement="topLeft" title={filename}>
-          <FileTextOutlined style={{ marginRight: 8 }} />
-          {filename}
-        </Tooltip>
-      ),
-    },
-    {
-      title: 'Size',
-      dataIndex: 'size',
-      key: 'size',
-      width: 100,
-      sorter: (a, b) => {
-        const sizeA = parseFloat(a.size.replace(/[^0-9.]/g, ''));
-        const sizeB = parseFloat(b.size.replace(/[^0-9.]/g, ''));
-        return sizeA - sizeB;
-      },
-    },
-    {
-      title: 'Create Time',
-      dataIndex: 'createTime',
-      key: 'createTime',
-      width: 150,
-      sorter: (a, b) => new Date(a.createTime).getTime() - new Date(b.createTime).getTime(),
-    },
-    {
-      title: 'Type',
-      dataIndex: 'type',
-      key: 'type',
-      width: 80,
-      render: (type: string) => (
-        <Tag color={type === 'auto' ? 'blue' : 'green'}>
-          {type === 'auto' ? 'Auto' : 'Manual'}
-        </Tag>
-      ),
-      filters: [
-        { text: 'Auto', value: 'auto' },
-        { text: 'Manual', value: 'manual' },
-      ],
-      onFilter: (value, record) => record.type === value,
-    },
-    {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      width: 80,
-      render: (status: keyof typeof backupStatusColors) => (
-        <Tag color={backupStatusColors[status]}>
-          {backupStatusTexts[status]}
-        </Tag>
-      ),
-      filters: [
-        { text: 'Success', value: 'success' },
-        { text: 'Failed', value: 'failed' },
-        { text: 'In Progress', value: 'in_progress' },
-      ],
-      onFilter: (value, record) => record.status === value,
-    },
-    {
-      title: 'Description',
-      dataIndex: 'description',
-      key: 'description',
-      ellipsis: {
-        showTitle: false,
-      },
-      render: (description: string) => (
-        <Tooltip placement="topLeft" title={description}>
-          {description || '-'}
-        </Tooltip>
-      ),
-    },
-    {
-      title: 'Actions',
-      key: 'action',
-      width: 150,
-      render: (_, record) => (
-        <Space size="small">
-          {record.status === 'success' && (
-            <>
-              <Button
-                type="link"
-                size="small"
-                icon={<DownloadOutlined />}
-                onClick={() => handleDownloadBackup(record)}
-              >
-                Download
-              </Button>
-              <Button
-                type="link"
-                size="small"
-                icon={<UploadOutlined />}
-                onClick={() => handleRestoreBackup(record)}
-              >
-                Restore
-              </Button>
-            </>
-          )}
-          <Button
-            type="link"
-            size="small"
-            danger
-            icon={<DeleteOutlined />}
-            onClick={() => handleDeleteBackup(record.id)}
-          >
-            Delete
-          </Button>
-        </Space>
-      ),
-    },
-  ];
-
-  // Filter logs
-  const filterLogs = (level: string, module: string, dateRange: [dayjs.Dayjs, dayjs.Dayjs] | null) => {
-    let filtered = logs;
-
-    if (level !== 'all') {
-      filtered = filtered.filter((log) => log.level === level);
-    }
-
-    if (module !== 'all') {
-      filtered = filtered.filter((log) => log.module === module);
-    }
-
-    if (dateRange) {
-      const [start, end] = dateRange;
-      filtered = filtered.filter((log) => {
-        const logTime = dayjs(log.timestamp);
-        return logTime.isAfter(start) && logTime.isBefore(end);
-      });
-    }
-
-    setFilteredLogs(filtered);
-  };
-
-  // Log level filtering
-  const handleLogLevelFilter = (value: string) => {
-    setLogLevel(value);
-    filterLogs(value, logModule, logDateRange);
-  };
-
-  // Log module filtering
-  const handleLogModuleFilter = (value: string) => {
-    setLogModule(value);
-    filterLogs(logLevel, value, logDateRange);
-  };
-
-  // Log date range filtering
-  const handleLogDateRangeFilter: RangePickerProps['onChange'] = (dates) => {
-    setLogDateRange(dates as [dayjs.Dayjs, dayjs.Dayjs] | null);
-    filterLogs(logLevel, logModule, dates as [dayjs.Dayjs, dayjs.Dayjs] | null);
-  };
-
-  // Save system configuration
-  const handleSaveConfig = async () => {
+  const calculateStorageSize = () => {
     try {
-      const values = await form.validateFields();
-      setLoading(true);
-      
-      // Simulate saving configuration
-      setTimeout(() => {
-        setSystemConfig({ ...systemConfig, ...values });
-        setLoading(false);
-        message.success('System configuration saved successfully');
-      }, 1000);
+      let total = 0;
+      for (let key in localStorage) {
+        if (localStorage.hasOwnProperty(key)) {
+          total += localStorage.getItem(key)?.length || 0;
+        }
+      }
+      const sizeInKB = (total / 1024).toFixed(2);
+      setStorageSize(`${sizeInKB} KB`);
     } catch (error) {
-      console.error('Form validation failed:', error);
+      setStorageSize('Unknown');
     }
   };
 
-  // Reset system configuration
-  const handleResetConfig = () => {
-    form.setFieldsValue(mockSystemConfig);
-    setSystemConfig(mockSystemConfig);
-    message.info('System configuration has been reset');
-  };
+  useEffect(() => {
+    // Load user info
+    const userData = AuthManager.getUser();
+    setUser(userData);
 
-  // Create backup
-  const handleCreateBackup = () => {
-    setBackupLoading(true);
-    const newBackup: BackupRecord = {
-      id: Date.now().toString(),
-      filename: `system_backup_${dayjs().format('YYYYMMDD_HHmmss')}.zip`,
-      size: '0 MB',
-      createTime: dayjs().format('YYYY-MM-DD HH:mm:ss'),
-      type: 'manual',
-      status: 'in_progress',
-      description: 'Manual backup',
+    // Load saved preferences
+    const prefs = SettingsManager.getPreferences();
+    setPreferences(prefs);
+
+    // Check notification permission
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      setNotificationPermission(Notification.permission);
+    }
+
+    // Calculate storage size
+    calculateStorageSize();
+  }, []);
+
+  // Listen for storage changes to update preferences
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'user_preferences') {
+        const prefs = SettingsManager.getPreferences();
+        setPreferences(prefs);
+      }
     };
 
-    setBackupRecords([newBackup, ...backupRecords]);
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
-    // Simulate backup process
-    setTimeout(() => {
-      const updatedBackup = {
-        ...newBackup,
-        size: `${(Math.random() * 100 + 50).toFixed(1)} MB`,
-        status: 'success' as const,
-      };
-      setBackupRecords(prev => prev.map(record => 
-        record.id === newBackup.id ? updatedBackup : record
-      ));
-      setBackupLoading(false);
-      message.success('Backup created successfully');
-    }, 3000);
+  const handlePreferenceChange = async (field: keyof UserPreferences, value: any) => {
+    try {
+      const newPreferences = { ...preferences, [field]: value };
+      setPreferences(newPreferences);
+      
+      // Save preferences using SettingsManager
+      SettingsManager.savePreferences(newPreferences);
+      
+      // Request notification permission if enabling notifications
+      if (field === 'enableNotifications' && value && notificationPermission !== 'granted') {
+        const granted = await SettingsManager.requestNotificationPermission();
+        setNotificationPermission(granted ? 'granted' : 'denied');
+        if (!granted) {
+          message.warning('Notification permission denied. Please enable it in your browser settings.');
+        }
+      }
+
+      // Trigger storage event to update ThemeProvider (cross-tab)
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: 'user_preferences',
+        newValue: JSON.stringify(newPreferences),
+      }));
+      
+      // Trigger custom event for immediate same-tab update
+      window.dispatchEvent(new CustomEvent('preferencesUpdated', {
+        detail: newPreferences,
+      }));
+
+      calculateStorageSize();
+    } catch (error) {
+      console.error('Failed to save preferences:', error);
+    }
   };
 
-  // Download backup
-  const handleDownloadBackup = (record: BackupRecord) => {
-    message.info(`Downloading backup file: ${record.filename}`);
-    // Actual download logic should be implemented here
-  };
-
-  // Restore backup
-  const handleRestoreBackup = (record: BackupRecord) => {
+  const handleResetPreferences = () => {
     Modal.confirm({
-      title: 'Confirm Restore Backup',
-      content: `Are you sure you want to restore backup file "${record.filename}"? This operation will overwrite current system data.`,
-      icon: <ExclamationCircleOutlined />,
-      okText: 'Confirm Restore',
+      title: 'Reset Settings',
+      content: 'Are you sure you want to reset all settings to default values?',
+      okText: 'Reset',
       cancelText: 'Cancel',
-      okType: 'danger',
       onOk: () => {
-        setRestoreLoading(true);
-        // Simulate restore process
+        SettingsManager.resetPreferences();
+        setPreferences(defaultPreferences);
+        
+        // Trigger storage event (cross-tab)
+        window.dispatchEvent(new StorageEvent('storage', {
+          key: 'user_preferences',
+          newValue: null,
+        }));
+        
+        // Trigger custom event for immediate same-tab update
+        window.dispatchEvent(new CustomEvent('preferencesUpdated'));
+
+        message.success('Settings reset to default values');
+        calculateStorageSize();
+      },
+    });
+  };
+
+  const handleTestNotification = async () => {
+    const prefs = SettingsManager.getPreferences();
+    if (!prefs.enableNotifications) {
+      message.warning('Please enable notifications first');
+      return;
+    }
+
+    if (notificationPermission !== 'granted') {
+      const granted = await SettingsManager.requestNotificationPermission();
+      setNotificationPermission(granted ? 'granted' : 'denied');
+      if (!granted) {
+        message.error('Notification permission denied');
+        return;
+      }
+    }
+
+    SettingsManager.showNotification('Test Notification', {
+      body: 'This is a test notification from the Host Management System.',
+      tag: 'test-notification',
+    });
+    message.success('Test notification sent!');
+  };
+
+  const handleClearCache = () => {
+    Modal.confirm({
+      title: 'Clear Browser Cache',
+      content: 'This will clear cached data but keep your login session and preferences. Continue?',
+      okText: 'Clear',
+      cancelText: 'Cancel',
+      onOk: () => {
+        // Clear cache (this is a client-side action)
+        message.info('Cache cleared. Note: Some cached data may require page reload to clear completely.');
         setTimeout(() => {
-          setRestoreLoading(false);
-          message.success('Backup restored successfully');
-        }, 2000);
+          window.location.reload();
+        }, 1000);
       },
     });
   };
 
-  // Delete backup
-  const handleDeleteBackup = (id: string) => {
+  const handleClearLocalStorage = () => {
     Modal.confirm({
-      title: 'Confirm Delete Backup',
-      content: 'Are you sure you want to delete this backup file? This action cannot be undone.',
-      icon: <ExclamationCircleOutlined />,
-      okText: 'Confirm Delete',
+      title: 'Clear Local Storage',
+      content: 'Warning: This will clear ALL local storage data including login session, preferences, and other saved data. You will be logged out. Continue?',
+      okText: 'Clear All',
       cancelText: 'Cancel',
       okType: 'danger',
       onOk: () => {
-        setBackupRecords(backupRecords.filter(record => record.id !== id));
-        message.success('Backup file deleted successfully');
+        localStorage.clear();
+        message.warning('Local storage cleared. You will be logged out.');
+        setTimeout(() => {
+          AuthManager.logout();
+          router.replace('/auth/login');
+        }, 1500);
       },
     });
   };
 
-  // Clear logs
-  const handleClearLogs = () => {
+  const handleLogout = () => {
     Modal.confirm({
-      title: 'Confirm Clear Logs',
-      content: 'Are you sure you want to clear all system logs? This operation cannot be undone.',
-      icon: <ExclamationCircleOutlined />,
-      okText: 'Confirm Clear',
+      title: 'Logout',
+      content: 'Are you sure you want to logout?',
+      okText: 'Logout',
       cancelText: 'Cancel',
-      okType: 'danger',
       onOk: () => {
-        setLogs([]);
-        setFilteredLogs([]);
-        message.success('System logs cleared successfully');
+        AuthManager.logout();
+        message.success('Logged out successfully');
+        router.replace('/auth/login');
       },
     });
   };
 
-  const configTab = (
-    <Card>
-      <Form
-        form={form}
-        layout="vertical"
-        initialValues={systemConfig}
-        onFinish={handleSaveConfig}
-      >
-        <Title level={4}>Basic Settings</Title>
-        <Row gutter={16}>
-          <Col span={12}>
-            <Form.Item
-              name="siteName"
-              label="Site Name"
-              rules={[{ required: true, message: 'Please enter site name' }]}
-            >
-              <Input placeholder="Please enter site name" />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item
-              name="adminEmail"
-              label="Admin Email"
-              rules={[
-                { required: true, message: 'Please enter admin email' },
-                { type: 'email', message: 'Please enter a valid email address' },
-              ]}
-            >
-              <Input placeholder="Please enter admin email" />
-            </Form.Item>
-          </Col>
-        </Row>
-        <Form.Item
-          name="siteDescription"
-          label="Site Description"
+  const getRoleColor = (role?: string) => {
+    const colors: Record<string, string> = {
+      admin: 'blue',
+      operator: 'purple',
+      operation: 'purple',
+      manager: 'green',
+    };
+    return colors[role?.toLowerCase() || ''] || 'default';
+  };
+
+  const getRoleText = (role?: string) => {
+    if (!role) return 'Unknown';
+    return role.charAt(0).toUpperCase() + role.slice(1).toLowerCase();
+  };
+
+  return (
+    <MainLayout>
+      <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
+          <Title level={2} style={{ marginBottom: '24px' }}>
+            <SettingOutlined /> System Settings
+          </Title>
+
+        {/* Account Information */}
+        <Card
+          title={
+            <span>
+              <UserOutlined style={{ marginRight: 8 }} />
+              Account Information
+            </span>
+          }
+          style={{ marginBottom: '24px' }}
         >
-          <TextArea rows={3} placeholder="Please enter site description" />
-        </Form.Item>
+          {user ? (
+            <Descriptions column={1} bordered>
+              <Descriptions.Item label="Username">
+                <Space>
+                  <Avatar icon={<UserOutlined />} style={{ backgroundColor: '#1890ff' }} />
+                  <Text strong>{user.username || 'N/A'}</Text>
+                </Space>
+              </Descriptions.Item>
+              <Descriptions.Item label="Email">
+                {user.email || 'N/A'}
+              </Descriptions.Item>
+              <Descriptions.Item label="Role">
+                <Tag color={getRoleColor(user.role)}>
+                  {getRoleText(user.role)}
+                </Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="User ID">
+                {user.id || 'N/A'}
+              </Descriptions.Item>
+            </Descriptions>
+          ) : (
+            <Alert
+              message="No user information available"
+              type="warning"
+              showIcon
+            />
+          )}
+        </Card>
 
-        <Divider />
-        <Title level={4}>Security Settings</Title>
-        <Row gutter={16}>
-          <Col span={8}>
-            <Form.Item
-              name="maxLoginAttempts"
-              label="Max Login Attempts"
-              rules={[{ required: true, message: 'Please enter max login attempts' }]}
-            >
-              <InputNumber min={1} max={10} style={{ width: '100%' }} />
-            </Form.Item>
-          </Col>
-          <Col span={8}>
-            <Form.Item
-              name="sessionTimeout"
-              label="Session Timeout (minutes)"
-              rules={[{ required: true, message: 'Please enter session timeout' }]}
-            >
-              <InputNumber min={5} max={120} style={{ width: '100%' }} />
-            </Form.Item>
-          </Col>
-          <Col span={8}>
-            <Form.Item
-              name="maxFileSize"
-              label="Max File Size (MB)"
-              rules={[{ required: true, message: 'Please enter max file size' }]}
-            >
-              <InputNumber min={1} max={100} style={{ width: '100%' }} />
-            </Form.Item>
-          </Col>
-        </Row>
-        <Row gutter={16}>
-          <Col span={8}>
-            <Form.Item
-              name="enableRegistration"
-              label="Allow User Registration"
-              valuePropName="checked"
-            >
-              <Switch />
-            </Form.Item>
-          </Col>
-          <Col span={8}>
-            <Form.Item
-              name="maintenanceMode"
-              label="Maintenance Mode"
-              valuePropName="checked"
-            >
-              <Switch />
-            </Form.Item>
-          </Col>
-          <Col span={8}>
-            <Form.Item
-              name="debugMode"
-              label="Debug Mode"
-              valuePropName="checked"
-            >
-              <Switch />
-            </Form.Item>
-          </Col>
-        </Row>
+        {/* Appearance Settings */}
+        <Card
+          title={
+            <span>
+              <EyeOutlined style={{ marginRight: 8 }} />
+              Appearance Settings
+            </span>
+          }
+          style={{ marginBottom: '24px' }}
+        >
+          <Row gutter={[24, 16]}>
+            <Col xs={24} sm={12} md={8}>
+              <div style={{ marginBottom: 16 }}>
+                <Text strong style={{ display: 'block', marginBottom: 8 }}>
+                  Font Size
+                  <Tooltip title="Adjust the base font size for better readability">
+                    <InfoCircleOutlined style={{ marginLeft: 4, color: '#999' }} />
+                  </Tooltip>
+                </Text>
+                <Radio.Group
+                  value={preferences.fontSize}
+                  onChange={(e) => handlePreferenceChange('fontSize', e.target.value)}
+                >
+                  <Radio.Button value="small">Small</Radio.Button>
+                  <Radio.Button value="medium">Medium</Radio.Button>
+                  <Radio.Button value="large">Large</Radio.Button>
+                </Radio.Group>
+              </div>
+            </Col>
 
-        <Divider />
-        <Title level={4}>Notification Settings</Title>
-        <Row gutter={16}>
-          <Col span={12}>
-            <Form.Item
-              name="enableEmailNotification"
-              label="Enable Email Notification"
-              valuePropName="checked"
-            >
-              <Switch />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item
-              name="enableSMSNotification"
-              label="Enable SMS Notification"
-              valuePropName="checked"
-            >
-              <Switch />
-            </Form.Item>
-          </Col>
-        </Row>
+            <Col xs={24} sm={12} md={8}>
+              <div style={{ marginBottom: 16 }}>
+                <Text strong style={{ display: 'block', marginBottom: 8 }}>
+                  Language
+                  <Tooltip title="Select your preferred language">
+                    <InfoCircleOutlined style={{ marginLeft: 4, color: '#999' }} />
+                  </Tooltip>
+                </Text>
+                <Select
+                  value={preferences.language}
+                  onChange={(value) => handlePreferenceChange('language', value)}
+                  style={{ width: '100%' }}
+                >
+                  <Select.Option value="en">English</Select.Option>
+                  <Select.Option value="zh">中文</Select.Option>
+                </Select>
+              </div>
+            </Col>
 
-        <Divider />
-        <Title level={4}>System Maintenance</Title>
-        <Row gutter={16}>
-          <Col span={8}>
-            <Form.Item
-              name="backupInterval"
-              label="Backup Interval (hours)"
-              rules={[{ required: true, message: 'Please enter backup interval' }]}
-            >
-              <InputNumber min={1} max={168} style={{ width: '100%' }} />
-            </Form.Item>
-          </Col>
-          <Col span={8}>
-            <Form.Item
-              name="logRetentionDays"
-              label="Log Retention Days"
-              rules={[{ required: true, message: 'Please enter log retention days' }]}
-            >
-              <InputNumber min={1} max={365} style={{ width: '100%' }} />
-            </Form.Item>
-          </Col>
-        </Row>
+            <Col xs={24} sm={24} md={8}>
+              <div style={{ marginBottom: 16 }}>
+                <Text strong style={{ display: 'block', marginBottom: 8 }}>
+                  Theme Color
+                  <Tooltip title="Override role-based theme (auto uses your role's default theme)">
+                    <InfoCircleOutlined style={{ marginLeft: 4, color: '#999' }} />
+                  </Tooltip>
+                </Text>
+                <Select
+                  value={preferences.themeOverride}
+                  onChange={(value) => handlePreferenceChange('themeOverride', value)}
+                  style={{ width: '100%' }}
+                >
+                  <Select.Option value="auto">Auto (Role-based)</Select.Option>
+                  <Select.Option value="blue">Blue</Select.Option>
+                  <Select.Option value="purple">Purple</Select.Option>
+                  <Select.Option value="green">Green</Select.Option>
+                  <Select.Option value="red">Red</Select.Option>
+                  <Select.Option value="orange">Orange</Select.Option>
+                </Select>
+              </div>
+            </Col>
+          </Row>
 
-        <Form.Item>
+          <Divider />
+
+          <Row gutter={[24, 16]}>
+            <Col xs={24} sm={12}>
+              <Space>
+                <Switch
+                  checked={preferences.compactMode}
+                  onChange={(checked) => handlePreferenceChange('compactMode', checked)}
+                />
+                <Text>
+                  Compact Mode
+                  <Tooltip title="Enable compact mode for more content per screen">
+                    <InfoCircleOutlined style={{ marginLeft: 4, color: '#999' }} />
+                  </Tooltip>
+                </Text>
+              </Space>
+            </Col>
+
+            <Col xs={24} sm={12}>
+              <Space>
+                <Switch
+                  checked={preferences.sidebarAutoCollapse}
+                  onChange={(checked) => handlePreferenceChange('sidebarAutoCollapse', checked)}
+                />
+                <Text>
+                  Auto-collapse Sidebar
+                  <Tooltip title="Automatically collapse sidebar on smaller screens">
+                    <InfoCircleOutlined style={{ marginLeft: 4, color: '#999' }} />
+                  </Tooltip>
+                </Text>
+              </Space>
+            </Col>
+          </Row>
+        </Card>
+
+        {/* Notification Settings */}
+        <Card
+          title={
+            <span>
+              <BellOutlined style={{ marginRight: 8 }} />
+              Notification Settings
+            </span>
+          }
+          style={{ marginBottom: '24px' }}
+        >
+          <Row gutter={[24, 16]}>
+            <Col xs={24} sm={12}>
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Space>
+                  <Switch
+                    checked={preferences.enableNotifications}
+                    onChange={(checked) => handlePreferenceChange('enableNotifications', checked)}
+                  />
+                  <Text>
+                    Enable Notifications
+                    <Tooltip title="Enable browser notifications for alerts and updates">
+                      <InfoCircleOutlined style={{ marginLeft: 4, color: '#999' }} />
+                    </Tooltip>
+                  </Text>
+                </Space>
+                {notificationPermission !== 'default' && (
+                  <Tag color={notificationPermission === 'granted' ? 'success' : 'warning'}>
+                    Permission: {notificationPermission}
+                  </Tag>
+                )}
+              </Space>
+            </Col>
+
+            <Col xs={24} sm={12}>
+              <Space>
+                <Switch
+                  checked={preferences.enableSound}
+                  onChange={(checked) => handlePreferenceChange('enableSound', checked)}
+                />
+                <Text>
+                  Enable Sound
+                  <Tooltip title="Play sound effects for notifications">
+                    <InfoCircleOutlined style={{ marginLeft: 4, color: '#999' }} />
+                  </Tooltip>
+                </Text>
+              </Space>
+            </Col>
+          </Row>
+          
+          <Divider />
+          
           <Space>
             <Button
-              type="primary"
-              htmlType="submit"
-              icon={<SaveOutlined />}
-              loading={loading}
+              icon={<BellOutlined />}
+              onClick={handleTestNotification}
+              disabled={!preferences.enableNotifications}
             >
-              Save Configuration
+              Test Notification
             </Button>
-            <Button
-              icon={<ReloadOutlined />}
-              onClick={handleResetConfig}
-            >
-              Reset Configuration
-            </Button>
-          </Space>
-        </Form.Item>
-      </Form>
-    </Card>
-  );
-
-  const logsTab = (
-    <>
-      <Card style={{ marginBottom: 16 }}>
-        <Row gutter={[16, 16]}>
-          <Col xs={24} sm={6} md={4}>
-            <Select
-              value={logLevel}
-              onChange={handleLogLevelFilter}
-              style={{ width: '100%' }}
-              placeholder="Log Level"
-            >
-              <Select.Option value="all">All Levels</Select.Option>
-              <Select.Option value="info">Info</Select.Option>
-              <Select.Option value="warn">Warning</Select.Option>
-              <Select.Option value="error">Error</Select.Option>
-              <Select.Option value="debug">Debug</Select.Option>
-            </Select>
-          </Col>
-          <Col xs={24} sm={6} md={4}>
-            <Select
-              value={logModule}
-              onChange={handleLogModuleFilter}
-              style={{ width: '100%' }}
-              placeholder="Module Filter"
-            >
-              <Select.Option value="all">All Modules</Select.Option>
-              <Select.Option value="User Management">User Management</Select.Option>
-              <Select.Option value="Device Management">Device Management</Select.Option>
-              <Select.Option value="System Monitoring">System Monitoring</Select.Option>
-              <Select.Option value="Backup Management">Backup Management</Select.Option>
-              <Select.Option value="System Settings">System Settings</Select.Option>
-            </Select>
-          </Col>
-          <Col xs={24} sm={12} md={8}>
-            <RangePicker
-              value={logDateRange}
-              onChange={handleLogDateRangeFilter}
-              style={{ width: '100%' }}
-              placeholder={["Start Time", "End Time"]}
-            />
-          </Col>
-          <Col xs={24} sm={24} md={8}>
-            <Space style={{ float: 'right' }}>
+            {notificationPermission !== 'granted' && preferences.enableNotifications && (
               <Button
-                icon={<ReloadOutlined />}
-                onClick={() => {
-                  setLogLevel('all');
-                  setLogModule('all');
-                  setLogDateRange(null);
-                  setFilteredLogs(logs);
+                type="link"
+                onClick={async () => {
+                  const granted = await SettingsManager.requestNotificationPermission();
+                  setNotificationPermission(granted ? 'granted' : 'denied');
+                  if (granted) {
+                    message.success('Notification permission granted!');
+                  } else {
+                    message.warning('Notification permission denied');
+                  }
                 }}
               >
-                Reset Filter
+                Request Permission
               </Button>
-              <Button
-                danger
-                icon={<DeleteOutlined />}
-                onClick={handleClearLogs}
-              >
-                Clear Logs
-              </Button>
-            </Space>
-          </Col>
-        </Row>
-      </Card>
+            )}
+          </Space>
+        </Card>
 
-      <Card>
-        <Table
-          columns={logColumns}
-          dataSource={filteredLogs}
-          rowKey="id"
-          pagination={{
-            total: filteredLogs.length,
-            pageSize: 20,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
-          }}
-          scroll={{ x: 1000 }}
-        />
-      </Card>
-    </>
-  );
-
-  const backupTab = (
-    <>
-      <Card style={{ marginBottom: 16 }}>
-        <Row gutter={16}>
-          <Col span={12}>
+        {/* Data Management */}
+        <Card
+          title={
+            <span>
+              <DatabaseOutlined style={{ marginRight: 8 }} />
+              Data Management
+            </span>
+          }
+          style={{ marginBottom: '24px' }}
+        >
+          <Space direction="vertical" style={{ width: '100%' }} size="middle">
             <Alert
-              message="Backup Reminder"
-              description="It is recommended to backup system data regularly to ensure data security. Current backup interval is 24 hours."
+              message="Local Storage Information"
+              description={
+                <div>
+                  <Text>Current storage usage: <Text strong>{storageSize}</Text></Text>
+                  <br />
+                  <Text type="secondary" style={{ fontSize: '12px' }}>
+                    This includes your login session, preferences, and cached data.
+                  </Text>
+                </div>
+              }
               type="info"
               showIcon
               icon={<InfoCircleOutlined />}
             />
-          </Col>
-          <Col span={12}>
-            <Space style={{ float: 'right' }}>
+
+            <Space wrap>
               <Button
-                type="primary"
-                icon={<CloudUploadOutlined />}
-                onClick={handleCreateBackup}
-                loading={backupLoading}
+                icon={<ReloadOutlined />}
+                onClick={calculateStorageSize}
               >
-                Create Backup
+                Refresh Storage Info
+              </Button>
+              <Button
+                icon={<ClearOutlined />}
+                onClick={handleClearCache}
+              >
+                Clear Cache
+              </Button>
+              <Button
+                danger
+                icon={<ClearOutlined />}
+                onClick={handleClearLocalStorage}
+              >
+                Clear All Data
               </Button>
             </Space>
-          </Col>
-        </Row>
-      </Card>
+          </Space>
+        </Card>
 
-      <Card>
-        <Table
-          columns={backupColumns}
-          dataSource={backupRecords}
-          rowKey="id"
-          loading={restoreLoading}
-          pagination={{
-            total: backupRecords.length,
-            pageSize: 10,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
-          }}
-          scroll={{ x: 1000 }}
-        />
-      </Card>
-    </>
-  );
+        {/* Actions */}
+        <Card
+          title={
+            <span>
+              <SettingOutlined style={{ marginRight: 8 }} />
+              Actions
+            </span>
+          }
+          style={{ marginBottom: '24px' }}
+        >
+          <Space direction="vertical" style={{ width: '100%' }} size="middle">
+            <Alert
+              message="Auto-Save Enabled"
+              description={
+                <Text type="secondary">
+                  All settings are automatically saved when you change them. No need to click a save button!
+                </Text>
+              }
+              type="success"
+              showIcon
+            />
 
-  const items = [
-    { key: 'config', label: (<span><SettingOutlined />System Configuration</span>), children: configTab },
-    { key: 'logs', label: (<span><FileTextOutlined />System Logs</span>), children: logsTab },
-    { key: 'backup', label: (<span><DatabaseOutlined />Backup & Recovery</span>), children: backupTab },
-  ];
+            <Space wrap>
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={handleResetPreferences}
+                size="large"
+              >
+                Reset to Defaults
+              </Button>
+              <Divider type="vertical" />
+              <Button
+                danger
+                icon={<LogoutOutlined />}
+                onClick={handleLogout}
+                size="large"
+              >
+                Logout
+              </Button>
+            </Space>
 
-  return (
-    <MainLayout>
-      <Tabs defaultActiveKey="config" type="card" items={items} />
+            <Alert
+              message="Settings Storage"
+              description={
+                <Text type="secondary">
+                  Your preferences are saved locally in your browser. They will persist across sessions
+                  but will be cleared if you clear browser data or use incognito/private mode.
+                </Text>
+              }
+              type="info"
+              showIcon
+              style={{ marginTop: '16px' }}
+            />
+          </Space>
+        </Card>
+      </div>
     </MainLayout>
   );
 }
