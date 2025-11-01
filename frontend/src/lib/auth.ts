@@ -57,7 +57,6 @@ export class AuthManager {
     } catch {}
   }
 
-  // ===== 状态 =====
   static isAuthenticated(): boolean {
     return !!this.getToken();
   }
@@ -67,7 +66,6 @@ export class AuthManager {
     this.setUser(null);
   }
 
-  // ===== 通用 fetch =====
   static async fetchWithAuth<T = unknown>(path: string, init?: RequestInit): Promise<T> {
     const token = this.getToken();
     const res = await fetch(`${API_BASE_URL}${path}`, {
@@ -99,7 +97,7 @@ export class AuthManager {
     return (await res.json()) as T;
   }
 
-  // ===== 登录（请根据后端返回结构调整字段名） =====
+
   static async login(username: string, password: string): Promise<{ token: string } & Json> {
     // Backend expects /api/auth/signin with body { username, password }
     const res = await fetch(`${API_BASE_URL}/api/auth/signin`, {
@@ -146,7 +144,6 @@ export class AuthManager {
     return data;
   }
 
-  // ===== 注册 =====
   static async register(userData: { username: string; email: string; password: string; role: string }): Promise<{ success: boolean; message?: string } & Json> {
     // Backend expects /api/auth/signup with body { username, email, password, role }
     const res = await fetch(`${API_BASE_URL}/api/auth/signup`, {

@@ -8,18 +8,18 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    // 只检查一次，避免无限循环
+    // Check only once to avoid infinite loops
     const isAuth = AuthManager.isAuthenticated();
     console.log('Home page - isAuthenticated:', isAuth);
     
     if (isAuth) {
-      // 如果已登录，跳转到dashboard
-      router.replace('/dashboard'); // 使用 replace 而不是 push
+      // If logged in, redirect to dashboard
+      router.replace('/dashboard'); // Use replace instead of push
     } else {
-      // 如果未登录，跳转到登录页
-      router.replace('/auth/login'); // 使用 replace 而不是 push
+      // If not logged in, redirect to login page
+      router.replace('/auth/login'); // Use replace instead of push
     }
-  }, []); // 移除router依赖，只在组件挂载时执行一次
+  }, []); // Remove router dependency, execute only once when component mounts
 
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>

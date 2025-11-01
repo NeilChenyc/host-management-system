@@ -331,7 +331,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     </div>
   );
 
-  // 根据用户角色过滤菜单项
+  // Filter menu items based on user role
   const getMenuItems = () => {
     const baseItems = [
       { key: '/dashboard', icon: <DashboardOutlined />, label: 'Dashboard' },
@@ -341,7 +341,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       { key: '/settings', icon: <SettingOutlined />, label: 'Settings' },
     ];
 
-    // 只有管理员才能看到用户管理菜单
+    // Only administrators can see the user management menu
     if (user?.role === 'admin') {
       baseItems.splice(3, 0, { key: '/users', icon: <UserOutlined />, label: 'Users' });
     }
@@ -358,8 +358,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   ];
 
   const handleMenuClick = ({ key }: { key: string }) => {
-    // 防止页面刷新，使用 Next.js 路由
-    console.log('Navigation to:', key); // 添加调试日志
+    // Prevent page refresh, use Next.js router
+    console.log('Navigation to:', key); // Add debug log
     router.push(key);
   };
   
@@ -479,11 +479,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             background: 'transparent',
             fontSize: '14px'
           }}
-          // 确保不使用默认的链接行为
+          // Ensure no default link behavior is used
           inlineCollapsed={collapsed}
-          // 禁用默认的链接行为
+          // Disable default link behavior
           selectable={true}
-          // 确保菜单项不会触发页面刷新
+          // Ensure menu items don't trigger page refresh
           triggerSubMenuAction="click"
         />
       </Sider>

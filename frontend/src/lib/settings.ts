@@ -245,10 +245,10 @@ export const compactTheme: ThemeConfig = {
       cellPaddingInline: 4,
     },
     Space: {
-      sizeSmall: 2,
+      sizeSM: 2,
       size: 4,
-      sizeMiddle: 6,
-      sizeLarge: 8,
+      sizeMD: 6,
+      sizeLG: 8,
     },
     Menu: {
       itemPaddingInline: 8,

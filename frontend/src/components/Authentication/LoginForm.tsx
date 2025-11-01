@@ -35,7 +35,7 @@ interface LoginFormProps {
 const LoginForm: React.FC<LoginFormProps> = ({ onLogin, loading = false }) => {
   const [form] = Form.useForm();
   const [isLoading, setIsLoading] = useState(false);
-  // 新增：用于展示"登录失败"的错误提示信息。如果为 null 则不展示
+  // New: Used to display "login failed" error message. If null, no message is displayed
   const [loginError, setLoginError] = useState<string | null>(null);
 
   // Message API for React 19 compatibility
@@ -43,15 +43,15 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, loading = false }) => {
   const router = useRouter();
 
   /**
-   * 处理登录表单提交
-   * - 清空旧的错误提示（如果有）
-   * - 调用 AuthManager.login 进行登录
-   * - 根据返回结果显示成功或失败的消息
-   * - 失败时除了右上角 message 提示外，还会在表单上方展示一个明显的错误 Alert
+   * Handle login form submission
+   * - Clear old error messages (if any)
+   * - Call AuthManager.login to perform login
+   * - Display success or failure messages based on the result
+   * - On failure, display a prominent error Alert above the form in addition to the top-right message notification
    */
   const handleSubmit = async (values: LoginFormData) => {
     setIsLoading(true);
-    // 每次提交时先清空之前的错误提示，避免旧错误一直显示
+    // Clear previous error messages on each submission to avoid displaying old errors
     setLoginError(null);
     try {
       await AuthManager.login(values.username, values.password);
@@ -70,7 +70,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, loading = false }) => {
       // Redirect to main page using Next.js router
       router.push("/");
     } catch (error) {
-      // 捕获到异常（例如网络错误或服务器异常）
+      // Caught exception (e.g., network error or server exception)
       setLoginError(
         "Login failed due to a network or server error. Please try again."
       );
@@ -83,7 +83,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, loading = false }) => {
   return (
     <div>
       {contextHolder}
-      {/* 如果存在登录错误，则在表单上方展示一个醒目的错误警告框 */}
+      {/* If login error exists, display a prominent error alert above the form */}
       {loginError && (
         <Alert
           type="error"
