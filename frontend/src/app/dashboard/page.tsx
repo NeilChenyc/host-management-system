@@ -344,11 +344,25 @@ const MonitoringDashboard: React.FC = () => {
       
       // Real-time data updates
       if (autoRefresh) {
+        // Clear any existing interval first
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
         intervalRef.current = setInterval(() => {
           // Periodically refresh server overview and alerts (every 10 seconds)
+          console.log('[Dashboard] Auto-refreshing server overview and alerts...');
           loadServersOverview();
           loadAlerts();
         }, 10000); // Update every 10 seconds
+        console.log('[Dashboard] Auto-refresh enabled: interval set for server overview and alerts');
+      } else {
+        // Clear interval if auto refresh is disabled
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+          console.log('[Dashboard] Auto-refresh disabled: interval cleared');
+        }
       }
     };
 
@@ -357,9 +371,11 @@ const MonitoringDashboard: React.FC = () => {
     return () => {
       if (wsRef.current) {
         wsRef.current.close();
+        wsRef.current = null;
       }
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
     };
   }, [autoRefresh]);
@@ -376,12 +392,17 @@ const MonitoringDashboard: React.FC = () => {
     if (autoRefresh && selectedServerId) {
       // Set interval to refresh every 5 seconds
       const refreshInterval = setInterval(() => {
+        console.log(`[Dashboard] Auto-refreshing metrics for server ${selectedServerId}...`);
         loadServerMetrics(selectedServerId);
       }, 5000);
 
+      console.log(`[Dashboard] Auto-refresh enabled for metrics: interval set for server ${selectedServerId}`);
       return () => {
         clearInterval(refreshInterval);
+        console.log(`[Dashboard] Auto-refresh disabled for metrics: interval cleared for server ${selectedServerId}`);
       };
+    } else {
+      console.log(`[Dashboard] Auto-refresh metrics: disabled or no server selected`);
     }
   }, [autoRefresh, selectedServerId]);
 
