@@ -147,11 +147,7 @@ export default function AlertsPage() {
     total: 0,
   });
 
-  // Notification channels (sample data)
-  const [channels] = useState([
-    { id: 'channel-001', name: 'Admin Email', type: 'email', createdAt: new Date().toISOString(), enabled: true },
-    { id: 'channel-002', name: 'Ops Slack', type: 'slack', createdAt: new Date().toISOString(), enabled: true },
-  ]);
+
 
   // Stats
   const activeAlerts = events.filter((e) => e.status === 'active').length;
@@ -926,15 +922,7 @@ export default function AlertsPage() {
             </Select>
           </Form.Item>
 
-          <Form.Item name="notificationChannels" label="Notification Channels">
-            <Select mode="multiple" placeholder="Select channels">
-              {channels.map((c) => (
-                <Option key={c.id} value={c.id}>
-                  {c.name}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
+
 
           <Form.Item name="enabled" label="Status" valuePropName="checked">
             <Switch checkedChildren="Enabled" unCheckedChildren="Disabled" />
