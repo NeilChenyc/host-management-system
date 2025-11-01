@@ -316,23 +316,58 @@ export default function AlertsPage() {
         width: 140,
       },
       {
-        title: 'Value',
+        title: 'Metric & Value',
         key: 'value',
         render: (_: any, record: AlertInstance) => {
+          // Find the corresponding rule to get accurate metric information
+          const correspondingRule = rules.find(rule => rule.id === record.ruleId);
+          
+          // Use metric from rule if available, otherwise fall back to record metric
+          const actualMetric = correspondingRule?.metric || record.metric;
+          
+          /**
+           * Format value based on metric type with appropriate units
+           * @param value - The numeric value to format
+           * @param metric - The metric type (cpu, memory, disk, etc.)
+           * @returns Formatted string with appropriate units
+           */
           const formatValue = (value: number, metric: string) => {
-            if (metric === 'cpu' || metric === 'memory' || metric === 'disk') {
-              return `${value.toFixed(1)}%`;
-            } else if (metric === 'temperature') {
-              return `${value.toFixed(1)}°C`;
-            } else if (metric === 'network_in' || metric === 'network_out') {
-              return `${(value / 1024 / 1024).toFixed(2)} MB/s`;
-            } else {
-              return value.toFixed(2);
+            switch (metric) {
+              case 'cpu':
+              case 'memory':
+              case 'disk':
+                return `${value.toFixed(1)}%`;
+              case 'temperature':
+                return `${value.toFixed(1)}°C`;
+              case 'network':
+              case 'network_in':
+              case 'network_out':
+                return `${(value / 1024 / 1024).toFixed(2)} MB/s`;
+              default:
+                return value.toFixed(2);
             }
           };
 
-          const triggeredValueFormatted = formatValue(record.triggeredValue, record.metric);
-          const thresholdFormatted = formatValue(record.threshold, record.metric);
+          /**
+           * Get display name for metric type
+           * @param metric - The metric type
+           * @returns Human-readable metric name
+           */
+          const getMetricDisplayName = (metric: string) => {
+            const metricNames: Record<string, string> = {
+              cpu: 'CPU',
+              memory: 'Memory',
+              disk: 'Disk',
+              network: 'Network',
+              temperature: 'Temperature',
+              service: 'Service'
+            };
+            return metricNames[metric] || metric.toUpperCase();
+          };
+
+          const triggeredValueFormatted = formatValue(record.triggeredValue, actualMetric);
+          const thresholdFormatted = formatValue(record.threshold, actualMetric);
+          
           // Color: red when breached or active, orange when acknowledged, green when resolved
           const breached = record.threshold > 0 && record.triggeredValue >= record.threshold;
           const color = record.status === 'active' || breached
@@ -342,12 +377,41 @@ export default function AlertsPage() {
             : '#52c41a';
           
           return (
-            <span style={{ color }}>
-              {triggeredValueFormatted} / {thresholdFormatted}
-            </span>
+            <div>
+              {/* Metric type tag */}
+              <div style={{ marginBottom: 4 }}>
+                <Tag 
+                  color={actualMetric === 'cpu' ? 'orange' : 
+                        actualMetric === 'memory' ? 'blue' : 
+                        actualMetric === 'disk' ? 'green' : 
+                        actualMetric === 'network' ? 'purple' : 
+                        actualMetric === 'temperature' ? 'red' : 'default'}
+                >
+                  {getMetricDisplayName(actualMetric)}
+                </Tag>
+              </div>
+              {/* Value comparison */}
+              <span style={{ color, fontWeight: 500 }}>
+                {triggeredValueFormatted} / {thresholdFormatted}
+              </span>
+              {/* Show condition from rule if available */}
+              {correspondingRule && (
+                <div style={{ fontSize: 11, color: '#999', marginTop: 2 }}>
+                  {(() => {
+                    // Map condition to symbol for better readability
+                    const conditionSymbol = correspondingRule.condition === 'greater_than' ? '>' :
+                                          correspondingRule.condition === 'less_than' ? '<' :
+                                          correspondingRule.condition === 'equals' ? '=' :
+                                          correspondingRule.condition === 'not_equals' ? '!=' :
+                                          (correspondingRule.condition as string).replace('_', ' ');
+                    return `${conditionSymbol} ${correspondingRule.threshold}%`;
+                  })()}
+                </div>
+              )}
+            </div>
           );
         },
-        width: 150,
+        width: 180,
       },
       {
         title: 'Triggered',
@@ -437,13 +501,31 @@ export default function AlertsPage() {
       {
         title: 'Condition',
         key: 'cond',
-        render: (_: any, r: UiAlertRule) => (
-          <div>
-            <Tag>{r.metric.toUpperCase()}</Tag>
-            <span style={{ margin: '0 6px' }}>{r.condition.replace('_', ' ')}</span>
-            <b>{r.threshold}%</b>
-          </div>
-        ),
+        render: (_: any, r: UiAlertRule) => {
+          // Map backend condition string to readable symbol for UI
+          const mapConditionToSymbol = (c: string) => {
+            switch (c) {
+              case 'greater_than':
+                return '>';
+              case 'less_than':
+                return '<';
+              case 'equals':
+                return '=';
+              case 'not_equals':
+                return '!=';
+              default:
+                return c.replace('_', ' ');
+            }
+          };
+
+          return (
+            <div>
+              <Tag>{r.metric.toUpperCase()}</Tag>
+              <span style={{ margin: '0 6px' }}>{mapConditionToSymbol(r.condition)}</span>
+              <b>{r.threshold}%</b>
+            </div>
+          );
+        },
         width: 220,
       },
       {
@@ -794,12 +876,12 @@ export default function AlertsPage() {
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name="condition" label="Condition" rules={[{ required: true }]}>
+              <Form.Item name="condition" label="Condition" rules={[{ required: true }]}> 
                 <Select>
-                  <Option value="greater_than">Greater Than</Option>
-                  <Option value="less_than">Less Than</Option>
-                  <Option value="equals">Equals</Option>
-                  <Option value="not_equals">Not Equals</Option>
+                  <Option value="greater_than">{'>'}</Option>
+                  <Option value="less_than">{'<'}</Option>
+                  <Option value="equals">{'='}</Option>
+                  <Option value="not_equals">{'!='}</Option>
                 </Select>
               </Form.Item>
             </Col>
