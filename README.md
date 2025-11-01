@@ -8,75 +8,230 @@ This is a modern host management system developed with Next.js 15 + React 19 + A
 
 **Note: This project is a course assignment project for learning and demonstrating modern frontend development technologies.**
 
-## ✨ Key Features
+## ✨ Working Functionalities
 
-### 🖥️ Device Management
-- **Device Overview**: Real-time display of device status statistics and operation status charts
-- **Host Management**: Device list management, add/edit/delete devices
-- **Status Monitoring**: CPU and memory usage monitoring
-- **Category Filtering**: Filter by device type (Web server, database server, etc.)
+### 🔐 Authentication & Authorization
+- **User Login**: JWT-based authentication with role-based access control
+- **User Registration**: User registration with validation
+- **Role Management**: Support for admin, operator, and manager roles
+- **Token Management**: Secure token storage and refresh mechanism
+- **Protected Routes**: Route protection based on user roles
+
+### 📊 Dashboard & Overview
+- **Dashboard**: Real-time system overview with key metrics
+- **Auto-refresh**: Configurable auto-refresh for live data updates
+- **Metrics Visualization**: Interactive charts for CPU, memory, disk, network
+- **Server Statistics**: Total servers, online/offline status, health indicators
+
+### 🖥️ Server Management
+- **Server List**: View all servers with pagination and filtering
+- **Server Details**: Detailed server information and metrics
+- **Server Metrics**: Real-time and historical metrics display
+  - CPU Usage, Memory Usage, Disk Usage
+  - Network Traffic (In/Out)
+  - Temperature, Load Average
+- **Metrics Summary**: Average, minimum, maximum, latest values
+- **Historical Data**: Time-range query with chart visualization
+- **Server Status**: Online/Offline/Maintenance status tracking
 
 ### 👥 User Management
-- **User List**: CRUD operations for user information
-- **Role Permissions**: User role assignment and permission management
-- **User Groups**: Support for user group management
-- **Status Management**: User enable/disable status control
+- **User List**: View all users with search and filtering
+- **User CRUD**: Create, read, update, and delete users
+- **Role Assignment**: Assign roles (admin, operator, manager) to users
+- **User Profile**: View and update user profile information
+- **Status Management**: Enable/disable user accounts
 
-### ⚙️ System Settings
-- **Basic Configuration**: Site name, description, administrator email, etc.
-- **Security Settings**: Login restrictions, session timeout, maintenance mode
-- **Notification Settings**: Email and SMS notification switches
-- **System Logs**: Operation log viewing and filtering
-- **Backup Management**: Data backup and recovery functionality
+### 📁 Project Management
+- **Project List**: View all projects with details
+- **Project CRUD**: Create, read, update, and delete projects
+- **Project Members**: Add and remove project members
+- **Server Association**: Associate servers with projects
 
-### 🎨 Interface Features
-- **Responsive Design**: Adapted for desktop and mobile devices
-- **Modern UI**: Based on Ant Design 5 design language
-- **Dark Theme**: Support for theme switching (extensible)
-- **Internationalization**: Support for English interface
+### 🚨 Alert System
+- **Alert Rules**: Create, update, and delete alert rules
+- **Rule Configuration**: Set thresholds for metrics (CPU, memory, disk, etc.)
+- **Severity Levels**: low, medium, high, critical
+- **Alert Events**: View triggered alerts with filtering
+- **Alert Acknowledgment**: Acknowledge and manage alert events
+- **Batch Operations**: Batch delete alert rules
+- **Real-time Notifications**: Browser notifications for new alerts (with sound)
 
-## 🛠️ Technology Stack
+### ⚙️ Settings & Preferences
+- **Account Information**: Display current user info (username, role, email)
+- **Appearance Settings**:
+  - Font Size: Adjustable font size (Small, Medium, Large)
+  - Theme Color: Dynamic theme based on user role (admin, operator, manager)
+  - Compact Mode: Toggle compact UI mode
+  - Auto-collapse Sidebar: Auto-collapse sidebar with hover expand
+- **Notification Settings**:
+  - Enable/disable browser notifications
+  - Enable/disable notification sounds
+  - Test notification functionality
+- **Data Management**:
+  - View localStorage usage
+  - Clear browser cache
+  - Clear all local data
+  - Reset preferences to defaults
+- **Session Management**: Logout functionality
 
-- **Frontend Framework**: Next.js 15.5.0
-- **UI Library**: React 19.1.0
-- **Component Library**: Ant Design 5.27.1
-- **Development Language**: TypeScript 5
-- **Styling Solution**: Tailwind CSS 4
-- **Build Tool**: Turbopack
-- **Code Standards**: ESLint 9
+### 🎨 UI/UX Features
+- **Responsive Design**: Works on desktop and mobile devices
+- **Dynamic Theming**: Role-based color schemes
+- **Fixed Sidebar**: Persistent sidebar navigation
+- **Menu Highlighting**: Active menu item highlighting based on route
+- **Loading States**: Loading indicators for async operations
+- **Error Handling**: User-friendly error messages
+- **Toast Notifications**: Success/error/info notifications
 
-## 🚀 Quick Start
+### 📈 Data Visualization
+- **Recharts Integration**: Interactive charts using Recharts library
+- **Line Charts**: Time-series data visualization
+- **Real-time Updates**: Live data updates without page refresh
+- **Dynamic Scaling**: Automatic Y-axis scaling based on data range
+- **Chart Configuration**: Customizable chart appearance and behavior
 
-### Environment Requirements
+## 📦 Libraries and Dependencies
 
+### Frontend Dependencies
+| Library | Version | Purpose |
+|---------|---------|---------|
+| **next** | 15.5.0 | Next.js framework (React-based) |
+| **react** | 19.1.0 | UI library |
+| **react-dom** | 19.1.0 | React DOM rendering |
+| **antd** | 5.27.1 | Ant Design component library |
+| **@ant-design/icons** | 6.0.0 | Icon library |
+| **@ant-design/nextjs-registry** | 1.1.0 | Ant Design Next.js integration |
+| **@ant-design/v5-patch-for-react-19** | 1.0.3 | React 19 compatibility patch |
+| **axios** | 1.12.2 | HTTP client |
+| **dayjs** | 1.11.18 | Date/time manipulation |
+| **recharts** | 3.2.0 | Chart visualization |
+
+### Frontend Dev Dependencies
+| Library | Version | Purpose |
+|---------|---------|---------|
+| **typescript** | ^5 | TypeScript compiler |
+| **tailwindcss** | ^4 | CSS framework |
+| **eslint** | ^9 | Code linting |
+| **eslint-config-next** | 15.5.0 | Next.js ESLint config |
+
+### Backend Dependencies
+| Library | Version | Purpose |
+|---------|---------|---------|
+| **spring-boot-starter-parent** | 3.5.4 | Spring Boot parent POM |
+| **spring-boot-starter-web** | 3.5.4 | Spring Web MVC |
+| **spring-boot-starter-data-jpa** | 3.5.4 | Spring Data JPA |
+| **spring-boot-starter-security** | 3.5.4 | Spring Security |
+| **spring-boot-starter-validation** | 3.5.4 | Bean validation |
+| **postgresql** | (runtime) | PostgreSQL JDBC driver |
+| **h2** | (runtime) | H2 database (for testing) |
+| **springdoc-openapi-starter-webmvc-ui** | 2.8.3 | Swagger/OpenAPI documentation |
+| **jjwt-api** | 0.12.6 | JWT API |
+| **jjwt-impl** | 0.12.6 | JWT implementation |
+| **jjwt-jackson** | 0.12.6 | JWT Jackson support |
+
+### Build Tools
+- **Java**: 21
+- **Maven**: (via Spring Boot parent)
+- **Node.js**: >= 18.0.0
+- **npm**: >= 8.0.0
+- **Turbopack**: (Next.js built-in)
+
+## 🚀 Quick Start Guide
+
+### Prerequisites
+
+**Frontend Requirements:**
 - Node.js >= 18.0.0
 - npm >= 8.0.0
 
-### Install Dependencies
+**Backend Requirements:**
+- Java 21
+- Maven 3.6+
+- PostgreSQL 15+ (or access to Supabase PostgreSQL)
+
+### Step 1: Clone the Repository
 
 ```bash
+git clone <repository-url>
+cd ELEC5619-03-Group-1
+```
+
+### Step 2: Setup Backend
+
+```bash
+cd backend
+```
+
+**Configure Database:**
+- Update `src/main/resources/application.properties` with your database credentials
+- Or set environment variables for Supabase connection
+
+**Run Backend:**
+```bash
+mvn clean install
+mvn spring-boot:run
+```
+
+The backend will start on `http://localhost:8080`
+
+**Access API Documentation:**
+- Swagger UI: `http://localhost:8080/swagger-ui.html`
+- OpenAPI JSON: `http://localhost:8080/api-docs`
+
+### Step 3: Setup Frontend
+
+```bash
+cd ../frontend
 npm install
 ```
 
-### Start Development Server
-
+**Run Frontend:**
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to view the application.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### Build for Production
+### Step 4: Login
 
+1. Navigate to `http://localhost:3000/auth/login`
+2. Use existing credentials or register a new account
+3. Default roles: admin, operator, manager
+
+### Running Tests
+
+**Backend Tests:**
 ```bash
+cd backend
+mvn test
+```
+
+**Generate Test Coverage Report:**
+```bash
+mvn test jacoco:report
+# Report location: target/site/jacoco/index.html
+```
+
+**Frontend Linting:**
+```bash
+cd frontend
+npm run lint
+```
+
+### Production Build
+
+**Frontend:**
+```bash
+cd frontend
 npm run build
 npm run start
 ```
 
-### Code Linting
-
+**Backend:**
 ```bash
-npm run lint
+cd backend
+mvn clean package
+java -jar target/backend-0.0.1-SNAPSHOT.jar
 ```
 
 ## 📁 Project Structure
