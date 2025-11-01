@@ -65,6 +65,16 @@ public class ServerMetricsController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime) {
         
+        // Validate time range
+        if (startTime.isAfter(endTime)) {
+            return ResponseEntity.badRequest().build();
+        }
+        
+        // Limit time range to prevent extremely large queries (max 30 days)
+        if (java.time.Duration.between(startTime, endTime).toDays() > 30) {
+            return ResponseEntity.badRequest().build();
+        }
+        
         List<ServerMetrics> metrics = serverMetricsService.getMetricsForServer(serverId, startTime, endTime);
         return ResponseEntity.ok(metrics);
     }

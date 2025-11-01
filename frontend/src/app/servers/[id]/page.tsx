@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   Card,
@@ -220,10 +220,20 @@ const ServerDetailPage: React.FC = () => {
 
   const loadMetricsRange = async (startTime?: string | Dayjs, endTime?: string | Dayjs) => {
     // Use selectedDateRange if parameters are not provided
-    const start = startTime ? (typeof startTime === 'string' ? startTime : startTime.toISOString()) : 
-                   selectedDateRange[0].toISOString();
-    const end = endTime ? (typeof endTime === 'string' ? endTime : endTime.toISOString()) : 
-                 selectedDateRange[1].toISOString();
+    // Format: Remove timezone info and milliseconds to match backend ISO.DATE_TIME format
+    const formatForBackend = (time: string | Dayjs): string => {
+      if (typeof time === 'string') {
+        // If already a string, try to parse and reformat
+        const d = dayjs(time);
+        return d.isValid() ? d.format('YYYY-MM-DDTHH:mm:ss') : time;
+      }
+      return time.format('YYYY-MM-DDTHH:mm:ss');
+    };
+    
+    const start = startTime ? formatForBackend(startTime) : 
+                   selectedDateRange[0].format('YYYY-MM-DDTHH:mm:ss');
+    const end = endTime ? formatForBackend(endTime) : 
+                 selectedDateRange[1].format('YYYY-MM-DDTHH:mm:ss');
     
     try {
       setLoading(true);
@@ -316,6 +326,26 @@ const ServerDetailPage: React.FC = () => {
     }
   };
 
+  // Calculate maximum network traffic value for dynamic Y-axis scaling (Historical Data)
+  const maxNetworkValue = useMemo(() => {
+    if (historicalChartData.length === 0) return 100;
+    const maxIn = Math.max(...historicalChartData.map(d => d.networkIn || 0));
+    const maxOut = Math.max(...historicalChartData.map(d => d.networkOut || 0));
+    const maxValue = Math.max(maxIn, maxOut);
+    // Add 20% padding and round up to nearest 10
+    return Math.ceil(maxValue * 1.2 / 10) * 10 || 100;
+  }, [historicalChartData]);
+
+  // Calculate maximum network traffic value for dynamic Y-axis scaling (Latest Metrics)
+  const maxNetworkValueLatest = useMemo(() => {
+    if (chartData.length === 0) return 100;
+    const maxIn = Math.max(...chartData.map(d => d.networkIn || 0));
+    const maxOut = Math.max(...chartData.map(d => d.networkOut || 0));
+    const maxValue = Math.max(maxIn, maxOut);
+    // Add 20% padding and round up to nearest 10
+    return Math.ceil(maxValue * 1.2 / 10) * 10 || 100;
+  }, [chartData]);
+
   const getStatusText = (status: string | undefined | null) => {
     const statusValue = String(status || 'unknown').toLowerCase();
     switch (statusValue) {
@@ -369,11 +399,13 @@ const ServerDetailPage: React.FC = () => {
       title: 'Minimum',
       dataIndex: 'min',
       key: 'min',
+      render: (value: number) => value.toFixed(2),
     },
     {
       title: 'Maximum',
       dataIndex: 'max',
       key: 'max',
+      render: (value: number) => value.toFixed(2),
     },
     {
       title: 'Data Points',
@@ -384,6 +416,7 @@ const ServerDetailPage: React.FC = () => {
       title: 'Latest Value',
       dataIndex: 'lastValue',
       key: 'lastValue',
+      render: (value: number) => value.toFixed(2),
     },
     {
       title: 'Last Updated',
@@ -681,7 +714,7 @@ const ServerDetailPage: React.FC = () => {
                   fontSize={12}
                 />
                 <YAxis 
-                  domain={[0, 1000]} 
+                  domain={[0, maxNetworkValueLatest]} 
                   stroke="#666"
                   fontSize={12}
                   label={{ value: 'MB/s', angle: -90, position: 'insideLeft' }}
@@ -836,78 +869,79 @@ const ServerDetailPage: React.FC = () => {
                     </Space>
                   </div>
                   {historicalChartData.length > 0 ? (
-                    <Row gutter={16}>
-                      {/* System Metrics Chart */}
-                      <Col span={12}>
-                        <Card title="System Metrics">
-                          <ResponsiveContainer width="100%" height={300}>
-                            <LineChart 
-                              data={historicalChartData}
-                              margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
-                            >
-                              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                              <XAxis 
-                                dataKey="timestamp" 
-                                tickFormatter={(value: string) => dayjs(value).format('MM/DD HH:mm')}
-                                stroke="#666"
-                                fontSize={12}
-                              />
-                              <YAxis 
-                                domain={[0, 100]} 
-                                stroke="#666"
-                                fontSize={12}
-                                tickFormatter={(value) => `${value.toFixed(1)}%`}
-                              />
-                              <RechartsTooltip 
-                                labelFormatter={(value: string) => dayjs(value).format('YYYY-MM-DD HH:mm:ss')}
-                                formatter={(value: number, name: string) => {
-                                  const formattedValue = name.toLowerCase().includes('temperature') 
-                                    ? `${value.toFixed(1)}°C` 
-                                    : `${value.toFixed(1)}%`;
-                                  return [formattedValue, name];
-                                }}
-                              />
-                              <Legend />
-                              <Line type="monotone" dataKey="cpu" stroke="#1890ff" strokeWidth={2} name="CPU Usage (%)" />
-                              <Line type="monotone" dataKey="memory" stroke="#52c41a" strokeWidth={2} name="Memory Usage (%)" />
-                              <Line type="monotone" dataKey="disk" stroke="#faad14" strokeWidth={2} name="Disk Usage (%)" />
-                              <Line type="monotone" dataKey="temperature" stroke="#ff4d4f" strokeWidth={2} name="Temperature (°C)" />
-                            </LineChart>
-                          </ResponsiveContainer>
-                        </Card>
-                      </Col>
+                    <Row gutter={[0, 16]}>
+                        {/* System Metrics Chart */}
+                        <Col span={24}>
+                          <Card title="System Metrics">
+                            <ResponsiveContainer width="100%" height={300}>
+                              <LineChart 
+                                data={historicalChartData}
+                                margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                              >
+                                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                                <XAxis 
+                                  dataKey="timestamp" 
+                                  tickFormatter={(value: string) => dayjs(value).format('MM/DD HH:mm')}
+                                  stroke="#666"
+                                  fontSize={12}
+                                />
+                                <YAxis 
+                                  domain={[0, 100]} 
+                                  stroke="#666"
+                                  fontSize={12}
+                                  tickFormatter={(value) => `${value.toFixed(1)}%`}
+                                />
+                                <RechartsTooltip 
+                                  labelFormatter={(value: string) => dayjs(value).format('YYYY-MM-DD HH:mm:ss')}
+                                  formatter={(value: number, name: string) => {
+                                    const formattedValue = name.toLowerCase().includes('temperature') 
+                                      ? `${value.toFixed(1)}°C` 
+                                      : `${value.toFixed(1)}%`;
+                                    return [formattedValue, name];
+                                  }}
+                                />
+                                <Legend />
+                                <Line type="monotone" dataKey="cpu" stroke="#1890ff" strokeWidth={2} dot={false} name="CPU Usage (%)" />
+                                <Line type="monotone" dataKey="memory" stroke="#52c41a" strokeWidth={2} dot={false} name="Memory Usage (%)" />
+                                <Line type="monotone" dataKey="disk" stroke="#faad14" strokeWidth={2} dot={false} name="Disk Usage (%)" />
+                                <Line type="monotone" dataKey="temperature" stroke="#ff4d4f" strokeWidth={2} dot={false} name="Temperature (°C)" />
+                              </LineChart>
+                            </ResponsiveContainer>
+                          </Card>
+                        </Col>
 
-                      {/* Network Metrics Chart */}
-                      <Col span={12}>
-                        <Card title="Network Traffic">
-                          <ResponsiveContainer width="100%" height={300}>
-                            <LineChart 
-                              data={historicalChartData}
-                              margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
-                            >
-                              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                              <XAxis 
-                                dataKey="timestamp" 
-                                tickFormatter={(value: string) => dayjs(value).format('MM/DD HH:mm')}
-                                stroke="#666"
-                                fontSize={12}
-                              />
-                              <YAxis 
-                                stroke="#666"
-                                fontSize={12}
-                              />
-                              <RechartsTooltip 
-                                labelFormatter={(value: string) => dayjs(value).format('YYYY-MM-DD HH:mm:ss')}
-                                formatter={(value: number) => `${value.toFixed(2)} MB/s`}
-                              />
-                              <Legend />
-                              <Line type="monotone" dataKey="networkIn" stroke="#722ed1" strokeWidth={2} name="Network In (MB/s)" />
-                              <Line type="monotone" dataKey="networkOut" stroke="#13c2c2" strokeWidth={2} name="Network Out (MB/s)" />
-                            </LineChart>
-                          </ResponsiveContainer>
-                        </Card>
-                      </Col>
-                    </Row>
+                        {/* Network Metrics Chart */}
+                        <Col span={24}>
+                          <Card title="Network Traffic">
+                            <ResponsiveContainer width="100%" height={300}>
+                              <LineChart 
+                                data={historicalChartData}
+                                margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                              >
+                                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                                <XAxis 
+                                  dataKey="timestamp" 
+                                  tickFormatter={(value: string) => dayjs(value).format('MM/DD HH:mm')}
+                                  stroke="#666"
+                                  fontSize={12}
+                                />
+                                <YAxis 
+                                  domain={[0, maxNetworkValue]}
+                                  stroke="#666"
+                                  fontSize={12}
+                                />
+                                <RechartsTooltip 
+                                  labelFormatter={(value: string) => dayjs(value).format('YYYY-MM-DD HH:mm:ss')}
+                                  formatter={(value: number) => `${value.toFixed(2)} MB/s`}
+                                />
+                                <Legend />
+                                <Line type="monotone" dataKey="networkIn" stroke="#722ed1" strokeWidth={2} dot={false} name="Network In (MB/s)" />
+                                <Line type="monotone" dataKey="networkOut" stroke="#13c2c2" strokeWidth={2} dot={false} name="Network Out (MB/s)" />
+                              </LineChart>
+                            </ResponsiveContainer>
+                          </Card>
+                        </Col>
+                      </Row>
                   ) : (
                     <div style={{ textAlign: 'center', padding: '50px' }}>
                       <Text type="secondary">
