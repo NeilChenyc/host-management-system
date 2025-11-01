@@ -34,7 +34,7 @@ public class RoleService {
     @Autowired
     private ProjectMemberRepository projectMemberRepository;
     // 硬编码的角色权限映射
-    // Manager和Admin拥有相同的权限
+    // Manager和Admin拥有相同的权限，Operation现在也可以管理告警事件
     private static final Map<String, List<String>> ROLE_PERMISSIONS = Map.of(
         PermissionConstants.ROLE_OPERATION, List.of(
             PermissionConstants.PROJECT_READ_OWN,
@@ -42,7 +42,8 @@ public class RoleService {
             PermissionConstants.PROJECT_READ_COMPANY,
             PermissionConstants.USER_READ_ALL,        // Operation可以查看用户列表（只读）
             PermissionConstants.SERVER_READ_ALL,      // Operation可以查看服务器（只读）
-            PermissionConstants.ALERT_READ_ALL        // Operation可以查看告警（只读）
+            PermissionConstants.ALERT_READ_ALL,       // Operation可以查看告警（只读）
+            PermissionConstants.ALERT_MANAGE_ALL      // Operation可以管理告警事件（状态更改）
         ),
         PermissionConstants.ROLE_MANAGER, List.of(
             PermissionConstants.PROJECT_READ_ALL,
