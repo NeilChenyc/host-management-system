@@ -322,11 +322,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   // 根据用户角色过滤菜单项
   const getMenuItems = () => {
     const baseItems = [
-      { key: '/dashboard', icon: <DashboardOutlined />, label: 'Server Overview' },
+      { key: '/dashboard', icon: <DashboardOutlined />, label: 'Dashboard' },
       { key: '/servers', icon: <DesktopOutlined />, label: 'Servers' },
       { key: '/projects', icon: <ProjectOutlined />, label: 'Projects' },
       { key: '/alerts', icon: <AlertOutlined />, label: 'Alerts' },
-      { key: '/settings', icon: <SettingOutlined />, label: 'System Settings' },
+      { key: '/settings', icon: <SettingOutlined />, label: 'Settings' },
     ];
 
     // 只有管理员才能看到用户管理菜单

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
-import { ConfigProvider } from 'antd';
+import { ConfigProvider, App } from 'antd';
 import { AuthManager } from '@/lib/auth';
 import { getThemeByRole } from '@/lib/theme';
 import { SettingsManager, compactTheme, SETTINGS_STORAGE_KEY } from '@/lib/settings';
@@ -112,7 +112,9 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
 
   return (
     <ConfigProvider theme={theme}>
-      {children}
+      <App>
+        {children}
+      </App>
     </ConfigProvider>
   );
 }
