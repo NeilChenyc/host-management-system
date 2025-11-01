@@ -23,6 +23,8 @@ public interface AlertEventService {
 
     Optional<AlertEvent> getAlertEventById(Long eventId);
 
+    Optional<AlertEventResponseDto> getAlertEventByIdWithNames(Long eventId);
+
     AlertEvent updateAlertEvent(Long eventId, AlertEvent alertEvent);
 
     void deleteAlertEvent(Long eventId);

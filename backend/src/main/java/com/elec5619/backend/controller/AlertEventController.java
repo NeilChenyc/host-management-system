@@ -41,7 +41,6 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
@@ -131,10 +130,10 @@ public class AlertEventController {
     }
 
     @GetMapping("/{eventId}")
-    @Operation(summary = "Get Alert Event by ID", description = "Retrieve an alert event by its ID")
+    @Operation(summary = "Get Alert Event by ID", description = "Retrieve an alert event by its ID with complete rule information")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Alert event retrieved successfully",
-            content = @Content(mediaType = "application/json", schema = @Schema(implementation = AlertEvent.class))),
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = AlertEventResponseDto.class))),
         @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing JWT token"),
         @ApiResponse(responseCode = "403", description = "Forbidden - insufficient permissions"),
         @ApiResponse(responseCode = "404", description = "Alert event not found", content = @Content)
@@ -144,19 +143,8 @@ public class AlertEventController {
             @RequestAttribute("userId") Long userId) {
         // 所有角色都可以查看告警事件详情
         permissionChecker.requirePermission(userId, PermissionConstants.ALERT_READ_ALL);
-        return alertEventService.getAlertEventById(eventId)
-                .map(e -> {
-                    var dto = new AlertEventDto();
-                    dto.eventId = e.getEventId();
-                    dto.serverName = ""; // Will be populated by service layer
-                    dto.ruleName = ""; // Will be populated by service layer
-                    dto.status = e.getStatus();
-                    dto.startedAt = e.getStartedAt();
-                    dto.resolvedAt = e.getResolvedAt();
-                    dto.triggeredValue = e.getTriggeredValue();
-                    dto.summary = e.getSummary();
-                    return ResponseEntity.ok(dto);
-                })
+        return alertEventService.getAlertEventByIdWithNames(eventId)
+                .map(dto -> ResponseEntity.ok(dto))
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
@@ -332,19 +320,6 @@ public class AlertEventController {
                 "Failed to trigger alert: " + e.getMessage(), null);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
-    }
-
-    // Lightweight DTO to avoid lazy relation serialization issues
-    static class AlertEventDto {
-        public Long eventId;
-        public String serverName;
-        public String ruleName;
-        public String status;
-        public java.time.LocalDateTime startedAt;
-        public java.time.LocalDateTime resolvedAt;
-        public Double triggeredValue;
-        public String summary;
-        public java.time.LocalDateTime createdAt;
     }
 
     // 评估最新指标

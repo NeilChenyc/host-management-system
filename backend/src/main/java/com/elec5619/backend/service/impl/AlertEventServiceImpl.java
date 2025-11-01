@@ -2,7 +2,6 @@ package com.elec5619.backend.service.impl;
 
 import com.elec5619.backend.entity.AlertEvent;
 import com.elec5619.backend.entity.AlertRule;
-import com.elec5619.backend.entity.Server;
 import com.elec5619.backend.dto.AlertEventResponseDto;
 import com.elec5619.backend.repository.AlertEventRepository;
 import com.elec5619.backend.repository.ServerRepository;
@@ -75,10 +74,22 @@ public class AlertEventServiceImpl implements AlertEventService {
                     .ifPresent(server -> dto.setServerName(server.getServerName()));
         }
         
-        // Get rule name and threshold
+        // Get complete rule information
         if (event.getAlertRule() != null) {
-            dto.setRuleName(event.getAlertRule().getRuleName());
-            dto.setThreshold(event.getAlertRule().getThreshold());
+            AlertRule rule = event.getAlertRule();
+            dto.setRuleId(rule.getRuleId());
+            dto.setRuleName(rule.getRuleName());
+            dto.setRuleDescription(rule.getDescription());
+            dto.setTargetMetric(rule.getTargetMetric());
+            dto.setComparator(rule.getComparator());
+            dto.setThreshold(rule.getThreshold());
+            dto.setDuration(rule.getDuration());
+            dto.setSeverity(rule.getSeverity());
+            dto.setEnabled(rule.getEnabled());
+            dto.setScopeLevel(rule.getScopeLevel());
+            dto.setTargetFilter(rule.getTargetFilter());
+            dto.setRuleCreatedAt(rule.getCreatedAt());
+            dto.setRuleUpdatedAt(rule.getUpdatedAt());
         }
         
         return dto;
@@ -87,6 +98,12 @@ public class AlertEventServiceImpl implements AlertEventService {
     @Override
     public Optional<AlertEvent> getAlertEventById(Long eventId) {
         return alertEventRepository.findById(eventId);
+    }
+
+    @Override
+    public Optional<AlertEventResponseDto> getAlertEventByIdWithNames(Long eventId) {
+        return alertEventRepository.findById(eventId)
+                .map(this::convertToResponseDto);
     }
 
     @Override
