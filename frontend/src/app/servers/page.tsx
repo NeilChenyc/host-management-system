@@ -1,0 +1,618 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import MainLayout from '@/components/MainLayout';
+import {
+  Table,
+  Button,
+  Input,
+  Select,
+  Space,
+  Tag,
+  Modal,
+  Form,
+  message,
+  Popconfirm,
+  Card,
+  Row,
+  Col,
+} from 'antd';
+import {
+  PlusOutlined,
+  SearchOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  ReloadOutlined,
+  EyeOutlined,
+} from '@ant-design/icons';
+import type { ColumnsType } from 'antd/es/table';
+import ServerApiService, { Device } from '../../services/serverApi';
+import { serverCache } from '@/lib/serverCache';
+import { AuthManager } from '@/lib/auth';
+
+const { Search } = Input;
+const { Option } = Select;
+
+export default function ServersPage() {
+  const router = useRouter();
+  const [devices, setDevices] = useState<Device[]>([]);
+  const [filteredDevices, setFilteredDevices] = useState<Device[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searchText, setSearchText] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [editingDevice, setEditingDevice] = useState<Device | null>(null);
+  const [form] = Form.useForm();
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Message API for React 19 compatibility
+  const [messageApi, contextHolder] = message.useMessage();
+  // Check if current user is operator
+  const currentUser = AuthManager.getUser();
+  const isOperator = currentUser?.role === 'operation';
+  
+  // Load server list on component mount
+  useEffect(() => {
+    loadServers(false); 
+  }, []);
+
+  // Load server list
+  const loadServers = async (showMessage: boolean = false, forceRefresh: boolean = false) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const serverList = await serverCache.getServers(forceRefresh);
+      setDevices(serverList);
+      setFilteredDevices(serverList);
+    } catch (error) {
+      console.error('Failed to load servers:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load server list';
+      setError(errorMessage);
+      setTimeout(() => {
+        messageApi.error(errorMessage);
+      }, 0);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Status color mapping
+  const getStatusColor = (status: string | undefined | null) => {
+    // Ensure status is a string and not undefined or null
+    const statusValue = String(status || 'unknown').toLowerCase();
+    switch (statusValue) {
+      case 'online':
+        return 'green';
+      case 'offline':
+        return 'red';
+      case 'maintenance':
+        return 'orange';
+      case 'unknown':
+        return 'gray';
+      default:
+        return 'default';
+    }
+  };
+
+  // Status text mapping
+  const getStatusText = (status: string | undefined | null) => {
+    // Ensure status is a string and not undefined or null
+    const statusValue = String(status || 'unknown').toLowerCase();
+    switch (statusValue) {
+      case 'online':
+        return 'Online';
+      case 'offline':
+        return 'Offline';
+      case 'maintenance':
+        return 'Maintenance';
+      case 'unknown':
+        return 'Unknown';
+      default:
+        return statusValue.charAt(0).toUpperCase() + statusValue.slice(1);
+    }
+  };
+
+  // Navigate to server detail page
+  const handleServerNameClick = (device: Device) => {
+    router.push(`/servers/${device.id}`);
+  };
+
+  // View device detail handler (for modal)
+  const handleViewDetail = async (device: Device) => {
+    try {
+      // Fetch latest server details
+      const serverDetail = await ServerApiService.getServerById(device.id);
+      setSelectedDevice(serverDetail);
+      setDetailModalVisible(true);
+    } catch (error) {
+      console.error('Failed to fetch server detail:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch server details';
+      messageApi.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Table columns
+  const columns: ColumnsType<Device> = [
+    {
+      title: 'Server Name',
+      dataIndex: 'hostname',
+      key: 'hostname',
+      sorter: (a, b) => a.hostname.localeCompare(b.hostname),
+      render: (text: string, record: Device) => (
+        <Button
+          type="link"
+          onClick={() => handleServerNameClick(record)}
+          style={{ padding: 0, height: 'auto' }}
+        >
+          {text}
+        </Button>
+      ),
+    },
+    {
+      title: 'IP Address',
+      dataIndex: 'ipAddress',
+      key: 'ipAddress',
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status: string) => (
+        <Tag color={getStatusColor(status)}>{getStatusText(status)}</Tag>
+      ),
+      filters: [
+        { text: 'Online', value: 'online' },
+        { text: 'Offline', value: 'offline' },
+        { text: 'Maintenance', value: 'maintenance' },
+        { text: 'Unknown', value: 'unknown' },
+      ],
+      onFilter: (value, record) => record.status === value,
+    },
+    {
+      title: 'Operating System',
+      dataIndex: 'os',
+      key: 'os',
+    },
+    {
+      title: 'CPU',
+      dataIndex: 'cpu',
+      key: 'cpu',
+    },
+    {
+      title: 'Memory',
+      dataIndex: 'memory',
+      key: 'memory',
+    },
+    {
+      title: 'Last Update',
+      dataIndex: 'lastUpdate',
+      key: 'lastUpdate',
+      sorter: (a, b) => new Date(a.lastUpdate).getTime() - new Date(b.lastUpdate).getTime(),
+      render: (timestamp: string) => {
+        if (!timestamp) return '-';
+        try {
+          return new Date(timestamp).toLocaleString('en-US', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+          });
+        } catch (error) {
+          return timestamp; // 如果解析失败，显示原始值
+        }
+      },
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      width: 200,
+      render: (_, record) => (
+        <Space size="small">
+          <Button
+            type="link"
+            size="small"
+            icon={<EyeOutlined />}
+            onClick={() => handleViewDetail(record)}
+          >
+            Detail
+          </Button>
+          {!isOperator && (
+            <Button
+              type="link"
+              size="small"
+              icon={<EditOutlined />}
+              onClick={() => handleEdit(record)}
+            >
+              Edit
+            </Button>
+          )}
+          {!isOperator && (
+            <Popconfirm
+              title="Delete Device"
+              description="Are you sure you want to delete this device?"
+              onConfirm={() => handleDelete(record.id)}
+              okText="Yes"
+              cancelText="No"
+            >
+              <Button type="link" danger icon={<DeleteOutlined />}>
+                Delete
+              </Button>
+            </Popconfirm>
+          )}
+        </Space>
+      ),
+    },
+  ];
+
+  // Filter devices
+  const filterDevices = (search: string, status: string) => {
+    let filtered = devices;
+
+    if (search) {
+      filtered = filtered.filter(
+        (device) =>
+          device.hostname.toLowerCase().includes(search.toLowerCase()) ||
+          device.ipAddress.includes(search) ||
+          device.os.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+
+    if (status !== 'all') {
+      filtered = filtered.filter((device) => device.status === status);
+    }
+
+    setFilteredDevices(filtered);
+  };
+
+  // Search handler
+  const handleSearch = (value: string) => {
+    setSearchText(value);
+    filterDevices(value, statusFilter);
+  };
+
+  // Status filter handler
+  const handleStatusFilter = (value: string) => {
+    setStatusFilter(value);
+    filterDevices(searchText, value);
+  };
+
+  // Refresh handler
+  const handleRefresh = async () => {
+    serverCache.resetMessageFlag(); // Reset message flag
+    await loadServers(false, true); // Force refresh without showing load message
+    // Use setTimeout to avoid calling message API during render
+    setTimeout(() => {
+      messageApi.success('Server list refreshed');
+    }, 0);
+  };
+
+  // Add device handler
+  const handleAdd = () => {
+    setEditingDevice(null);
+    form.resetFields();
+    setIsModalVisible(true);
+  };
+
+  // Edit device handler
+  const handleEdit = (device: Device) => {
+    setEditingDevice(device);
+    form.setFieldsValue(device);
+    setIsModalVisible(true);
+  };
+
+  // Delete device handler
+  const handleDelete = async (id: string) => {
+    setLoading(true);
+    try {
+      await ServerApiService.deleteServer(id);
+      setTimeout(() => {
+        messageApi.success('Server deleted successfully');
+      }, 0);
+      // Reload server list
+      await loadServers();
+    } catch (error) {
+      console.error('Failed to delete server:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete server';
+      setTimeout(() => {
+        messageApi.error(errorMessage);
+      }, 0);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Save device
+  const handleSave = async () => {
+    try {
+      const values = await form.validateFields();
+      setLoading(true);
+      
+      if (editingDevice) {
+        // Edit mode - update server
+        await ServerApiService.updateServer(editingDevice.id, values);
+        setTimeout(() => {
+          messageApi.success('Server updated successfully');
+        }, 0);
+      } else {
+        // Add mode - create new server
+        await ServerApiService.createServer(values);
+        setTimeout(() => {
+          messageApi.success('Server added successfully');
+        }, 0);
+      }
+      
+      // Reload server list
+      await loadServers();
+      setIsModalVisible(false);
+      form.resetFields();
+    } catch (error) {
+      console.error('Failed to save server:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save server';
+      setTimeout(() => {
+        messageApi.error(errorMessage);
+      }, 0);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <MainLayout>
+      {contextHolder}
+      {/* Error Alert */}
+      {error && (
+        <Card style={{ marginBottom: 16 }}>
+          <div style={{ color: '#ff4d4f', textAlign: 'center' }}>
+            <strong>Error:</strong> {error}
+            <Button 
+              type="link" 
+              onClick={() => loadServers()}
+              style={{ marginLeft: 8 }}
+            >
+              Retry
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {/* Page title and operation area */}
+      <Card>
+        <Row gutter={[16, 16]} align="middle">
+          <Col xs={24} sm={12} md={8}>
+            <Search
+              placeholder="Search server name, IP address or operating system"
+              allowClear
+              enterButton={<SearchOutlined />}
+              size="middle"
+              onSearch={handleSearch}
+            />
+          </Col>
+          <Col xs={24} sm={12} md={4}>
+            <Select
+              value={statusFilter}
+              onChange={handleStatusFilter}
+              style={{ width: '100%' }}
+              size="middle"
+            >
+              <Option value="all">All Status</Option>
+              <Option value="online">Online</Option>
+              <Option value="offline">Offline</Option>
+              <Option value="maintenance">Maintenance</Option>
+              <Option value="unknown">Unknown</Option>
+            </Select>
+          </Col>
+          <Col xs={24} sm={24} md={12}>
+            <Space style={{ float: 'right' }}>
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={handleRefresh}
+                loading={loading}
+              >
+                Refresh
+              </Button>
+              {!isOperator && (
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={handleAdd}
+                >
+                  Add Server
+                </Button>
+              )}
+            </Space>
+          </Col>
+        </Row>
+      </Card>
+
+      {/* Device list table */}
+      <Card style={{ marginTop: 16 }}>
+        <Table
+          columns={columns}
+          dataSource={filteredDevices}
+          rowKey="id"
+          loading={loading}
+          pagination={{
+            total: filteredDevices.length,
+            pageSize: 10,
+            showSizeChanger: true,
+            showQuickJumper: true,
+            showTotal: (total, range) =>
+              ` ${range[0]}-${range[1]} of ${total} items`,
+          }}
+          scroll={{ x: 1200 }}
+        />
+      </Card>
+
+      {/* Add/Edit Server Modal */}
+      <Modal
+        title={editingDevice ? 'Edit Server' : 'Add Server'}
+        open={isModalVisible}
+        onOk={handleSave}
+        onCancel={() => setIsModalVisible(false)}
+        width={600}
+        okText="Save"
+        cancelText="Cancel"
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          initialValues={{
+            status: 'online',
+          }}
+        >
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label="Server Name"
+                name="hostname"
+                rules={[
+                  { required: true, message: 'Please enter server name' },
+                ]}
+              >
+                <Input placeholder="Please enter server name" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="IP Address"
+                name="ipAddress"
+                rules={[
+                  { required: true, message: 'Please enter IP address' },
+                  {
+                    pattern: /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/,
+                    message: 'Please enter a valid IP address',
+                  },
+                ]}
+              >
+                <Input placeholder="Please enter IP address" />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label="Status"
+                name="status"
+                rules={[
+                  { required: true, message: 'Please select status' },
+                ]}
+              >
+                <Select placeholder="Please select status">
+                  <Option value="online">Online</Option>
+                  <Option value="offline">Offline</Option>
+                  <Option value="maintenance">Maintenance</Option>
+                  <Option value="unknown">Unknown</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="Operating System"
+                name="os"
+                rules={[
+                  { required: true, message: 'Please enter operating system' },
+                ]}
+              >
+                <Input placeholder="Please enter operating system" />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label="CPU"
+                name="cpu"
+                rules={[
+                  { required: true, message: 'Please enter CPU information' },
+                ]}
+              >
+                <Input placeholder="Please enter CPU information" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="Memory"
+                name="memory"
+                rules={[
+                  { required: true, message: 'Please enter memory information' },
+                ]}
+              >
+                <Input placeholder="Please enter memory information" />
+              </Form.Item>
+            </Col>
+          </Row>
+        </Form>
+      </Modal>
+      
+      {/* Server Detail Modal */}
+      <Modal
+        title="Server Details"
+        open={detailModalVisible}
+        onCancel={() => setDetailModalVisible(false)}
+        footer={[
+          <Button key="close" onClick={() => setDetailModalVisible(false)}>
+            Close
+          </Button>,
+        ]}
+        width={600}
+      >
+        {selectedDevice && (
+          <div>
+            <Row gutter={[16, 16]}>
+              <Col span={12}>
+                <strong>Server Name:</strong> {selectedDevice.hostname}
+              </Col>
+              <Col span={12}>
+                <strong>IP Address:</strong> {selectedDevice.ipAddress}
+              </Col>
+            </Row>
+            <Row gutter={[16, 16]}>
+              <Col span={12}>
+                <strong>Status:</strong>{' '}
+                <Tag color={getStatusColor(selectedDevice.status)}>
+                  {getStatusText(selectedDevice.status)}
+                </Tag>
+              </Col>
+              <Col span={12}>
+                <strong>Operating System:</strong> {selectedDevice.os}
+              </Col>
+            </Row>
+            <Row gutter={[16, 16]}>
+              <Col span={12}>
+                <strong>CPU:</strong> {selectedDevice.cpu}
+              </Col>
+              <Col span={12}>
+                <strong>Memory:</strong> {selectedDevice.memory}
+              </Col>
+            </Row>
+            <Row gutter={[16, 16]}>
+              <Col span={24}>
+                <strong>Last Update:</strong> {
+                  selectedDevice.lastUpdate 
+                    ? new Date(selectedDevice.lastUpdate).toLocaleString('en-US', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: false
+                      })
+                    : '-'
+                }
+              </Col>
+            </Row>
+          </div>
+        )}
+      </Modal>
+    </MainLayout>
+  );
+}

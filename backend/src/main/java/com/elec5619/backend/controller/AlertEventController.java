@@ -255,6 +255,26 @@ public class AlertEventController {
         }
     }
 
+    @PostMapping("/{eventId}/acknowledge")
+    @Operation(summary = "Acknowledge Alert Event", description = "Mark an alert event as acknowledged")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Alert event acknowledged successfully",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = AlertEvent.class))),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - insufficient permissions"),
+        @ApiResponse(responseCode = "404", description = "Alert event not found", content = @Content)
+    })
+    public ResponseEntity<AlertEvent> acknowledgeAlertEvent(
+            @PathVariable Long eventId,
+            @RequestAttribute("userId") Long userId) {
+        permissionChecker.requirePermission(userId, PermissionConstants.ALERT_MANAGE_ALL);
+        try {
+            return ResponseEntity.ok(alertEventService.acknowledgeAlertEvent(eventId));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @GetMapping("/filtered")
     @Operation(summary = "Get Alert Events with Filters", description = "Retrieve alert events with multiple filter criteria")
     public ResponseEntity<List<AlertEvent>> getAlertEventsWithFilters(

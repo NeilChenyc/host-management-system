@@ -1,0 +1,7 @@
+{
+  "platform_url": "http://localhost:8080/api/servers/metrics/collect",
+  "server_id": 1,
+  "interval": 60,
+  "log_level": "INFO"
+}
+

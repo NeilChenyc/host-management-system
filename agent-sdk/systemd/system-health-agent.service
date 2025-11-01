@@ -1,0 +1,39 @@
+[Unit]
+Description=System Health Agent - Server Metrics Collection Service
+Documentation=file:///opt/system-health-agent/README.md
+After=network-online.target postgresql.service
+Wants=network-online.target
+Requires=network.target
+
+[Service]
+Type=simple
+User=agent
+Group=agent
+WorkingDirectory=/opt/system-health-agent
+ExecStart=/usr/bin/python3 /opt/system-health-agent/system_health_agent.py --config /opt/system-health-agent/config.yaml
+ExecReload=/bin/kill -HUP $MAINPID
+
+# Restart configuration
+Restart=on-failure
+RestartSec=10
+StartLimitInterval=300
+StartLimitBurst=5
+
+# Environment
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONPATH=/opt/system-health-agent
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/log/system-health-agent
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=system-health-agent
+
+[Install]
+WantedBy=multi-user.target

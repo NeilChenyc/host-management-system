@@ -1,0 +1,43 @@
+# System Health Agent Configuration
+
+# Database connection settings
+db:
+  host: localhost
+  port: 5432
+  database: b2b_system_health
+  user: agent_writer
+  password: change_me_secure_password
+  sslmode: prefer  # Options: disable, allow, prefer, require, verify-ca, verify-full
+
+# Logging configuration
+logging:
+  level: INFO  # Options: DEBUG, INFO, WARNING, ERROR, CRITICAL
+
+# Server identification (choose one method)
+server_identification:
+  # Method 1: Direct server ID (recommended if known)
+  server_id: 1
+  
+  # Method 2: Auto-resolve by server name and IP (fallback)
+  # server_name: "web-server-01"
+  # auto_detect_ip: true
+
+# Metrics collection settings
+metrics:
+  # Collection interval in seconds (minimum: 1, recommended: 5-60)
+interval_seconds: 20
+  
+  # Disk mount point to monitor (default: root filesystem)
+  disk_mount: "/"
+  
+  # Include temperature monitoring (may not work on all systems)
+  include_temperature: true
+  
+  # Network interface to monitor (null = all interfaces combined)
+  # Examples: "eth0", "ens33", "wlan0", null
+  network_interface: null
+  
+  # Display network metrics as percentage of bandwidth (true) or absolute MB/s (false)
+  # When true, the agent will attempt to detect interface bandwidth and show usage as percentage
+  # When false or bandwidth detection fails, shows absolute values in MB/s
+  network_as_percentage: true

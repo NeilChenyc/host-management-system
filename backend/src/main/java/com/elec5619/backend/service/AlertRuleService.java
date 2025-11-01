@@ -50,6 +50,13 @@ public interface AlertRuleService {
     void deleteAlertRule(Long ruleId);
 
     /**
+     * Delete multiple alert rules by their IDs.
+     *
+     * @param ruleIds the list of IDs of the alert rules to delete
+     */
+    void deleteAlertRulesBatch(List<Long> ruleIds);
+
+    /**
      * Get alert rules by enabled status.
      *
      * @param enabled the enabled status to filter by

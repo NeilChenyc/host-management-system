@@ -1,6 +1,8 @@
 package com.elec5619.backend.controller;
 
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.elec5619.backend.constants.PermissionConstants;
 import com.elec5619.backend.dto.RoleUpdateDto;
 import com.elec5619.backend.dto.UserResponseDto;
+import com.elec5619.backend.dto.UserUpdateDto;
 import com.elec5619.backend.exception.GlobalExceptionHandler;
 import com.elec5619.backend.service.UserService;
 import com.elec5619.backend.util.PermissionChecker;
@@ -216,5 +219,47 @@ public class UserController {
         return userService.getUserByUsername(username)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PutMapping("/profile")
+    @Operation(
+        summary = "Update User Profile",
+        description = "Update current user's profile information (username, email, password)"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "User profile updated successfully",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = UserResponseDto.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Invalid input data or current password incorrect"
+        ),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized - invalid or missing JWT token"
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "User not found"
+        )
+    })
+    public ResponseEntity<?> updateUserProfile(
+            @Parameter(description = "User profile update data", required = true)
+            @RequestBody UserUpdateDto updateDto,
+            @Parameter(hidden = true) @org.springframework.web.bind.annotation.RequestAttribute("userId") Long userId) {
+        try {
+            return userService.updateUserInfo(userId, updateDto)
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
+        } catch (IllegalArgumentException e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
     }
 }
