@@ -20,7 +20,6 @@ import com.elec5619.backend.entity.User;
 import com.elec5619.backend.exception.ProjectNameAlreadyExistsException;
 import com.elec5619.backend.exception.ServerNotFoundException;
 import com.elec5619.backend.exception.UserNotFoundException;
-import com.elec5619.backend.repository.AlertRuleRepository;
 import com.elec5619.backend.repository.ProjectMemberRepository;
 import com.elec5619.backend.repository.ProjectRepository;
 import com.elec5619.backend.repository.ServerRepository;
@@ -40,9 +39,6 @@ public class ProjectService {
 
     @Autowired
     private ProjectMemberRepository projectMemberRepository;
-
-    @Autowired
-    private AlertRuleRepository alertRuleRepository;
 
     public ProjectResponseDto create(ProjectCreateDto dto) {
         if (projectRepository.findByProjectName(dto.getProjectName()).isPresent()) {
@@ -134,13 +130,12 @@ public class ProjectService {
         try {
             if (!projectRepository.existsById(id)) return false;
             
-            // 先删除项目相关的告警规则，避免外键约束错误
-            alertRuleRepository.deleteByServerId(id);
-            
-            // 然后删除项目成员关联记录，避免外键约束错误
+            // 获取项目以进行清理操作
             Optional<Project> projectOpt = projectRepository.findById(id);
             if (projectOpt.isPresent()) {
                 Project project = projectOpt.get();
+                
+                // 先删除项目成员关联记录，避免外键约束错误
                 projectMemberRepository.deleteByProject(project);
                 
                 // 清除项目与服务器的多对多关联关系，避免外键约束错误

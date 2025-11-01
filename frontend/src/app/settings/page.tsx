@@ -7,19 +7,18 @@ import {
   Switch,
   Button,
   Space,
-  message,
   Divider,
   Row,
   Col,
   Typography,
   Select,
-  Modal,
   Avatar,
   Tag,
   Descriptions,
   Alert,
   Radio,
   Tooltip,
+  App,
 } from 'antd';
 import {
   SaveOutlined,
@@ -41,6 +40,7 @@ const { Title, Text } = Typography;
 
 export default function SettingsPage() {
   const router = useRouter();
+  const { message, modal } = App.useApp();
   const [user, setUser] = useState<any>(null);
   const [preferences, setPreferences] = useState<UserPreferences>(SettingsManager.getPreferences());
   const [storageSize, setStorageSize] = useState<string>('0 KB');
@@ -127,7 +127,7 @@ export default function SettingsPage() {
   };
 
   const handleResetPreferences = () => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Reset Settings',
       content: 'Are you sure you want to reset all settings to default values?',
       okText: 'Reset',
@@ -175,7 +175,7 @@ export default function SettingsPage() {
   };
 
   const handleClearCache = () => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Clear Browser Cache',
       content: 'This will clear cached data but keep your login session and preferences. Continue?',
       okText: 'Clear',
@@ -191,7 +191,7 @@ export default function SettingsPage() {
   };
 
   const handleClearLocalStorage = () => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Clear Local Storage',
       content: 'Warning: This will clear ALL local storage data including login session, preferences, and other saved data. You will be logged out. Continue?',
       okText: 'Clear All',
@@ -209,7 +209,7 @@ export default function SettingsPage() {
   };
 
   const handleLogout = () => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Logout',
       content: 'Are you sure you want to logout?',
       okText: 'Logout',
@@ -294,7 +294,7 @@ export default function SettingsPage() {
           style={{ marginBottom: '24px' }}
         >
           <Row gutter={[24, 16]}>
-            <Col xs={24} sm={12} md={8}>
+            <Col xs={24} sm={12}>
               <div style={{ marginBottom: 16 }}>
                 <Text strong style={{ display: 'block', marginBottom: 8 }}>
                   Font Size
@@ -313,26 +313,7 @@ export default function SettingsPage() {
               </div>
             </Col>
 
-            <Col xs={24} sm={12} md={8}>
-              <div style={{ marginBottom: 16 }}>
-                <Text strong style={{ display: 'block', marginBottom: 8 }}>
-                  Language
-                  <Tooltip title="Select your preferred language">
-                    <InfoCircleOutlined style={{ marginLeft: 4, color: '#999' }} />
-                  </Tooltip>
-                </Text>
-                <Select
-                  value={preferences.language}
-                  onChange={(value) => handlePreferenceChange('language', value)}
-                  style={{ width: '100%' }}
-                >
-                  <Select.Option value="en">English</Select.Option>
-                  <Select.Option value="zh">中文</Select.Option>
-                </Select>
-              </div>
-            </Col>
-
-            <Col xs={24} sm={24} md={8}>
+            <Col xs={24} sm={12}>
               <div style={{ marginBottom: 16 }}>
                 <Text strong style={{ display: 'block', marginBottom: 8 }}>
                   Theme Color
