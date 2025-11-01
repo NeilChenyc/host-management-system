@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -37,11 +37,11 @@ class ProjectControllerTest {
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
 
-    @MockBean private WebConfig webConfig;
-    @MockBean private JwtInterceptor jwtInterceptor;
-    @MockBean private JwtUtil jwtUtil;
-    @MockBean private PermissionChecker permissionChecker;
-    @MockBean private ProjectService projectService;
+    @MockitoBean private WebConfig webConfig;
+    @MockitoBean private JwtInterceptor jwtInterceptor;
+    @MockitoBean private JwtUtil jwtUtil;
+    @MockitoBean private PermissionChecker permissionChecker;
+    @MockitoBean private ProjectService projectService;
 
     private ProjectResponseDto project;
 
@@ -143,6 +143,7 @@ class ProjectControllerTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void members_add_and_remove_and_get() throws Exception {
         doNothing().when(permissionChecker).requirePermission(anyLong(), anyString());
         when(projectService.addMembers(eq(1L), any(Set.class))).thenReturn(Optional.of(project));
@@ -164,6 +165,7 @@ class ProjectControllerTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void members_add_notFound() throws Exception {
         doNothing().when(permissionChecker).requirePermission(anyLong(), anyString());
         when(projectService.addMembers(eq(99L), any(Set.class))).thenReturn(Optional.empty());

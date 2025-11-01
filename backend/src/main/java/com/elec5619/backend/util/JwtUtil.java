@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 
@@ -44,8 +43,10 @@ public class JwtUtil {
             cachedKey = Keys.hmacShaKeyFor(fixedKeyBytes);
             return cachedKey;
         } catch (Exception e) {
-            // 最后的fallback
-            cachedKey = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+            // 最后的fallback - 生成一个随机的 32 字节密钥用于 HS256
+            byte[] randomKey = new byte[32];
+            new java.security.SecureRandom().nextBytes(randomKey);
+            cachedKey = Keys.hmacShaKeyFor(randomKey);
             return cachedKey;
         }
     }
@@ -59,12 +60,13 @@ public class JwtUtil {
         claims.put("username", username);
         claims.put("role", role);
 
+        javax.crypto.SecretKey secretKey = (javax.crypto.SecretKey) getSigningKey();
         return Jwts.builder()
                 .setSubject(String.valueOf(userId))
                 .setClaims(claims)
                 .setIssuedAt(now)
                 .setExpiration(expiry)
-                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+                .signWith(secretKey, Jwts.SIG.HS256)
                 .compact();
     }
 

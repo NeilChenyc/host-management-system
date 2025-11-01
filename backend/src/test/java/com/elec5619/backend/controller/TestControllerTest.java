@@ -9,7 +9,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import com.elec5619.backend.config.TestSecurityConfig;
 import org.springframework.context.annotation.Import;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import com.elec5619.backend.interceptor.JwtInterceptor;
 import com.elec5619.backend.util.JwtUtil;
 
@@ -25,10 +25,10 @@ class TestControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @MockitoBean
     private JwtInterceptor jwtInterceptor;
 
-    @MockBean
+    @MockitoBean
     private JwtUtil jwtUtil;
 
     @Test

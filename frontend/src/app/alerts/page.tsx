@@ -609,27 +609,10 @@ export default function AlertsPage() {
     <MainLayout>
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
-        <Row justify="space-between" align="middle">
-          <Col>
-            <h1 style={{ margin: 0, display: 'flex', alignItems: 'center' }}>
-              <BellOutlined style={{ marginRight: 8, color: '#1890ff' }} />
-              Alerts
-            </h1>
-          </Col>
-          <Col>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => {
-                setEditing(null);
-                form.resetFields();
-                setRuleModalOpen(true);
-              }}
-            >
-              New Rule
-            </Button>
-          </Col>
-        </Row>
+        <h1 style={{ margin: 0, display: 'flex', alignItems: 'center' }}>
+          <BellOutlined style={{ marginRight: 8, color: '#1890ff' }} />
+          Alerts
+        </h1>
       </div>
 
       {/* Stats */}
@@ -717,7 +700,22 @@ export default function AlertsPage() {
       </Card>
 
       {/* Rules */}
-      <Card title="Alert Rules">
+      <Card 
+        title="Alert Rules"
+        extra={
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => {
+              setEditing(null);
+              form.resetFields();
+              setRuleModalOpen(true);
+            }}
+          >
+            New Rule
+          </Button>
+        }
+      >
         <Table
           rowKey="id"
           loading={loading}

@@ -50,7 +50,6 @@ import MainLayout from '../../../components/MainLayout';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
-const { TabPane } = Tabs;
 
 // Chart data interface
 interface ChartMetricData {
@@ -708,109 +707,120 @@ const ServerDetailPage: React.FC = () => {
 
       {/* Metrics Tabs */}
       <Card>
-        <Tabs activeKey={activeTab} onChange={handleTabChange}>
-          <TabPane
-            tab={
-              <span>
-                <DashboardOutlined />
-                Latest Metrics
-              </span>
-            }
-            key="latest"
-          >
-            <div style={{ marginBottom: 16 }}>
-              <Button
-                type="primary"
-                onClick={loadLatestMetrics}
-                loading={loading}
-              >
-                Refresh Latest Metrics
-              </Button>
-            </div>
-            <Table
-              columns={latestMetricsColumns}
-              dataSource={latestMetrics}
-              rowKey="metricType"
-              loading={loading}
-              pagination={false}
-            />
-          </TabPane>
-
-          <TabPane
-            tab={
-              <span>
-                <BarChartOutlined />
-                Metrics Summary
-              </span>
-            }
-            key="summary"
-          >
-            <div style={{ marginBottom: 16 }}>
-              <Button
-                type="primary"
-                onClick={loadMetricsSummary}
-                loading={loading}
-              >
-                Refresh Metrics Summary
-              </Button>
-            </div>
-            <Table
-              columns={summaryColumns}
-              dataSource={metricsSummary}
-              rowKey="metricType"
-              loading={loading}
-              pagination={false}
-            />
-          </TabPane>
-
-          <TabPane
-            tab={
-              <span>
-                <LineChartOutlined />
-                Historical Data
-              </span>
-            }
-            key="range"
-          >
-            <div style={{ marginBottom: 16 }}>
-              <Space>
-                <RangePicker
-                  showTime
-                  onChange={handleRangeChange}
-                  placeholder={['Start Time', 'End Time']}
-                />
-                <Button
-                  type="primary"
-                  onClick={() => {
-                    if (selectedDateRange) {
-                      loadMetricsRange(selectedDateRange[0], selectedDateRange[1]);
-                    } else {
-                      messageApi.warning('Please select a time range first');
-                    }
-                  }}
-                  loading={loading}
-                >
-                  Query Historical Data
-                </Button>
-              </Space>
-            </div>
-            {metricsRange.length > 0 ? (
-              <div>
-                <Alert
-                  message="Historical Data Loaded"
-                  description={`Found ${metricsRange.length} metric records`}
-                  type="success"
-                  style={{ marginBottom: 16 }}
-                />
-                {/* TODO: Implement proper historical data visualization */}
-              </div>
-            ) : (
-              <div style={{ textAlign: 'center', padding: '50px' }}>
-                <Text type="secondary">Please select a time range to query historical data</Text>
-              </div>
-            )}
-          </TabPane>
-        </Tabs>
+        <Tabs 
+          activeKey={activeTab} 
+          onChange={handleTabChange}
+          items={[
+            {
+              key: 'latest',
+              label: (
+                <span>
+                  <DashboardOutlined />
+                  Latest Metrics
+                </span>
+              ),
+              children: (
+                <>
+                  <div style={{ marginBottom: 16 }}>
+                    <Button
+                      type="primary"
+                      onClick={loadLatestMetrics}
+                      loading={loading}
+                    >
+                      Refresh Latest Metrics
+                    </Button>
+                  </div>
+                  <Table
+                    columns={latestMetricsColumns}
+                    dataSource={latestMetrics}
+                    rowKey="metricType"
+                    loading={loading}
+                    pagination={false}
+                  />
+                </>
+              ),
+            },
+            {
+              key: 'summary',
+              label: (
+                <span>
+                  <BarChartOutlined />
+                  Metrics Summary
+                </span>
+              ),
+              children: (
+                <>
+                  <div style={{ marginBottom: 16 }}>
+                    <Button
+                      type="primary"
+                      onClick={loadMetricsSummary}
+                      loading={loading}
+                    >
+                      Refresh Metrics Summary
+                    </Button>
+                  </div>
+                  <Table
+                    columns={summaryColumns}
+                    dataSource={metricsSummary}
+                    rowKey="metricType"
+                    loading={loading}
+                    pagination={false}
+                  />
+                </>
+              ),
+            },
+            {
+              key: 'range',
+              label: (
+                <span>
+                  <LineChartOutlined />
+                  Historical Data
+                </span>
+              ),
+              children: (
+                <>
+                  <div style={{ marginBottom: 16 }}>
+                    <Space>
+                      <RangePicker
+                        showTime
+                        onChange={handleRangeChange}
+                        placeholder={['Start Time', 'End Time']}
+                      />
+                      <Button
+                        type="primary"
+                        onClick={() => {
+                          if (selectedDateRange) {
+                            loadMetricsRange(selectedDateRange[0], selectedDateRange[1]);
+                          } else {
+                            messageApi.warning('Please select a time range first');
+                          }
+                        }}
+                        loading={loading}
+                      >
+                        Query Historical Data
+                      </Button>
+                    </Space>
+                  </div>
+                  {metricsRange.length > 0 ? (
+                    <div>
+                      <Alert
+                        message="Historical Data Loaded"
+                        description={`Found ${metricsRange.length} metric records`}
+                        type="success"
+                        style={{ marginBottom: 16 }}
+                      />
+                      {/* TODO: Implement proper historical data visualization */}
+                    </div>
+                  ) : (
+                    <div style={{ textAlign: 'center', padding: '50px' }}>
+                      <Text type="secondary">Please select a time range to query historical data</Text>
+                    </div>
+                  )}
+                </>
+              ),
+            },
+          ]}
+        />
       </Card>
     </MainLayout>
   );

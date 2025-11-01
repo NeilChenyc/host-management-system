@@ -119,6 +119,11 @@ export class AuthManager {
     }
 
     const data = (await res.json()) as { token: string; id?: number | string; username?: string; email?: string; role?: string } & Json;
+    
+    // Debug logging
+    console.log('[AuthManager] Login response data:', data);
+    console.log('[AuthManager] Role from backend:', data?.role);
+    
     if (data?.token) this.setToken(data.token);
     // Normalize and store user info from backend response
     const user: StoredUser | null = data
@@ -129,7 +134,15 @@ export class AuthManager {
           role: data.role,
         }
       : null;
+    
+    console.log('[AuthManager] Storing user:', user);
     if (user) this.setUser(user);
+    
+    // Verify storage
+    const stored = this.getUser();
+    console.log('[AuthManager] Verified stored user:', stored);
+    console.log('[AuthManager] Stored role:', stored?.role);
+    
     return data;
   }
 

@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -31,10 +31,10 @@ class ServerMetricsControllerTest {
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
 
-    @MockBean private ServerMetricsService serverMetricsService;
-    @MockBean private WebConfig webConfig;
-    @MockBean private JwtInterceptor jwtInterceptor;
-    @MockBean private JwtUtil jwtUtil;
+    @MockitoBean private ServerMetricsService serverMetricsService;
+    @MockitoBean private WebConfig webConfig;
+    @MockitoBean private JwtInterceptor jwtInterceptor;
+    @MockitoBean private JwtUtil jwtUtil;
 
     private ServerMetrics metrics;
 

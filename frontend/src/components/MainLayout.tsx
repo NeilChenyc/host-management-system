@@ -17,9 +17,11 @@ import {
   ProjectOutlined,
   WarningOutlined,
   ExclamationCircleOutlined,
+  CloudServerOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import { AuthManager } from '@/lib/auth';
+import { getLogoGradientByRole, getPrimaryColorByRole, getSidebarBackgroundByRole } from '@/lib/theme';
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
@@ -245,20 +247,74 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      <Sider trigger={null} collapsible collapsed={collapsed} style={{ background: '#001529' }}>
+      <Sider 
+        trigger={null} 
+        collapsible 
+        collapsed={collapsed} 
+        style={{ 
+          background: getSidebarBackgroundByRole(user?.role),
+          boxShadow: '2px 0 8px rgba(0, 0, 0, 0.15)'
+        }}
+      >
         <div
           style={{
             height: 64,
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            background: '#002140',
+            justifyContent: collapsed ? 'center' : 'flex-start',
+            padding: collapsed ? '0' : '0 16px',
+            background: getLogoGradientByRole(user?.role),
             color: '#fff',
-            fontSize: collapsed ? '16px' : '18px',
-            fontWeight: 'bold',
+            cursor: 'pointer',
+            transition: 'all 0.3s',
           }}
+          onClick={() => router.push('/dashboard')}
         >
-          {collapsed ? 'HMS' : 'Host Management System'}
+          {collapsed ? (
+            <CloudServerOutlined style={{ fontSize: '24px', color: '#fff' }} />
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', minWidth: 0 }}>
+              <div
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  minWidth: '36px',
+                  borderRadius: '8px',
+                  background: 'rgba(255, 255, 255, 0.2)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                  flexShrink: 0,
+                }}
+              >
+                <CloudServerOutlined style={{ fontSize: '20px', color: '#fff' }} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+                <div style={{ 
+                  fontSize: '16px', 
+                  fontWeight: 600, 
+                  lineHeight: '1.2', 
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
+                }}>
+                  Host Management
+                </div>
+                <div style={{ 
+                  fontSize: '11px', 
+                  opacity: 0.9, 
+                  lineHeight: '1.2',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
+                }}>
+                  System
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <Menu
@@ -267,7 +323,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           selectedKeys={selectedKeys}
           items={menuItems}
           onClick={handleMenuClick}
-          style={{ borderRight: 0 }}
+          style={{ 
+            borderRight: 0,
+            background: 'transparent',
+            fontSize: '14px'
+          }}
           // 确保不使用默认的链接行为
           inlineCollapsed={collapsed}
           // 禁用默认的链接行为
@@ -297,14 +357,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <Dropdown 
-              dropdownRender={() => alertDropdownContent}
+              popupRender={() => alertDropdownContent}
               placement="bottomRight" 
               arrow
               trigger={['click']}
             >
               <Badge count={notificationCount} size="small">
                 <Button 
-                  icon={<BellOutlined style={{ color: '#1890ff' }} />} 
+                  icon={<BellOutlined style={{ color: getPrimaryColorByRole(user?.role) }} />} 
                   style={{ 
                     fontSize: '16px',
                     backgroundColor: '#fff !important',
@@ -336,7 +396,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f5f5f5')}
                 onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
               >
-                <Avatar size="small" icon={<UserOutlined />} style={{ backgroundColor: '#1890ff' }} />
+                <Avatar size="small" icon={<UserOutlined />} style={{ backgroundColor: getPrimaryColorByRole(user?.role) }} />
                 <span style={{ fontSize: '14px' }}>{user?.name || user?.username || 'User'}</span>
               </div>
             </Dropdown>
