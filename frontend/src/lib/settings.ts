@@ -24,6 +24,9 @@ export const defaultPreferences: UserPreferences = {
 };
 
 export class SettingsManager {
+  // Cache for notification icon data URL to avoid repeated canvas creation
+  private static cachedNotificationIcon: string | undefined = undefined;
+
   static getPreferences(): UserPreferences {
     if (typeof window === 'undefined') return defaultPreferences;
     
@@ -131,9 +134,31 @@ export class SettingsManager {
     }
 
     if (Notification.permission === 'granted') {
+      // Use a cached data URL icon to avoid repeated favicon.ico requests
+      // Create icon only once and reuse it
+      if (!this.cachedNotificationIcon) {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = 64;
+          canvas.height = 64;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            // Draw a simple colored circle as icon
+            ctx.fillStyle = '#1890ff';
+            ctx.beginPath();
+            ctx.arc(32, 32, 28, 0, 2 * Math.PI);
+            ctx.fill();
+            this.cachedNotificationIcon = canvas.toDataURL('image/png');
+          }
+        } catch (e) {
+          // Fallback: no icon if canvas fails
+          this.cachedNotificationIcon = undefined;
+        }
+      }
+
       const notification = new Notification(title, {
-        icon: '/favicon.ico',
-        badge: '/favicon.ico',
+        ...(this.cachedNotificationIcon && { icon: this.cachedNotificationIcon }),
+        // Remove badge to avoid additional favicon requests
         ...options,
       });
 

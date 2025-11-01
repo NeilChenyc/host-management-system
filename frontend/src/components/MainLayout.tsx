@@ -1,7 +1,7 @@
 // ========================== MainLayout.tsx ==========================
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Layout, Menu, Avatar, Dropdown, Badge, Button, List, Typography, Empty, Spin } from 'antd';
 import {
@@ -64,6 +64,77 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const [notificationCount, setNotificationCount] = useState(0);
   const [previousAlertIds, setPreviousAlertIds] = useState<Set<string>>(new Set());
 
+  // Format alert value based on metric type
+  const formatAlertValue = useCallback((value: number, metric: string) => {
+    if (metric === 'cpu' || metric === 'memory' || metric === 'disk') {
+      return `${value.toFixed(1)}%`;
+    } else if (metric === 'temperature') {
+      return `${value.toFixed(1)}°C`;
+    } else if (metric === 'network_in' || metric === 'network_out') {
+      return `${(value / 1024 / 1024).toFixed(2)} MB/s`;
+    } else {
+      return value.toFixed(2);
+    }
+  }, []);
+
+  // Load active alerts - memoized to avoid recreating on every render
+  const loadActiveAlerts = useCallback(async () => {
+    try {
+      setAlertsLoading(true);
+      const data = await apiFetch<any[]>('/alert-events');
+      
+      // Filter only active alerts and map to notification format
+      const activeAlertsData = (data || [])
+        .filter(e => e.status === 'firing' || e.status === 'active')
+        .map((e): AlertNotification => ({
+          id: String(e.eventId ?? e.id ?? ''),
+          ruleName: e.ruleName ?? 'Unknown Rule',
+          serverName: e.serverName || (e.serverId ? `Server ${e.serverId}` : 'Unknown Server'),
+          severity: (String(e.severity || 'low').toLowerCase() as 'low' | 'medium' | 'high' | 'critical'),
+          triggeredValue: Number(e.triggeredValue ?? 0),
+          threshold: Number(e.threshold ?? 0),
+          metric: e.metricName || 'cpu',
+          triggeredAt: e.startedAt || new Date().toISOString(),
+        }));
+      
+      // Check for new alerts and trigger notifications
+      setPreviousAlertIds(prevIds => {
+        const currentAlertIds = new Set(activeAlertsData.map(a => a.id));
+        const newAlerts = activeAlertsData.filter(alert => !prevIds.has(alert.id));
+        
+        // Trigger notifications for new alerts
+        if (newAlerts.length > 0) {
+          newAlerts.forEach(alert => {
+            const severityEmoji = {
+              low: 'ℹ️',
+              medium: '⚠️',
+              high: '🔴',
+              critical: '🚨',
+            }[alert.severity] || '⚠️';
+            
+            SettingsManager.showNotification(
+              `${severityEmoji} Alert: ${alert.ruleName}`,
+              {
+                body: `${alert.serverName}: ${alert.metric} = ${formatAlertValue(alert.triggeredValue, alert.metric)} (threshold: ${formatAlertValue(alert.threshold, alert.metric)})`,
+                tag: `alert-${alert.id}`,
+                requireInteraction: alert.severity === 'critical' || alert.severity === 'high',
+              }
+            );
+          });
+        }
+        
+        return currentAlertIds;
+      });
+      
+      setActiveAlerts(activeAlertsData);
+      setNotificationCount(activeAlertsData.length);
+    } catch (error) {
+      console.error('Failed to load active alerts:', error);
+    } finally {
+      setAlertsLoading(false);
+    }
+  }, [formatAlertValue]);
+
   // User authentication and data loading
   useEffect(() => {
     if (!AuthManager.isAuthenticated()) {
@@ -84,7 +155,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         clearInterval(alertInterval);
       };
     }
-  }, [router]);
+  }, [router, loadActiveAlerts]);
 
   // Auto-collapse sidebar based on user preference - only initialize on mount
   useEffect(() => {
@@ -94,6 +165,15 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       setCollapsed(true);
     }
   }, []); // Only run once on mount
+
+  // Use refs to access latest state without causing re-renders
+  const isManualControlRef = useRef(isManualControl);
+  const collapsedRef = useRef(collapsed);
+  
+  useEffect(() => {
+    isManualControlRef.current = isManualControl;
+    collapsedRef.current = collapsed;
+  }, [isManualControl, collapsed]);
 
   // Listen for preference changes (cross-tab and same-tab)
   useEffect(() => {
@@ -105,7 +185,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           setIsManualControl(false);
         } else {
           // If enabled, immediately collapse the sidebar (unless manually controlled)
-          if (!isManualControl) {
+          if (!isManualControlRef.current) {
             setCollapsed(true);
           }
           // Reset manual control when enabling (to allow hover behavior)
@@ -124,7 +204,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         setIsManualControl(false);
       } else {
         // If enabled, immediately collapse the sidebar (unless manually controlled)
-        if (!isManualControl) {
+        if (!isManualControlRef.current) {
           setCollapsed(true);
         }
         // Reset manual control when enabling (to allow hover behavior)
@@ -138,7 +218,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('preferencesUpdated', handlePreferencesUpdate);
     };
-  }, [isManualControl, collapsed]);
+  }, []); // Empty deps - only register once
 
   // Handle hover for auto-collapse sidebar
   const handleSidebarMouseEnter = () => {
@@ -163,74 +243,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const handleManualToggle = () => {
     setIsManualControl(true);
     setCollapsed(!collapsed);
-  };
-
-  // Format alert value based on metric type
-  const formatAlertValue = (value: number, metric: string) => {
-    if (metric === 'cpu' || metric === 'memory' || metric === 'disk') {
-      return `${value.toFixed(1)}%`;
-    } else if (metric === 'temperature') {
-      return `${value.toFixed(1)}°C`;
-    } else if (metric === 'network_in' || metric === 'network_out') {
-      return `${(value / 1024 / 1024).toFixed(2)} MB/s`;
-    } else {
-      return value.toFixed(2);
-    }
-  };
-
-  // Load active alerts
-  const loadActiveAlerts = async () => {
-    try {
-      setAlertsLoading(true);
-      const data = await apiFetch<any[]>('/alert-events');
-      
-      // Filter only active alerts and map to notification format
-      const activeAlertsData = (data || [])
-        .filter(e => e.status === 'firing' || e.status === 'active')
-        .map((e): AlertNotification => ({
-          id: String(e.eventId ?? e.id ?? ''),
-          ruleName: e.ruleName ?? 'Unknown Rule',
-          serverName: e.serverName || (e.serverId ? `Server ${e.serverId}` : 'Unknown Server'),
-          severity: (String(e.severity || 'low').toLowerCase() as 'low' | 'medium' | 'high' | 'critical'),
-          triggeredValue: Number(e.triggeredValue ?? 0),
-          threshold: Number(e.threshold ?? 0),
-          metric: e.metricName || 'cpu',
-          triggeredAt: e.startedAt || new Date().toISOString(),
-        }));
-      
-      // Check for new alerts and trigger notifications
-      const currentAlertIds = new Set(activeAlertsData.map(a => a.id));
-      const newAlerts = activeAlertsData.filter(alert => !previousAlertIds.has(alert.id));
-      
-      // Trigger notifications for new alerts
-      if (newAlerts.length > 0) {
-        newAlerts.forEach(alert => {
-          const severityEmoji = {
-            low: 'ℹ️',
-            medium: '⚠️',
-            high: '🔴',
-            critical: '🚨',
-          }[alert.severity] || '⚠️';
-          
-          SettingsManager.showNotification(
-            `${severityEmoji} Alert: ${alert.ruleName}`,
-            {
-              body: `${alert.serverName}: ${alert.metric} = ${formatAlertValue(alert.triggeredValue, alert.metric)} (threshold: ${formatAlertValue(alert.threshold, alert.metric)})`,
-              tag: `alert-${alert.id}`,
-              requireInteraction: alert.severity === 'critical' || alert.severity === 'high',
-            }
-          );
-        });
-      }
-      
-      setActiveAlerts(activeAlertsData);
-      setNotificationCount(activeAlertsData.length);
-      setPreviousAlertIds(currentAlertIds);
-    } catch (error) {
-      console.error('Failed to load active alerts:', error);
-    } finally {
-      setAlertsLoading(false);
-    }
   };
 
   // Clear all notifications

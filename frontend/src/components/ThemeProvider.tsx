@@ -52,9 +52,11 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
     window.addEventListener('preferencesUpdated', handlePreferencesUpdate);
     
     // Also check periodically for local changes (for same-tab login/logout)
-    const interval = setInterval(updateRole, 500);
+    // Reduced frequency from 500ms to 2s to improve performance
+    const interval = setInterval(updateRole, 2000);
 
-    // Check for preference changes more frequently for immediate response
+    // Check for preference changes with reasonable frequency
+    // Reduced from 100ms to 500ms to improve performance while still being responsive
     const prefInterval = setInterval(() => {
       const current = SettingsManager.getPreferences();
       // Only update if preferences actually changed
@@ -62,7 +64,7 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
         const changed = JSON.stringify(prev) !== JSON.stringify(current);
         return changed ? current : prev;
       });
-    }, 100); // Check every 100ms for immediate response
+    }, 500); // Check every 500ms - still responsive but less CPU intensive
 
     // Apply font size on mount
     SettingsManager.applyFontSize();
