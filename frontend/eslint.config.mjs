@@ -22,11 +22,11 @@ const eslintConfig = [
   },
   {
     rules: {
-      // 暂时禁用 any 类型检查，允许使用 any 类型
+      // Temporarily disable any type checking, allow using any type
       "@typescript-eslint/no-explicit-any": "off",
-      // 将 React Hooks 依赖警告降级为警告而不是错误
+      // Downgrade React Hooks dependency warnings to warnings instead of errors
       "react-hooks/exhaustive-deps": "warn",
-      // 暂时禁用未使用变量的错误，改为警告
+      // Temporarily disable unused variable errors, change to warnings
       "@typescript-eslint/no-unused-vars": "warn",
     },
   },

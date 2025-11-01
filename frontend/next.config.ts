@@ -1,23 +1,23 @@
 import type { NextConfig } from 'next';
 
 /* ===========================================================
- * 🌐 环境变量设置
+ * 🌐 Environment Variables Configuration
  * -----------------------------------------------------------
- * BACKEND_ORIGIN:  后端服务地址（Spring Boot 端口，默认为 8081）
- * NEXT_PUBLIC_API_PREFIX:  前端调用 API 的统一前缀（通常为 /api）
+ * BACKEND_ORIGIN:  Backend service address (Spring Boot port, default 8081)
+ * NEXT_PUBLIC_API_PREFIX:  Unified prefix for frontend API calls (usually /api)
  * =========================================================== */
 const BACKEND_ORIGIN =
-  process.env.BACKEND_ORIGIN || 'http://localhost:8080'; // 后端地址
+  process.env.BACKEND_ORIGIN || 'http://localhost:8080'; // Backend address
 const API_PREFIX =
   process.env.NEXT_PUBLIC_API_PREFIX?.startsWith('/')
     ? process.env.NEXT_PUBLIC_API_PREFIX
-    : `/${process.env.NEXT_PUBLIC_API_PREFIX || 'api'}`; // 确保以 / 开头
+    : `/${process.env.NEXT_PUBLIC_API_PREFIX || 'api'}`; // Ensure it starts with /
 
 /* ===========================================================
- * ⚙️ Next.js 配置
+ * ⚙️ Next.js Configuration
  * -----------------------------------------------------------
- * 使用 rewrites 将前端 /api/* 请求转发到后端 /api/*
- * 这样在本地开发时可以避免 CORS（跨域）问题。
+ * Use rewrites to forward frontend /api/* requests to backend /api/*
+ * This avoids CORS (cross-origin) issues during local development.
  * =========================================================== */
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -31,7 +31,7 @@ const nextConfig: NextConfig = {
     ];
   },
 
-  // 🧩 如果需要自定义响应头（例如调试跨域），可以启用此段
+  // 🧩 If you need custom response headers (e.g., debugging CORS), you can enable this section
   // async headers() {
   //   return [
   //     {
@@ -47,6 +47,6 @@ const nextConfig: NextConfig = {
 };
 
 /* ===========================================================
- * ✅ 导出配置
+ * ✅ Export Configuration
  * =========================================================== */
 export default nextConfig;

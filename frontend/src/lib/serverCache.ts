@@ -1,21 +1,21 @@
-// 服务器数据缓存，避免重复API调用
+// Server data cache to avoid duplicate API calls
 class ServerCache {
   private cache: any[] | null = null;
   private lastFetch: number = 0;
-  private readonly CACHE_DURATION = 5000; // 5秒缓存
-  private messageShown: boolean = false; // 添加消息显示标志
+  private readonly CACHE_DURATION = 5000; // 5 second cache
+  private messageShown: boolean = false; // Add message display flag
 
   async getServers(forceRefresh: boolean = false): Promise<any[]> {
     // Use a stable timestamp to avoid hydration issues
     const now = typeof window !== 'undefined' ? Date.now() : 0;
     
-    // 如果缓存存在且未过期，且不是强制刷新，则返回缓存
+    // If cache exists and hasn't expired, and it's not a forced refresh, return cached data
     if (!forceRefresh && this.cache && (now - this.lastFetch) < this.CACHE_DURATION) {
       console.log('ServerCache: Returning cached data');
       return this.cache;
     }
 
-    // 否则重新获取数据
+    // Otherwise fetch fresh data
     try {
       console.log('ServerCache: Fetching fresh data');
       const { ServerApiService } = await import('@/services/serverApi');
@@ -28,7 +28,7 @@ class ServerCache {
     }
   }
 
-  // 检查是否应该显示消息
+  // Check if message should be displayed
   shouldShowMessage(): boolean {
     if (this.messageShown) {
       return false;
@@ -37,7 +37,7 @@ class ServerCache {
     return true;
   }
 
-  // 重置消息显示标志（用于手动刷新）
+  // Reset message display flag (for manual refresh)
   resetMessageFlag(): void {
     this.messageShown = false;
   }
@@ -45,7 +45,7 @@ class ServerCache {
   clearCache(): void {
     this.cache = null;
     this.lastFetch = 0;
-    this.messageShown = false; // 清除缓存时也重置消息标志
+    this.messageShown = false; // Also reset message flag when clearing cache
   }
 }
 

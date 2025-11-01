@@ -1,16 +1,16 @@
 // src/services/alertRuleApi.ts
 // AlertRule API Service Layer
-// 统一使用 AuthManager.fetchWithAuth -> 自动附带 Authorization、统一 401 处理
-// 支持可配置前缀（默认 '/api'），并通过 API_BASE_URL 组装完整地址
+// Unified use of AuthManager.fetchWithAuth -> automatically attach Authorization, unified 401 handling
+// Support configurable prefix (default '/api'), and assemble complete address through API_BASE_URL
 
 import { AuthManager } from '@/lib/auth';
 
-/* ============ 可配置 API 前缀（后端若无 /api 前缀可将其设为 ''） ============ */
+/* ============ Configurable API prefix (set to '' if backend has no /api prefix) ============ */
 const API_PREFIX = process.env.NEXT_PUBLIC_API_PREFIX ?? '/api';
 const api = <T>(path: string, init?: RequestInit) =>
   AuthManager.fetchWithAuth<T>(`${API_PREFIX}${path}`, init);
 
-/* ===================== 后端 DTO ===================== */
+/* ===================== Backend DTO ===================== */
 export interface AlertRuleDto {
   ruleId: number;
   ruleName: string;
@@ -22,13 +22,13 @@ export interface AlertRuleDto {
   severity: string; // WARNING / CRITICAL / HIGH / LOW
   enabled: boolean;
   scopeLevel?: string;
-  serverId: number; // 必需字段，绑定特定服务器
+  serverId: number; // Required field, bind to specific server
   targetFilter?: string;
   createdAt: string;
   updatedAt: string;
 }
 
-/* ===================== 前端 UI 类型 ===================== */
+/* ===================== Frontend UI Types ===================== */
 export interface UiAlertRule {
   id: string;
   name: string;
@@ -46,23 +46,23 @@ export interface UiAlertRule {
   createdBy: string;
   triggerCount: number;
   lastTriggered?: string;
-  relatedRuleIds?: string[]; // 用于跟踪合并显示的相关规则ID
+  relatedRuleIds?: string[]; // Used to track related rule IDs for merged display
 }
 
-/* ===================== 表单入参类型 ===================== */
+/* ===================== Form Input Types ===================== */
 export type AlertRuleFormValues = Omit<
   UiAlertRule,
   'id' | 'createdAt' | 'updatedAt' | 'createdBy' | 'triggerCount' | 'lastTriggered'
 >;
 
-/* ===================== 错误处理 ===================== */
+/* ===================== Error Handling ===================== */
 const handleApiError = (error: unknown, op: string): never => {
   console.error(`${op} failed:`, error);
   if (error instanceof Error) throw error;
-  throw new Error(`${op}失败`);
+  throw new Error(`${op} failed`);
 };
 
-/* ===================== 字段映射：UI <-> 后端 ===================== */
+/* ===================== Field Mapping: UI <-> Backend ===================== */
 const metricUiToBackend = (m: UiAlertRule['metric']): string => {
   const map: Record<UiAlertRule['metric'], string> = {
     cpu: 'cpu_usage',
@@ -151,8 +151,8 @@ const toUiRule = (dto: AlertRuleDto): UiAlertRule => ({
   severity: severityBackendToUi(dto.severity),
   duration: dto.duration,
   enabled: !!dto.enabled,
-  hostIds: [String(dto.serverId)], // serverId是必需的，直接映射到hostIds
-  notificationChannels: [], // 若后端返回，请在此映射
+  hostIds: [String(dto.serverId)], // serverId is required, directly map to hostIds
+  notificationChannels: [], // If backend returns, please map here
   createdAt: dto.createdAt,
   updatedAt: dto.updatedAt,
   createdBy: 'system',
@@ -161,12 +161,12 @@ const toUiRule = (dto: AlertRuleDto): UiAlertRule => ({
 });
 
 const toCreateDto = (v: AlertRuleFormValues): Partial<AlertRuleDto>[] => {
-  // 如果没有选择服务器，抛出错误
+  // If no server is selected, throw error
   if (!v.hostIds || v.hostIds.length === 0) {
-    throw new Error('必须选择至少一个目标服务器');
+    throw new Error('Must select at least one target server');
   }
   
-  // 为每个选中的服务器创建一个告警规则
+  // Create an alert rule for each selected server
   return v.hostIds.map(hostId => ({
     ruleName: v.name,
     description: v.description,
@@ -181,12 +181,12 @@ const toCreateDto = (v: AlertRuleFormValues): Partial<AlertRuleDto>[] => {
 };
 
 const toUpdateDto = (v: AlertRuleFormValues): Partial<AlertRuleDto> => {
-  // 更新时必须选择至少一个服务器
+  // Must select at least one server when updating
   if (!v.hostIds || v.hostIds.length === 0) {
-    throw new Error('必须选择至少一个目标服务器');
+    throw new Error('Must select at least one target server');
   }
   
-  // 对于单服务器更新，使用第一个服务器ID
+  // For single server update, use the first server ID
   return {
     ruleName: v.name,
     description: v.description,
@@ -202,23 +202,23 @@ const toUpdateDto = (v: AlertRuleFormValues): Partial<AlertRuleDto> => {
 
 /* ===================== API ===================== */
 export class AlertRuleApiService {
-  /** 列表 */
+  /** List */
   static async getAllAlertRules(): Promise<UiAlertRule[]> {
     try {
       const list = await api<AlertRuleDto[]>('/alert-rules');
       const uiRules = (list || []).map(toUiRule);
       
-      // 将相同规则名称、配置的规则合并显示
+      // Merge rules with same name and configuration for display
       const mergedRules = new Map<string, UiAlertRule>();
       
       for (const rule of uiRules) {
         const key = `${rule.name}-${rule.metric}-${rule.condition}-${rule.threshold}-${rule.severity}-${rule.duration}`;
         
         if (mergedRules.has(key)) {
-          // 合并 hostIds 和 ruleIds
+          // Merge hostIds and ruleIds
           const existingRule = mergedRules.get(key)!;
           existingRule.hostIds = [...existingRule.hostIds, ...rule.hostIds];
-          // 保存所有相关的规则ID，用于删除
+          // Save all related rule IDs for deletion
           if (!existingRule.relatedRuleIds) {
             existingRule.relatedRuleIds = [existingRule.id];
           }
@@ -230,34 +230,34 @@ export class AlertRuleApiService {
       
       return Array.from(mergedRules.values());
     } catch (e) {
-      return handleApiError(e, '获取告警规则列表');
+      return handleApiError(e, 'Get alert rule list');
     }
   }
 
-  /** 详情 */
+  /** Detail */
   static async getAlertRuleById(id: string): Promise<UiAlertRule> {
     try {
       const dto = await api<AlertRuleDto>(`/alert-rules/${id}`);
       return toUiRule(dto);
     } catch (e) {
-      return handleApiError(e, '获取告警规则详情');
+      return handleApiError(e, 'Get alert rule detail');
     }
   }
 
-  /** 创建 */
+  /** Create */
   static async createAlertRule(values: AlertRuleFormValues): Promise<UiAlertRule[]> {
     try {
       const payloads = toCreateDto(values);
       
       if (payloads.length === 1) {
-        // 单个服务器，使用单个创建 API
+        // Single server, use single creation API
         const dto = await api<AlertRuleDto>('/alert-rules', {
           method: 'POST',
           body: JSON.stringify(payloads[0]),
         });
         return [toUiRule(dto)];
       } else {
-        // 多个服务器，使用批量创建 API
+        // Multiple servers, use batch creation API
         const dtos = await api<AlertRuleDto[]>('/alert-rules/batch', {
           method: 'POST',
           body: JSON.stringify(payloads),
@@ -265,11 +265,11 @@ export class AlertRuleApiService {
         return dtos.map(toUiRule);
       }
     } catch (e) {
-      return handleApiError(e, '创建告警规则');
+      return handleApiError(e, 'Create alert rule');
     }
   }
 
-  /** 更新 */
+  /** Update */
   static async updateAlertRule(id: string, values: AlertRuleFormValues): Promise<UiAlertRule> {
     try {
       const payload = toUpdateDto(values);
@@ -279,23 +279,23 @@ export class AlertRuleApiService {
       });
       return toUiRule(dto);
     } catch (e) {
-      return handleApiError(e, '更新告警规则');
+      return handleApiError(e, 'Update alert rule');
     }
   }
 
-  /** 删除 */
+  /** Delete */
   static async deleteAlertRule(id: string): Promise<void> {
     try {
       await api(`/alert-rules/${id}`, { method: 'DELETE' });
     } catch (e) {
-      return handleApiError(e, '删除告警规则');
+      return handleApiError(e, 'Delete alert rule');
     }
   }
 
-  /** 批量删除 */
+  /** Batch Delete */
   static async deleteAlertRulesBatch(ids: string[]): Promise<void> {
     try {
-      // 将字符串ID转换为数字ID发送给后端
+      // Convert string IDs to numeric IDs for backend
       const numericIds = ids.map(id => parseInt(id, 10));
       await api('/alert-rules/batch', { 
         method: 'DELETE',
@@ -303,11 +303,11 @@ export class AlertRuleApiService {
         body: JSON.stringify(numericIds)
       });
     } catch (e) {
-      return handleApiError(e, '批量删除告警规则');
+      return handleApiError(e, 'Batch delete alert rules');
     }
   }
 
-  /** 启用/停用 */
+
   static async toggleAlertRuleStatus(id: string, enabled: boolean): Promise<UiAlertRule> {
     try {
       const dto = await api<AlertRuleDto>(`/alert-rules/${id}/status?enabled=${enabled}`, {
@@ -315,7 +315,7 @@ export class AlertRuleApiService {
       });
       return toUiRule(dto);
     } catch (e) {
-      return handleApiError(e, '更新告警规则状态');
+      return handleApiError(e, 'Update alert rule status');
     }
   }
 }

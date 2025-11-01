@@ -1,31 +1,31 @@
 // ============================================================
 // 🧩 Project API Service Layer
-// 封装后端 Project 模块的 CRUD 与成员管理接口
+// Encapsulates backend Project module CRUD and member management interfaces
 // ============================================================
 
 import { AuthManager } from '@/lib/auth';
 
 export type ProjectStatus = 'PLANNED' | 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'CANCELLED';
 
-// 服务器摘要（与后端 ServerSummaryDto 对应）
+// Server summary (corresponds to backend ServerSummaryDto)
 export interface ServerSummary {
   id: number;
   serverName: string;
   ipAddress: string;
 }
 
-/* ---------- 后端 DTO ---------- */
+/* ---------- Backend DTO ---------- */
 export interface ProjectResponseDto {
   id: number;
   projectName: string;
   status: ProjectStatus;
-  servers?: ServerSummary[]; // 后端返回的是 ServerSummaryDto 对象数组
+  servers?: ServerSummary[]; // Backend returns ServerSummaryDto object array
   duration?: string;
   createdAt: string;
   updatedAt: string;
 }
 
-/* ---------- 前端表单入参 ---------- */
+/* ---------- Frontend Form Input ---------- */
 export interface ProjectCreateDto {
   projectName: string;
   servers?: number[];
@@ -38,7 +38,7 @@ export interface ProjectUpdateDto {
   duration?: string;
 }
 
-/* ---------- 前端展示层 ---------- */
+/* ---------- Frontend Display Layer ---------- */
 export interface ProjectItem {
   id: string;
   projectName: string;
@@ -49,7 +49,7 @@ export interface ProjectItem {
   updatedAt: string;
 }
 
-/* ===================== 通用请求工具 ===================== */
+/* ===================== Common Request Tools ===================== */
 const handleResponse = async <T>(response: Response): Promise<T> => {
   if (!response.ok) {
     const errorText = await response.text();
@@ -82,22 +82,22 @@ const makeRequest = async <T>(url: string, options: RequestInit = {}): Promise<T
     });
   } catch (error) {
     if (error instanceof Error) throw error;
-    throw new Error('网络请求失败');
+    throw new Error('Network request failed');
   }
 };
 
 const handleApiError = (error: any, operation: string): never => {
   console.error(`${operation} failed:`, error);
   if (error instanceof Error) throw error;
-  throw new Error(`${operation}操作失败: ${error?.message || '未知错误'}`);
+  throw new Error(`${operation} operation failed: ${error?.message || 'Unknown error'}`);
 };
 
-/* ===================== 数据映射 ===================== */
+/* ===================== Data Mapping ===================== */
 const toProjectItem = (dto: ProjectResponseDto): ProjectItem => ({
   id: String(dto.id),
   projectName: dto.projectName,
   status: dto.status,
-  servers: Array.isArray(dto.servers) ? dto.servers.map(s => s.id) : [], // 提取服务器 ID
+  servers: Array.isArray(dto.servers) ? dto.servers.map(s => s.id) : [], // Extract server IDs
   duration: dto.duration,
   createdAt: dto.createdAt,
   updatedAt: dto.updatedAt,
@@ -105,27 +105,27 @@ const toProjectItem = (dto: ProjectResponseDto): ProjectItem => ({
 
 /* ===================== Project API ===================== */
 export class ProjectApiService {
-  /** 获取所有项目 */
+  /** Get all projects */
   static async getAllProjects(): Promise<ProjectItem[]> {
     try {
       const list = await makeRequest<ProjectResponseDto[]>('/api/projects/my');
       return list.map(toProjectItem);
     } catch (error) {
-      return handleApiError(error, '获取项目列表');
+      return handleApiError(error, 'Get project list');
     }
   }
 
-  /** 获取项目详情 */
+  /** Get project details */
   static async getProjectById(id: string): Promise<ProjectItem> {
     try {
       const dto = await makeRequest<ProjectResponseDto>(`/api/projects/${id}`);
       return toProjectItem(dto);
     } catch (error) {
-      return handleApiError(error, '获取项目详情');
+      return handleApiError(error, 'Get project details');
     }
   }
 
-  /** 创建项目 */
+  /** Create project */
   static async createProject(payload: ProjectCreateDto): Promise<ProjectItem> {
     try {
       const dto = await makeRequest<ProjectResponseDto>('/api/projects', {
@@ -134,11 +134,11 @@ export class ProjectApiService {
       });
       return toProjectItem(dto);
     } catch (error) {
-      return handleApiError(error, '创建项目');
+      return handleApiError(error, 'Create project');
     }
   }
 
-  /** 更新项目信息 */
+  /** Update project information */
   static async updateProject(
     id: string,
     payload: ProjectUpdateDto
@@ -150,11 +150,11 @@ export class ProjectApiService {
       });
       return toProjectItem(dto);
     } catch (error) {
-      return handleApiError(error, '更新项目');
+      return handleApiError(error, 'Update project');
     }
   }
 
-  /** 更新项目状态 */
+  /** Update project status */
   static async updateProjectStatus(
     id: string,
     status: ProjectStatus
@@ -166,21 +166,21 @@ export class ProjectApiService {
       );
       return toProjectItem(dto);
     } catch (error) {
-      return handleApiError(error, '更新项目状态');
+      return handleApiError(error, 'Update project status');
     }
   }
 
-  /** 获取项目成员 */
+  /** Get project members */
   static async getProjectMembers(id: string): Promise<number[]> {
     try {
       const members = await makeRequest<number[]>(`/api/projects/${id}/members`);
       return Array.isArray(members) ? members : [];
     } catch (error) {
-      return handleApiError(error, '获取项目成员');
+      return handleApiError(error, 'Get project members');
     }
   }
 
-  /** 添加成员 */
+  /** Add members */
   static async addProjectMembers(
     id: string,
     userIds: number[]
@@ -195,11 +195,11 @@ export class ProjectApiService {
       );
       return toProjectItem(dto);
     } catch (error) {
-      return handleApiError(error, '添加项目成员');
+      return handleApiError(error, 'Add project members');
     }
   }
 
-  /** 删除成员 */
+  /** Remove members */
   static async removeProjectMembers(
     id: string,
     userIds: number[]
@@ -214,16 +214,16 @@ export class ProjectApiService {
       );
       return toProjectItem(dto);
     } catch (error) {
-      return handleApiError(error, '删除项目成员');
+      return handleApiError(error, 'Remove project members');
     }
   }
 
-  /** 删除项目 */
+  /** Delete project */
   static async deleteProject(id: string): Promise<void> {
     try {
       await makeRequest<void>(`/api/projects/${id}`, { method: 'DELETE' });
     } catch (error) {
-      handleApiError(error, '删除项目');
+      handleApiError(error, 'Delete project');
     }
   }
 }

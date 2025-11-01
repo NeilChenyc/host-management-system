@@ -2,7 +2,7 @@
   "name": "host-management-system",
   "version": "0.1.0",
   "private": true,
-  "description": "基于 Next.js 和 Ant Design 的企业级主机设备管理系统 - 课程作业项目",
+  "description": "Enterprise-level host device management system based on Next.js and Ant Design - Course assignment project",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",

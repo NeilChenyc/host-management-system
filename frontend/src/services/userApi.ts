@@ -47,8 +47,8 @@ export async function getAllUsers(): Promise<UserResponseDto[]> {
     const data = await AuthManager.fetchWithAuth<UserResponseDto[]>('/api/users', { method: 'GET' });
     return Array.isArray(data) ? data : [];
   } catch (error: any) {
-    console.error('❌ userApi.getAllUsers: API调用失败');
-    console.error('📋 错误详情:', {
+    console.error('❌ userApi.getAllUsers: API call failed');
+    console.error('📋 Error details:', {
       message: error?.message,
       // fetchWithAuth throws Error with message; no axios response object here
     });
@@ -86,8 +86,8 @@ export async function registerUser(payload: { username: string; email: string; p
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error: any) {
-    // 提取后端返回的友好错误消息
-    const errorMessage = error?.message || '注册用户失败';
+    // Extract friendly error message returned by backend
+    const errorMessage = error?.message || 'User registration failed';
     throw new Error(errorMessage);
   }
 }
@@ -102,8 +102,8 @@ export async function updateUserRole(id: number | string, role: AppRole): Promis
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error: any) {
-    // 提取后端返回的友好错误消息
-    const errorMessage = error?.message || '更新用户角色失败';
+    // Extract friendly error message returned by backend
+    const errorMessage = error?.message || 'Update user role failed';
     throw new Error(errorMessage);
   }
 }
@@ -116,8 +116,8 @@ export async function updateUserProfile(updateData: UserUpdateDto): Promise<User
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error: any) {
-    // 提取后端返回的友好错误消息
-    const errorMessage = error?.message || '更新用户信息失败';
+    // Extract friendly error message returned by backend
+    const errorMessage = error?.message || 'Update user profile failed';
     throw new Error(errorMessage);
   }
 }
@@ -126,8 +126,8 @@ export async function deleteUser(id: number | string): Promise<void> {
   try {
     await AuthManager.fetchWithAuth<void>(`/api/users/${id}`, { method: 'DELETE' });
   } catch (error: any) {
-    // 提取后端返回的友好错误消息
-    const errorMessage = error?.message || '删除用户失败';
+    // Extract friendly error message returned by backend
+    const errorMessage = error?.message || 'Delete user failed';
     throw new Error(errorMessage);
   }
 }

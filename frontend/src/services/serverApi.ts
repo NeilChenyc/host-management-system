@@ -1,12 +1,12 @@
 // ============================================================
 // 🖥️ Server API Service Layer
-// 封装后端服务器管理模块的 CRUD 与指标接口
+// Encapsulates backend server management module CRUD and metrics interfaces
 // ============================================================
 
 import AuthManager from '@/lib/auth';
 
-/* ===================== 类型定义 ===================== */
-// ---------- 后端 DTO ----------
+/* ===================== Type Definitions ===================== */
+// ---------- Backend DTO ----------
 export interface ServerResponseDto {
   id: number;
   serverName: string;
@@ -38,7 +38,7 @@ export interface ServerUpdateDto {
   status?: 'online' | 'offline' | 'maintenance' | 'unknown';
 }
 
-// ---------- 前端 Device ----------
+// ---------- Frontend Device ----------
 export interface Device {
   id: string;
   hostname: string;
@@ -50,14 +50,14 @@ export interface Device {
   lastUpdate: string;
 }
 
-// ---------- 前端指标类型 ----------
+// ---------- Frontend Metric Types ----------
 export type MetricData = {
   timestamp: string;
   metricType: 'CPU Usage' | 'Memory Usage' | 'Disk Usage' | 'Network In' | 'Network Out' | 'Temperature' | 'Load Average';
   value: number;
 };
 
-// ---------- 前端指标类型 ----------
+// ---------- Frontend Metric Types ----------
 export interface LatestMetric {
   id: string;
   metricType: string;
@@ -66,7 +66,7 @@ export interface LatestMetric {
   timestamp: string;
 }
 
-// ---------- 前端指标类型 ----------
+// ---------- Frontend Metric Types ----------
 export interface MetricSummary {
   metricType: string;
   average: number;
@@ -80,7 +80,7 @@ export interface MetricSummary {
   unit: string;
 }
 
-// ---------- 前端指标类型 ----------
+// ---------- Frontend Metric Types ----------
 export interface MetricRange {
   timestamp: string;
   cpuUsage: number;
@@ -92,7 +92,7 @@ export interface MetricRange {
   loadAvg: number;
 }
 
-/* ===================== 辅助函数 ===================== */
+/* ===================== Helper Functions ===================== */
 const mapBackendStatusToFrontend = (
   backendStatus: ServerResponseDto['status']
 ): Device['status'] => backendStatus || 'unknown';
@@ -101,7 +101,7 @@ const mapFrontendStatusToBackend = (
   frontendStatus: Device['status']
 ): ServerResponseDto['status'] => frontendStatus || 'unknown';
 
-/* ===================== 数据转换 ===================== */
+/* ===================== Data Conversion ===================== */
 const convertServerResponseToDevice = (server: ServerResponseDto): Device => ({
   id: String(server.id),
   hostname: server.serverName,
@@ -113,7 +113,7 @@ const convertServerResponseToDevice = (server: ServerResponseDto): Device => ({
   lastUpdate: server.updatedAt,
 });
 
-/* ===================== HTTP 工具 ===================== */
+/* ===================== HTTP Tools ===================== */
 const handleResponse = async <T>(response: Response): Promise<T> => {
   if (!response.ok) {
     const errorText = await response.text();
@@ -160,7 +160,7 @@ const makeRequest = async <T>(url: string, options: RequestInit = {}): Promise<T
 const handleApiError = (error: any, operation: string): never => {
   console.error(`${operation} failed:`, error);
   if (error instanceof Error) throw error;
-  throw new Error(`${operation}操作失败: ${error?.message || '未知错误'}`);
+  throw new Error(`${operation} operation failed: ${error?.message || 'Unknown error'}`);
 };
 
 /* ===================== Server API ===================== */
@@ -421,13 +421,13 @@ export class ServerApiService {
     }
   }
 
-  // 获取服务器指标汇总数据
+  // Get server metrics summary data
   static async getServerMetricsSummary(serverId: string): Promise<MetricSummary[]> {
     try {
       const response = await makeRequest<any>(`/api/servers/${serverId}/metrics/summary`);
       
-      // 后端返回的是对象格式，需要转换为数组
-      // 后端返回格式: { id, dataPoints, timeRange, averages: {cpu, memory, disk, temperature}, maximums: {cpu, memory, disk, temperature} }
+      // Backend returns object format, needs to be converted to array
+      // Backend return format: { id, dataPoints, timeRange, averages: {cpu, memory, disk, temperature}, maximums: {cpu, memory, disk, temperature} }
       if (!response || !response.averages) {
         return [];
       }
@@ -462,7 +462,7 @@ export class ServerApiService {
     }
   }
 
-  // 获取指标单位的辅助方法
+  // Helper method to get metric units
   private static getMetricUnit(metricType: string): string {
     switch (metricType.toLowerCase()) {
       case 'cpu usage':
