@@ -17,7 +17,9 @@ import {
   Button,
   Space,
   Alert,
-  List
+  List,
+  Collapse,
+  Checkbox
 } from 'antd';
 import {
   LineChart,
@@ -53,6 +55,86 @@ import ServerApiService from '../../services/serverApi';
 import { serverCache } from '@/lib/serverCache';
 
 const { Option } = Select;
+
+// 定义可配置模块的类型
+interface DashboardModule {
+  key: string;
+  title: string;
+  description: string;
+}
+
+// 定义仪表盘配置的类型
+interface DashboardConfig {
+  [key: string]: boolean;
+}
+
+// 定义所有可配置模块
+const DASHBOARD_MODULES: DashboardModule[] = [
+  {
+    key: 'overview_statistics',
+    title: 'Overview Statistics',
+    description: '概览统计卡片：Total/Online Servers, Active Alerts 等'
+  },
+  {
+    key: 'host_details_table',
+    title: 'Host Details Table',
+    description: '主机详情列表：展示所有主机详细信息的表格'
+  },
+  {
+    key: 'real_time_metrics',
+    title: 'Real-time Metrics',
+    description: '实时趋势图：CPU/内存/网络趋势的折线图'
+  },
+  {
+    key: 'status_usage_distribution',
+    title: 'Status & Usage Distribution',
+    description: '状态与分布图：服务器状态饼图和平均资源占用图'
+  },
+  {
+    key: 'resource_comparison',
+    title: 'Resource Comparison',
+    description: '资源对比图：各服务器资源对比的柱状图'
+  },
+  {
+    key: 'recent_alerts',
+    title: 'Recent Alerts',
+    description: '最新告警：右下角的最新告警列表'
+  }
+];
+
+// 默认配置（所有模块可见）
+const DEFAULT_DASHBOARD_CONFIG: DashboardConfig = {
+  overview_statistics: true,
+  host_details_table: true,
+  real_time_metrics: true,
+  status_usage_distribution: true,
+  resource_comparison: true,
+  recent_alerts: true
+};
+
+// 从localStorage加载配置
+const loadDashboardConfig = (): DashboardConfig => {
+  try {
+    const savedConfig = localStorage.getItem('dashboard_layout_preference');
+    if (savedConfig) {
+      const parsedConfig = JSON.parse(savedConfig);
+      // 合并默认配置和保存的配置，确保所有模块都有定义
+      return { ...DEFAULT_DASHBOARD_CONFIG, ...parsedConfig };
+    }
+  } catch (error) {
+    console.error('Failed to load dashboard configuration:', error);
+  }
+  return { ...DEFAULT_DASHBOARD_CONFIG };
+};
+
+// 保存配置到localStorage
+const saveDashboardConfig = (config: DashboardConfig) => {
+  try {
+    localStorage.setItem('dashboard_layout_preference', JSON.stringify(config));
+  } catch (error) {
+    console.error('Failed to save dashboard configuration:', error);
+  }
+};
 
 // Format alert values, reusing the logic from the Alerts page
 const formatAlertValue = (value: number, metric: string) => {
@@ -132,13 +214,23 @@ const MonitoringDashboard: React.FC = () => {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const wsRef = useRef<WebSocket | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  
+
   // State: server list and currently selected server
   const [servers, setServers] = useState<any[]>([]);
   const [selectedServerId, setSelectedServerId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
 
+  // State: dashboard configuration
+  const [dashboardConfig, setDashboardConfig] = useState<DashboardConfig>(loadDashboardConfig);
+
   // Removed mock data and generators to rely on real API responses
+
+  // Handle dashboard configuration changes
+  const handleConfigChange = (moduleKey: string, checked: boolean) => {
+    const newConfig = { ...dashboardConfig, [moduleKey]: checked };
+    setDashboardConfig(newConfig);
+    saveDashboardConfig(newConfig);
+  };
 
   // Load server list
   const loadServers = async () => {
@@ -600,8 +692,8 @@ const MonitoringDashboard: React.FC = () => {
             closable
             style={{ marginBottom: 24 }}
             action={
-              <Button 
-                size="small" 
+              <Button
+                size="small"
                 danger
                 onClick={() => window.location.href = '/alerts'}
               >
@@ -611,412 +703,460 @@ const MonitoringDashboard: React.FC = () => {
           />
         )}
 
+        {/* Customize Dashboard Configuration */}
+        <Collapse
+          defaultActiveKey={[]}
+          style={{ marginBottom: 24, backgroundColor: '#ffffff' }}
+        >
+          <Collapse.Panel header="Customize Dashboard" key="1">
+            <div style={{ padding: '16px 0' }}>
+              <div style={{ marginBottom: 16, fontSize: '14px', fontWeight: 500, color: '#333' }}>
+                Select which modules to display on the dashboard:
+              </div>
+              {DASHBOARD_MODULES.map(module => (
+                <div key={module.key} style={{ marginBottom: 12, padding: '12px', borderRadius: '6px', backgroundColor: '#fafafa', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: 500, color: '#333' }}>
+                      {module.title}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#666', marginTop: 2 }}>
+                      {module.description}
+                    </div>
+                  </div>
+                  <Checkbox
+                    checked={dashboardConfig[module.key]}
+                    onChange={(e) => handleConfigChange(module.key, e.target.checked)}
+                    style={{ fontSize: '14px' }}
+                  />
+                </div>
+              ))}
+            </div>
+          </Collapse.Panel>
+        </Collapse>
+
         {/* Overview Statistics */}
-        <Row gutter={16} style={{ marginBottom: 24 }}>
-          <Col span={6}>
-          <Card>
-            <Statistic
-                title="Total Servers"
-                value={totalHosts}
-                prefix={<ServerOutlined />}
-              valueStyle={{ color: '#1890ff' }}
-            />
-          </Card>
-        </Col>
-          <Col span={6}>
-          <Card>
-            <Statistic
-                title="Online Servers"
-                value={onlineHosts}
-              prefix={<CheckCircleOutlined />}
-                valueStyle={{ color: '#3f8600' }}
-                suffix={`/ ${totalHosts}`}
-            />
-          </Card>
-        </Col>
-          <Col span={6}>
-          <Card>
-            <Statistic
-                title="Active Alerts"
-                value={activeAlerts}
-                prefix={<BellOutlined />}
-                valueStyle={{ color: activeAlerts > 0 ? '#cf1322' : '#3f8600' }}
-                suffix={activeAlerts === 0 ? 'No alerts' : undefined}
-            />
-          </Card>
-        </Col>
-          <Col span={6}>
-          <Card>
-            <Statistic
-                title="Avg CPU Usage"
-                value={avgCpu}
-                prefix={<FireOutlined />}
-              suffix="%"
-                valueStyle={{ color: getMetricColor(avgCpu) }}
-              />
-            </Card>
-          </Col>
-        </Row>
+        {dashboardConfig.overview_statistics && (
+          <Row gutter={16} style={{ marginBottom: 24 }}>
+            <Col span={6}>
+              <Card>
+                <Statistic
+                  title="Total Servers"
+                  value={totalHosts}
+                  prefix={<ServerOutlined />}
+                  valueStyle={{ color: '#1890ff' }}
+                />
+              </Card>
+            </Col>
+            <Col span={6}>
+              <Card>
+                <Statistic
+                  title="Online Servers"
+                  value={onlineHosts}
+                  prefix={<CheckCircleOutlined />}
+                  valueStyle={{ color: '#3f8600' }}
+                  suffix={`/ ${totalHosts}`}
+                />
+              </Card>
+            </Col>
+            <Col span={6}>
+              <Card>
+                <Statistic
+                  title="Active Alerts"
+                  value={activeAlerts}
+                  prefix={<BellOutlined />}
+                  valueStyle={{ color: activeAlerts > 0 ? '#cf1322' : '#3f8600' }}
+                  suffix={activeAlerts === 0 ? 'No alerts' : undefined}
+                />
+              </Card>
+            </Col>
+            <Col span={6}>
+              <Card>
+                <Statistic
+                  title="Avg CPU Usage"
+                  value={avgCpu}
+                  prefix={<FireOutlined />}
+                  suffix="%"
+                  valueStyle={{ color: getMetricColor(avgCpu) }}
+                />
+              </Card>
+            </Col>
+          </Row>
+        )}
 
         {/* Host Details Table */}
-        <Row gutter={16} style={{ marginBottom: 24 }}>
-          <Col span={24}>
-            <Card title="Host Details" extra={
-              <Space>
-                <Select
-                  value={selectedHost}
-                  onChange={setSelectedHost}
-                  style={{ width: 200 }}
-                >
-                  <Option value="all">All Hosts</Option>
-                  {hosts.map(host => (
-                    <Option key={host.id} value={host.id}>{host.name}</Option>
-                  ))}
-                </Select>
-              </Space>
-            }>
-              <Table
-                columns={hostColumns}
-                dataSource={selectedHost === 'all' ? hosts : hosts.filter(h => h.id === selectedHost)}
-                rowKey="id"
-                pagination={false}
-                size="small"
-            />
-          </Card>
-        </Col>
-      </Row>
-
-        {/* Charts Row - Restructured Layout */}
-        <Row gutter={16} style={{ marginBottom: 24 }}>
-          {/* Real-time System Metrics - Match Host Resource Comparison width */}
-          <Col span={16}>
-            <Card 
-              title="Real-time System Metrics" 
-              extra={
+        {dashboardConfig.host_details_table && (
+          <Row gutter={16} style={{ marginBottom: 24 }}>
+            <Col span={24}>
+              <Card title="Host Details" extra={
                 <Space>
-                  <Button 
-                    type={autoRefresh ? 'primary' : 'default'}
-                    onClick={() => setAutoRefresh(!autoRefresh)}
-                    icon={autoRefresh ? <ReloadOutlined spin /> : <ReloadOutlined />}
-                    size="small"
-                  >
-                    {autoRefresh ? 'Auto Refreshing' : 'Enable Auto Refresh'}
-                  </Button>
                   <Select
-                    value={selectedServerId}
-                    onChange={setSelectedServerId}
+                    value={selectedHost}
+                    onChange={setSelectedHost}
                     style={{ width: 200 }}
-                    placeholder="Select Server"
-                    loading={isLoading}
                   >
-                    {servers.map(server => (
-                      <Option key={server.id} value={server.id.toString()}>
-                        {server.hostname} ({server.ipAddress})
-                      </Option>
+                    <Option value="all">All Hosts</Option>
+                    {hosts.map(host => (
+                      <Option key={host.id} value={host.id}>{host.name}</Option>
                     ))}
                   </Select>
-                  <Badge status="processing" text="Live" />
                 </Space>
-              }
-            >
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart 
-                  data={realTimeData.slice(-20)}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis 
-                    dataKey="timestamp" 
-                    tickFormatter={(value: string) => dayjs(value).format('HH:mm:ss')}
-                    stroke="#666"
-                    fontSize={12}
-                  />
-                  <YAxis 
-                    domain={[0, 100]} 
-                    stroke="#666"
-                    fontSize={12}
-                    tickFormatter={(value) => `${value.toFixed(1)}%`}
-                  />
-                  <RechartsTooltip 
-                    labelFormatter={(value: string) => dayjs(value).format('HH:mm:ss')}
-                    formatter={(value: number, name: string) => {
-                      // Format display based on metric type
-                      let formattedValue = '';
-                      
-                      switch (name.toLowerCase()) {
-                        case 'cpu':
-                        case 'memory':
-                        case 'disk':
-                          formattedValue = `${value.toFixed(1)}%`;
-                          break;
-                        case 'network':
-                          formattedValue = `${(value * 10).toFixed(1)} MB/s`; // Restore original network traffic value
-                          break;
-                        case 'temperature':
-                          formattedValue = `${value.toFixed(2)}°C`;
-                          break;
-                        case 'loadavg':
-                          formattedValue = `${value.toFixed(2)}`;
-                          break;
-                        default:
-                          formattedValue = `${value.toFixed(1)}`;
-                      }
-                      
-                      return [formattedValue, name.toUpperCase()];
-                    }}
-                    contentStyle={{
-                      backgroundColor: '#fff',
-                      border: '1px solid #d9d9d9',
-                      borderRadius: '6px',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
-                    }}
-                  />
-                  <Legend 
-                    wrapperStyle={{ paddingTop: '20px' }}
-                    iconType="line"
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="cpu" 
-                    stroke="#1890ff" 
-                    strokeWidth={3} 
-                    dot={false} 
-                    strokeDasharray="0"
-                    connectNulls={false}
-                    name="CPU"
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="memory" 
-                    stroke="#52c41a" 
-                    strokeWidth={3} 
-                    dot={false} 
-                    strokeDasharray="5 5"
-                    connectNulls={false}
-                    name="Memory"
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="disk" 
-                    stroke="#faad14" 
-                    strokeWidth={3} 
-                    dot={false} 
-                    strokeDasharray="10 5"
-                    connectNulls={false}
-                    name="Disk"
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="network" 
-                    stroke="#f5222d" 
-                    strokeWidth={3} 
-                    dot={false} 
-                    strokeDasharray="15 5 5 5"
-                    connectNulls={false}
-                    name="Network"
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="temperature" 
-                    stroke="#722ed1" 
-                    strokeWidth={3} 
-                    dot={false} 
-                    strokeDasharray="20 5"
-                    connectNulls={false}
-                    name="Temperature"
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="loadAvg" 
-                    stroke="#13c2c2" 
-                    strokeWidth={3} 
-                    dot={false} 
-                    strokeDasharray="25 5"
-                    connectNulls={false}
-                    name="Load Avg"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </Card>
-          </Col>
+              }>
+                <Table
+                  columns={hostColumns}
+                  dataSource={selectedHost === 'all' ? hosts : hosts.filter(h => h.id === selectedHost)}
+                  rowKey="id"
+                  pagination={false}
+                  size="small"
+                />
+              </Card>
+            </Col>
+          </Row>
+        )}
 
-          {/* Combined Host Status & Resource Usage - Match Recent Alerts width */}
-          <Col span={8}>
-            <Card title="Server Status & Resource Usage">
-              <ResponsiveContainer width="100%" height={300}>
-                <div style={{ height: '300px', display: 'flex', flexDirection: 'column', padding: '10px 0' }}>
-                  {/* Host Status Distribution - Top Half */}
-                  <div style={{ flex: 1, marginBottom: '10px' }}>
-                    <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '8px', color: '#666', textAlign: 'center' }}>Server Status Distribution</div>
-                    <ResponsiveContainer width="100%" height={120}>
-                      <PieChart margin={{ top: 5, right: 20, bottom: 5, left: 5 }}>
-                        <Pie
-                          data={pieData}
-                          cx="40%"
-                          cy="50%"
-                          innerRadius={20}
-                          outerRadius={40}
-                          paddingAngle={2}
-                          dataKey="value"
-                        >
-                          {pieData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <RechartsTooltip 
-                          formatter={(value: number) => [`${value}`, 'Hosts']}
-                          contentStyle={{
-                            backgroundColor: '#fff',
-                            border: '1px solid #d9d9d9',
-                            borderRadius: '4px',
-                            fontSize: '11px'
-                          }}
-                        />
-                        <Legend 
-                          verticalAlign="middle" 
-                          align="right"
-                          layout="vertical"
-                          iconType="rect"
-                          wrapperStyle={{ fontSize: '10px', paddingLeft: '8px' }}
-                        />
-                      </PieChart>
-                    </ResponsiveContainer>
-                    </div>
-                  
-                  {/* Average Resource Usage - Bottom Half */}
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '8px', color: '#666', textAlign: 'center' }}>Average Resource Usage</div>
-                    <ResponsiveContainer width="100%" height={120}>
-                      <RadialBarChart 
-                        cx="40%" 
-                        cy="50%" 
-                        innerRadius="25%" 
-                        outerRadius="75%" 
-                        data={radialData}
-                        startAngle={90}
-                        endAngle={-270}
-                        margin={{ top: 5, right: 20, bottom: 5, left: 5 }}
+        {/* Charts Row - Restructured Layout */}
+        {(dashboardConfig.real_time_metrics || dashboardConfig.status_usage_distribution) && (
+          <Row gutter={16} style={{ marginBottom: 24 }}>
+            {/* Real-time System Metrics - Match Host Resource Comparison width */}
+            {dashboardConfig.real_time_metrics && (
+              <Col span={dashboardConfig.status_usage_distribution ? 16 : 24}>
+                <Card
+                  title="Real-time System Metrics"
+                  extra={
+                    <Space>
+                      <Button
+                        type={autoRefresh ? 'primary' : 'default'}
+                        onClick={() => setAutoRefresh(!autoRefresh)}
+                        icon={autoRefresh ? <ReloadOutlined spin /> : <ReloadOutlined />}
+                        size="small"
                       >
-                        <RadialBar
-                          label={{ position: 'insideStart', fill: '#fff', fontSize: 9 }}
-                          background={{ fill: '#f0f0f0' }}
-                          dataKey="value"
-                          cornerRadius={2}
-                          maxBarSize={15}
-                        />
-                        <Legend 
-                          iconSize={6} 
-                          layout="vertical" 
-                          verticalAlign="middle" 
-                          align="right"
-                          iconType="rect"
-                          wrapperStyle={{ fontSize: '10px', paddingLeft: '8px' }}
-                        />
-                        <RechartsTooltip 
-                          formatter={(value: number) => [`${value.toFixed(1)}%`, 'Usage']}
-                          contentStyle={{
-                            backgroundColor: '#fff',
-                            border: '1px solid #d9d9d9',
-                            borderRadius: '4px',
-                            fontSize: '11px'
-                          }}
-                        />
-                      </RadialBarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-              </ResponsiveContainer>
-            </Card>
-          </Col>
-        </Row>
+                        {autoRefresh ? 'Auto Refreshing' : 'Enable Auto Refresh'}
+                      </Button>
+                      <Select
+                        value={selectedServerId}
+                        onChange={setSelectedServerId}
+                        style={{ width: 200 }}
+                        placeholder="Select Server"
+                        loading={isLoading}
+                      >
+                        {servers.map(server => (
+                          <Option key={server.id} value={server.id.toString()}>
+                            {server.hostname} ({server.ipAddress})
+                          </Option>
+                        ))}
+                      </Select>
+                      <Badge status="processing" text="Live" />
+                    </Space>
+                  }
+                >
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart
+                      data={realTimeData.slice(-20)}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <XAxis
+                        dataKey="timestamp"
+                        tickFormatter={(value: string) => dayjs(value).format('HH:mm:ss')}
+                        stroke="#666"
+                        fontSize={12}
+                      />
+                      <YAxis
+                        domain={[0, 100]}
+                        stroke="#666"
+                        fontSize={12}
+                        tickFormatter={(value) => `${value.toFixed(1)}%`}
+                      />
+                      <RechartsTooltip
+                        labelFormatter={(value: string) => dayjs(value).format('HH:mm:ss')}
+                        formatter={(value: number, name: string) => {
+                          // Format display based on metric type
+                          let formattedValue = '';
+
+                          switch (name.toLowerCase()) {
+                            case 'cpu':
+                            case 'memory':
+                            case 'disk':
+                              formattedValue = `${value.toFixed(1)}%`;
+                              break;
+                            case 'network':
+                              formattedValue = `${(value * 10).toFixed(1)} MB/s`; // Restore original network traffic value
+                              break;
+                            case 'temperature':
+                              formattedValue = `${value.toFixed(2)}°C`;
+                              break;
+                            case 'loadavg':
+                              formattedValue = `${value.toFixed(2)}`;
+                              break;
+                            default:
+                              formattedValue = `${value.toFixed(1)}`;
+                          }
+
+                          return [formattedValue, name.toUpperCase()];
+                        }}
+                        contentStyle={{
+                          backgroundColor: '#fff',
+                          border: '1px solid #d9d9d9',
+                          borderRadius: '6px',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+                        }}
+                      />
+                      <Legend
+                        wrapperStyle={{ paddingTop: '20px' }}
+                        iconType="line"
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="cpu"
+                        stroke="#1890ff"
+                        strokeWidth={3}
+                        dot={false}
+                        strokeDasharray="0"
+                        connectNulls={false}
+                        name="CPU"
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="memory"
+                        stroke="#52c41a"
+                        strokeWidth={3}
+                        dot={false}
+                        strokeDasharray="5 5"
+                        connectNulls={false}
+                        name="Memory"
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="disk"
+                        stroke="#faad14"
+                        strokeWidth={3}
+                        dot={false}
+                        strokeDasharray="10 5"
+                        connectNulls={false}
+                        name="Disk"
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="network"
+                        stroke="#f5222d"
+                        strokeWidth={3}
+                        dot={false}
+                        strokeDasharray="15 5 5 5"
+                        connectNulls={false}
+                        name="Network"
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="temperature"
+                        stroke="#722ed1"
+                        strokeWidth={3}
+                        dot={false}
+                        strokeDasharray="20 5"
+                        connectNulls={false}
+                        name="Temperature"
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="loadAvg"
+                        stroke="#13c2c2"
+                        strokeWidth={3}
+                        dot={false}
+                        strokeDasharray="25 5"
+                        connectNulls={false}
+                        name="Load Avg"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </Card>
+              </Col>
+            )}
+
+            {/* Combined Host Status & Resource Usage - Match Recent Alerts width */}
+            {dashboardConfig.status_usage_distribution && (
+              <Col span={dashboardConfig.real_time_metrics ? 8 : 24}>
+                <Card title="Server Status & Resource Usage">
+                  <ResponsiveContainer width="100%" height={300}>
+                    <div style={{ height: '300px', display: 'flex', flexDirection: 'column', padding: '10px 0' }}>
+                      {/* Host Status Distribution - Top Half */}
+                      <div style={{ flex: 1, marginBottom: '10px' }}>
+                        <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '8px', color: '#666', textAlign: 'center' }}>Server Status Distribution</div>
+                        <ResponsiveContainer width="100%" height={120}>
+                          <PieChart margin={{ top: 5, right: 20, bottom: 5, left: 5 }}>
+                            <Pie
+                              data={pieData}
+                              cx="40%"
+                              cy="50%"
+                              innerRadius={20}
+                              outerRadius={40}
+                              paddingAngle={2}
+                              dataKey="value"
+                            >
+                              {pieData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} />
+                              ))}
+                            </Pie>
+                            <RechartsTooltip
+                              formatter={(value: number) => [`${value}`, 'Hosts']}
+                              contentStyle={{
+                                backgroundColor: '#fff',
+                                border: '1px solid #d9d9d9',
+                                borderRadius: '4px',
+                                fontSize: '11px'
+                              }}
+                            />
+                            <Legend
+                              verticalAlign="middle"
+                              align="right"
+                              layout="vertical"
+                              iconType="rect"
+                              wrapperStyle={{ fontSize: '10px', paddingLeft: '8px' }}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+
+                      {/* Average Resource Usage - Bottom Half */}
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '8px', color: '#666', textAlign: 'center' }}>Average Resource Usage</div>
+                        <ResponsiveContainer width="100%" height={120}>
+                          <RadialBarChart
+                            cx="40%"
+                            cy="50%"
+                            innerRadius="25%"
+                            outerRadius="75%"
+                            data={radialData}
+                            startAngle={90}
+                            endAngle={-270}
+                            margin={{ top: 5, right: 20, bottom: 5, left: 5 }}
+                          >
+                            <RadialBar
+                              label={{ position: 'insideStart', fill: '#fff', fontSize: 9 }}
+                              background={{ fill: '#f0f0f0' }}
+                              dataKey="value"
+                              cornerRadius={2}
+                              maxBarSize={15}
+                            />
+                            <Legend
+                              iconSize={6}
+                              layout="vertical"
+                              verticalAlign="middle"
+                              align="right"
+                              iconType="rect"
+                              wrapperStyle={{ fontSize: '10px', paddingLeft: '8px' }}
+                            />
+                            <RechartsTooltip
+                              formatter={(value: number) => [`${value.toFixed(1)}%`, 'Usage']}
+                              contentStyle={{
+                                backgroundColor: '#fff',
+                                border: '1px solid #d9d9d9',
+                                borderRadius: '4px',
+                                fontSize: '11px'
+                              }}
+                            />
+                          </RadialBarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  </ResponsiveContainer>
+                </Card>
+              </Col>
+            )}
+          </Row>
+        )}
 
         {/* Resource Comparison Chart */}
-        <Row gutter={16} style={{ marginBottom: 24 }}>
-          <Col span={16}>
-            <Card title="Server Resource Comparison">
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart 
-                  data={resourceData}
-                  margin={{ top: 20, right: 30, bottom: 20, left: 20 }}
-                  barCategoryGap="20%"
-                >
-                  <CartesianGrid 
-                    strokeDasharray="3 3" 
-                    stroke="#f0f0f0"
-                    horizontal={true}
-                    vertical={false}
-                  />
-                  <XAxis 
-                    dataKey="name" 
-                    axisLine={{ stroke: '#d9d9d9' }}
-                    tickLine={{ stroke: '#d9d9d9' }}
-                    tick={{ fontSize: 12, fill: '#666' }}
-                    interval={0}
-                    angle={-45}
-                    textAnchor="end"
-                    height={60}
-                  />
-                  <YAxis 
-                    domain={[0, 100]}
-                    axisLine={{ stroke: '#d9d9d9' }}
-                    tickLine={{ stroke: '#d9d9d9' }}
-                    tick={{ fontSize: 12, fill: '#666' }}
-                    label={{ value: 'Usage (%)', angle: -90, position: 'insideLeft' }}
-                  />
-                  <RechartsTooltip 
-                    formatter={(value: number) => [`${value}%`, 'Usage']}
-                    contentStyle={{
-                      backgroundColor: '#fff',
-                      border: '1px solid #d9d9d9',
-                      borderRadius: '6px',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
-                    }}
-                  />
-                  <Legend 
-                    wrapperStyle={{ paddingTop: '20px' }}
-                    iconType="rect"
-                  />
-                  <Bar dataKey="cpu" fill="#1890ff" name="CPU" radius={[2, 2, 0, 0]} />
-                  <Bar dataKey="memory" fill="#52c41a" name="Memory" radius={[2, 2, 0, 0]} />
-                  <Bar dataKey="disk" fill="#faad14" name="Disk" radius={[2, 2, 0, 0]} />
-                  <Bar dataKey="network" fill="#f5222d" name="Network" radius={[2, 2, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </Card>
-          </Col>
+        {(dashboardConfig.resource_comparison || dashboardConfig.recent_alerts) && (
+          <Row gutter={16} style={{ marginBottom: 24 }}>
+            {/* Resource Comparison Chart */}
+            {dashboardConfig.resource_comparison && (
+              <Col span={dashboardConfig.recent_alerts ? 16 : 24}>
+                <Card title="Server Resource Comparison">
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart
+                      data={resourceData}
+                      margin={{ top: 20, right: 30, bottom: 20, left: 20 }}
+                      barCategoryGap="20%"
+                    >
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="#f0f0f0"
+                        horizontal={true}
+                        vertical={false}
+                      />
+                      <XAxis
+                        dataKey="name"
+                        axisLine={{ stroke: '#d9d9d9' }}
+                        tickLine={{ stroke: '#d9d9d9' }}
+                        tick={{ fontSize: 12, fill: '#666' }}
+                        interval={0}
+                        angle={-45}
+                        textAnchor="end"
+                        height={60}
+                      />
+                      <YAxis
+                        domain={[0, 100]}
+                        axisLine={{ stroke: '#d9d9d9' }}
+                        tickLine={{ stroke: '#d9d9d9' }}
+                        tick={{ fontSize: 12, fill: '#666' }}
+                        label={{ value: 'Usage (%)', angle: -90, position: 'insideLeft' }}
+                      />
+                      <RechartsTooltip
+                        formatter={(value: number) => [`${value}%`, 'Usage']}
+                        contentStyle={{
+                          backgroundColor: '#fff',
+                          border: '1px solid #d9d9d9',
+                          borderRadius: '6px',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+                        }}
+                      />
+                      <Legend
+                        wrapperStyle={{ paddingTop: '20px' }}
+                        iconType="rect"
+                      />
+                      <Bar dataKey="cpu" fill="#1890ff" name="CPU" radius={[2, 2, 0, 0]} />
+                      <Bar dataKey="memory" fill="#52c41a" name="Memory" radius={[2, 2, 0, 0]} />
+                      <Bar dataKey="disk" fill="#faad14" name="Disk" radius={[2, 2, 0, 0]} />
+                      <Bar dataKey="network" fill="#f5222d" name="Network" radius={[2, 2, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </Card>
+              </Col>
+            )}
 
-          {/* Recent Alerts */}
-          <Col span={8}>
-            <Card title="Recent Alerts" extra={<Badge count={activeAlerts} />}>
-              <div style={{ height: '300px', overflowY: 'auto' }}>
-                <List
-                  size="small"
-                  dataSource={alerts.slice(0, 6)}
-                  renderItem={(alert) => (
-                    <List.Item>
-                      <div style={{ width: '100%' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Tag color={getSeverityColor(alert.severity)}>
-                            {alert.severity.toUpperCase()}
-                          </Tag>
-                          <span style={{ fontSize: '12px', color: '#666' }}>
-                            {dayjs(alert.timestamp).format('HH:mm')}
-                          </span>
-                        </div>
-                        <div style={{ marginTop: 4, fontSize: '12px' }}>
-                          <strong>{alert.hostName}</strong>
-                        </div>
-                        <div style={{ fontSize: '12px', color: '#666' }}>
-                          {alert.message}
-                        </div>
-                      </div>
-                    </List.Item>
-                  )}
-                />
-              </div>
-      </Card>
-          </Col>
-        </Row>
+            {/* Recent Alerts */}
+            {dashboardConfig.recent_alerts && (
+              <Col span={dashboardConfig.resource_comparison ? 8 : 24}>
+                <Card title="Recent Alerts" extra={<Badge count={activeAlerts} />}>
+                  <div style={{ height: '300px', overflowY: 'auto' }}>
+                    <List
+                      size="small"
+                      dataSource={alerts.slice(0, 6)}
+                      renderItem={(alert) => (
+                        <List.Item>
+                          <div style={{ width: '100%' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <Tag color={getSeverityColor(alert.severity)}>
+                                {alert.severity.toUpperCase()}
+                              </Tag>
+                              <span style={{ fontSize: '12px', color: '#666' }}>
+                                {dayjs(alert.timestamp).format('HH:mm')}
+                              </span>
+                            </div>
+                            <div style={{ marginTop: 4, fontSize: '12px' }}>
+                              <strong>{alert.hostName}</strong>
+                            </div>
+                            <div style={{ fontSize: '12px', color: '#666' }}>
+                              {alert.message}
+                            </div>
+                          </div>
+                        </List.Item>
+                      )}
+                    />
+                  </div>
+                </Card>
+              </Col>
+            )}
+          </Row>
+        )}
         </div>
     </MainLayout>
   );
