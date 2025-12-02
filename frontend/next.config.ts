@@ -7,7 +7,7 @@ import type { NextConfig } from 'next';
  * NEXT_PUBLIC_API_PREFIX:  Unified prefix for frontend API calls (usually /api)
  * =========================================================== */
 const BACKEND_ORIGIN =
-  process.env.BACKEND_ORIGIN || 'http://localhost:8080'; // Backend address
+  process.env.BACKEND_ORIGIN || 'http://localhost:8081'; // Backend address
 const API_PREFIX =
   process.env.NEXT_PUBLIC_API_PREFIX?.startsWith('/')
     ? process.env.NEXT_PUBLIC_API_PREFIX
