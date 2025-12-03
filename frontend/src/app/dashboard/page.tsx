@@ -13,19 +13,14 @@ import {
   Tag,
   Badge,
   Select,
-  DatePicker,
   Button,
   Space,
   Alert,
-  List,
-  Collapse,
-  Checkbox
+  List
 } from 'antd';
 import {
   LineChart,
   Line,
-  AreaChart,
-  Area,
   BarChart,
   Bar,
   PieChart,
@@ -704,35 +699,33 @@ const MonitoringDashboard: React.FC = () => {
         )}
 
         {/* Customize Dashboard Configuration */}
-        <Collapse
-          defaultActiveKey={[]}
-          style={{ marginBottom: 24, backgroundColor: '#ffffff' }}
-        >
-          <Collapse.Panel header="Customize Dashboard" key="1">
-            <div style={{ padding: '16px 0' }}>
-              <div style={{ marginBottom: 16, fontSize: '14px', fontWeight: 500, color: '#333' }}>
-                Select which modules to display on the dashboard:
-              </div>
-              {DASHBOARD_MODULES.map(module => (
-                <div key={module.key} style={{ marginBottom: 12, padding: '12px', borderRadius: '6px', backgroundColor: '#fafafa', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <div style={{ fontSize: '13px', fontWeight: 500, color: '#333' }}>
-                      {module.title}
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#666', marginTop: 2 }}>
-                      {module.description}
-                    </div>
-                  </div>
-                  <Checkbox
-                    checked={dashboardConfig[module.key]}
-                    onChange={(e) => handleConfigChange(module.key, e.target.checked)}
-                    style={{ fontSize: '14px' }}
-                  />
-                </div>
-              ))}
-            </div>
-          </Collapse.Panel>
-        </Collapse>
+        <Card style={{ marginBottom: 24, backgroundColor: '#ffffff' }}>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
+            <DashboardOutlined style={{ marginRight: 8, color: '#1890ff' }} />
+            <span style={{ fontSize: '14px', fontWeight: 500, color: '#333' }}>Customize Dashboard</span>
+          </div>
+          <div style={{ marginBottom: 8, fontSize: '13px', color: '#666' }}>
+            Select which modules to display:
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            {DASHBOARD_MODULES.map(module => (
+              <Tag
+                key={module.key}
+                color={dashboardConfig[module.key] ? '#1890ff' : 'default'}
+                style={{
+                  fontSize: '13px',
+                  padding: '4px 12px',
+                  cursor: 'pointer',
+                  border: dashboardConfig[module.key] ? '1px solid #1890ff' : '1px solid #d9d9d9',
+                  backgroundColor: dashboardConfig[module.key] ? '#e6f7ff' : '#ffffff'
+                }}
+                onClick={() => handleConfigChange(module.key, !dashboardConfig[module.key])}
+              >
+                {module.title}
+              </Tag>
+            ))}
+          </div>
+        </Card>
 
         {/* Overview Statistics */}
         {dashboardConfig.overview_statistics && (
